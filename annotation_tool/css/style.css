@@ -1,0 +1,12 @@
+.btn-xs {
+    padding: 2px;
+    position: relative;
+    top: -1.5px;
+}
+.table tbody tr > td.error {
+  background-color: #ebcccc !important;
+}
+
+.table tbody tr > td.success {
+  background-color: #dff0d8 !important;
+}
