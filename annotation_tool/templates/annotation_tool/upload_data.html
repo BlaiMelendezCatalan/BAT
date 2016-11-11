@@ -1,0 +1,15 @@
+{% extends 'annotation_tool/base.html' %}
+
+{% block title %}Upload data{% endblock %}
+
+{% block header %}Upload data{% endblock %}
+
+{% block body_block %}
+
+<form action="" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form }}
+    <input type="submit" value="Upload files" />
+</form>
+
+{% endblock %}
