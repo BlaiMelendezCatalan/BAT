@@ -9,4 +9,6 @@ urlpatterns = [
     url(r'^segments/$', views.segments, name='segments'),
     url(r'^annotations/$', views.annotations, name='annotations'),
     url(r'^events/$', views.events, name='events'),
+    url(r'^upload_data/$', views.UploadFileView.as_view(), name='upload_data'),
+    url(r'^successful_upload/$', views.successful_upload, name='successful_upload'),
 ]

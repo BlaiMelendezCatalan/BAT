@@ -22,7 +22,7 @@ class Class(models.Model):
 
 class Wav(models.Model):
 	project = models.ForeignKey('Project', on_delete=models.CASCADE)
-	abs_path = models.CharField(max_length=1000)
+	file = models.FileField(upload_to="/home/bmelendez/musicspeech_annotation_project/django_test/", max_length=500)
 	name = models.CharField(max_length=100)
 	upload_date = models.DateTimeField('upload date')
 
@@ -37,7 +37,7 @@ class Segment(models.Model):
 	name = models.CharField(max_length=100)
 
 	def __str__(self):
-		return str(self.id)
+		return str(self.name)
 
 
 class Annotation(models.Model):
@@ -45,6 +45,9 @@ class Annotation(models.Model):
 	user = models.ForeignKey(User, on_delete=models.CASCADE)
 	name = models.CharField(max_length=100)
 	annotation_date = models.DateTimeField('annotation date')
+
+	class Meta:
+		unique_together = ("segment","user")
 
 	def __str__(self):
 		return str(self.id)

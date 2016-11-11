@@ -6,6 +6,12 @@
 
 {% block body_block %}
 
+<form action="" method="post">
+    {% csrf_token %}
+    {{ form }}
+    <input type="submit" value="Create new project" />
+</form>
+
 {% if projects %}
 	<table class="table table-striped table-bordered sortable" style="width: auto;">
 	<tr>
