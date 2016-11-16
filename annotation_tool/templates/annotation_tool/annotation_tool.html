@@ -1,0 +1,92 @@
+{% extends 'annotation_tool/base_normal.html' %}
+
+{% block title %}Annotation tool{% endblock %}
+
+{% block header %}Annotation tool{% endblock %}
+
+{% block body_block %}
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/1.2.4/wavesurfer.min.js"></script>
+
+<div id="waveform"></div>
+
+<div style="text-align: center">
+  <button class="btn btn-primary" onclick="wavesurfer.playPause()">
+    <i class="glyphicon glyphicon-play"></i>
+    Play
+  </button>
+
+  <p class="row">
+    <div class="col-xs-1">
+      <i class="glyphicon glyphicon-zoom-in"></i>
+    </div>
+
+    <div class="col-xs-10">
+      <input id="slider" type="range" min="1" max="200" value="1" style="width: 100%" />
+    </div>
+
+    <div class="col-xs-1">
+      <i class="glyphicon glyphicon-zoom-out"></i>
+    </div>
+  </p>
+</div>
+
+<script type="text/javascript">
+
+	function createBuffer(originalBuffer, duration) {
+		var sampleRate = originalBuffer.sampleRate
+		var frameCount = duration * sampleRate
+		var channels = originalBuffer.numberOfChannels 
+		return new AudioContext().createBuffer(channels, frameCount, sampleRate)
+	}
+
+	function copyBuffer(fromBuffer, fromStart, fromEnd, toBuffer, toStart) {
+		var sampleRate = fromBuffer.sampleRate
+		var frameCount = (fromEnd - fromStart) * sampleRate
+		for (var i = 0; i < fromBuffer.numberOfChannels; i++) {
+	    	var fromChanData = fromBuffer.getChannelData(i)
+	    	var toChanData = toBuffer.getChannelData(i)
+	    	for (var j = 0, f = Math.round(fromStart*sampleRate), t = Math.round(toStart*sampleRate); j < frameCount; j++, f++, t++) {
+	        	toChanData[t] = fromChanData[f]
+	    	}
+		}
+	}
+
+	var wavesurfer = WaveSurfer.create({
+	    container: '#waveform',
+	    waveColor: 'violet',
+	    progressColor: 'purple',
+	    normalize: true
+	});
+
+	wavesurfer.load("{% url 'media' segment.wav.name %}")
+
+	var start = {{ segment.start_time }}
+	var end = {{ segment.end_time }}
+	var duration = end - start
+
+	var isBufferCreated = 0
+
+	wavesurfer.on('ready', function () {
+		if (isBufferCreated == 0) {
+			isBufferCreated = 1
+			// create a new buffer to hold the new clip
+			var buffer = createBuffer(wavesurfer.backend.buffer, duration)
+			// copy
+			copyBuffer(wavesurfer.backend.buffer, start, end, buffer, 0)
+			// load the new buffer
+			wavesurfer.empty()
+			wavesurfer.loadDecodedBuffer(buffer)
+		}
+	});
+
+	var slider = document.querySelector('#slider');
+
+	slider.oninput = function () {
+		var zoomLevel = Number(15 * slider.value);
+		wavesurfer.zoom(zoomLevel);
+	};
+
+</script>
+
+{% endblock %}

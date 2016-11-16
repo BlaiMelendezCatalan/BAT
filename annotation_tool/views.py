@@ -5,15 +5,26 @@ from django.http import HttpResponseRedirect
 from annotation_tool.models import Project, Wav, Segment, Annotation, Event
 from django.contrib.auth.models import User
 from django.views.generic.edit import FormView
-from .forms import CreateProjectForm, UploadDataForm
+from .forms import CreateProjectForm, UploadDataForm, LoginForm
 import django.core.exceptions as e
 import utils
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth import authenticate, login
+from django.contrib.auth.decorators import user_passes_test,login_required
+from django.utils.decorators import method_decorator
+from django.shortcuts import redirect
+
+
+def superuser_check(user):
+    return user.is_superuser
 
 
 def index(request):
     return HttpResponse("Hello, world. You're at the annotation tool index.")
 
 
+#@login_required(login_url='../loginsignup')
+@user_passes_test(superuser_check)
 def projects(request):
     context = {}
 
@@ -32,6 +43,8 @@ def projects(request):
     return render(request, 'annotation_tool/projects.html', context)
 
 
+#@login_required(login_url='../../loginsignup')
+@user_passes_test(superuser_check)
 def wavs(request):
     context = {}
 
@@ -49,12 +62,13 @@ def wavs(request):
         if v['selected']:
             selected_values[v['route']] = v['selected']
 
-    # Get filtered runs
     context['query_data'] = Wav.objects.filter(**selected_values) \
                                             .order_by('-id')
     return render(request, 'annotation_tool/wavs.html', context)
 
 
+#@login_required(login_url='../loginsignup')
+@user_passes_test(superuser_check)
 def segments(request):
     context = {}
 
@@ -74,12 +88,13 @@ def segments(request):
         if v['selected']:
             selected_values[v['route']] = v['selected']
 
-    # Get filtered runs
     context['query_data'] = Segment.objects.filter(**selected_values) \
                                             .order_by('-id')
     return render(request, 'annotation_tool/segments.html', context)
 
 
+#@login_required(login_url='../loginsignup')
+@user_passes_test(superuser_check)
 def annotations(request):
     context = {}
 
@@ -91,6 +106,8 @@ def annotations(request):
                  'name': 'wav'},
         'Segments': {'route': 'segment__name',
                      'name': 'segment'},
+        'Users': {'route': 'user__username',
+                  'name': 'user'}
     }
     for v in context['filters'].values():
     	v['available'] = Annotation.objects.values_list(v['route'], flat=True) \
@@ -101,12 +118,13 @@ def annotations(request):
         if v['selected']:
             selected_values[v['route']] = v['selected']
 
-    # Get filtered runs
     context['query_data'] = Annotation.objects.filter(**selected_values) \
                                             .order_by('-id')
     return render(request, 'annotation_tool/annotations.html', context)
 
 
+#@login_required(login_url='../loginsignup')
+@user_passes_test(superuser_check)
 def events(request):
     context = {}
 
@@ -132,21 +150,68 @@ def events(request):
         if v['selected']:
             selected_values[v['route']] = v['selected']
 
-    # Get filtered runs
     context['query_data'] = Event.objects.filter(**selected_values) \
                                             .order_by('-id')
     return render(request, 'annotation_tool/events.html', context)
 
 
+#@login_required(login_url='../loginsignup')
+@user_passes_test(superuser_check)
 def successful_upload(request):
     context = {}
 
     return render(request, 'annotation_tool/successful_upload.html', context)
 
 
+def loginsignup(request):
+    context = {}
+
+    if request.method == 'POST':
+        username = request.POST.get('username')
+
+        if 'login' in request.POST:
+            password = request.POST.get('password')
+            user = authenticate(username=username, password=password)
+            if user is not None:
+                login(request, user)
+            context['form_login'] = LoginForm(request.POST)
+            context['form_signup'] = UserCreationForm()
+            if user.is_superuser:
+                return HttpResponseRedirect('../projects')
+            else:
+                return HttpResponseRedirect('../new_annotation')
+
+        elif 'signup' in request.POST:
+            password1 = request.POST.get('password1')
+            password2 = request.POST.get('password2')
+            if password1 == password2:
+                u = User(username=username, password=password1)
+                u.save()
+                utils.set_user_permissions(u)
+                
+            else:
+                # better redirect to signup with message
+                raise e("Passwords do not match")
+            context['form_login'] = LoginForm()
+            context['form_signup'] = UserCreationForm(request.POST)
+
+        return HttpResponseRedirect('./')
+
+    else:
+        context['form_login'] = LoginForm()
+        context['form_signup'] = UserCreationForm()
+
+    return render(request, 'annotation_tool/loginsignup.html', context)
+
+
+
 class UploadFileView(FormView):
     form_class = UploadDataForm
     template_name = 'annotation_tool/upload_data.html'
+
+    @method_decorator(user_passes_test(superuser_check, login_url=None, redirect_field_name=None)) 
+    def dispatch(self, *args, **kwargs):
+        return super(UploadFileView,  self).dispatch(*args, **kwargs)
 
     def post(self, request, *args, **kwargs):
         form_class = self.get_form_class()
@@ -164,3 +229,70 @@ class UploadFileView(FormView):
             return HttpResponseRedirect('./')
         else:
             return self.form_invalid(form)
+
+
+#@login_required(login_url='../loginsignup')
+def new_annotation(request):
+    context = {}
+
+    # Define filters, extract possibles values and store selections
+    context['filters'] = {
+        'Projects': {'route': 'name',
+                     'name': 'project'},
+    }
+    for v in context['filters'].values():
+        v['available'] = Project.objects.values_list(v['route'], flat=True) \
+            .order_by(v['route']).distinct()
+    selected_values = {}
+    for v in context['filters'].values():
+        v['selected'] = request.GET.get(v['name'], "")
+        if v['selected']:
+            selected_values[v['route']] = v['selected']
+
+    context['query_data'] = Project.objects.filter(**selected_values) \
+                                            .order_by('-id')
+
+    if v['selected'] == '':
+        return render(request, 'annotation_tool/new_annotation.html', context)
+    else:
+        context['segment'] = utils.pick_segment_to_annotate(request.GET['project'], request.user.id)
+        print context['segment']
+        return render(request, 'annotation_tool/annotation_tool.html', context)
+
+
+#@login_required(login_url='../loginsignup')
+def completed_annotations(request):
+    context = {}
+
+    # Define filters, extract possibles values and store selections
+    context['filters'] = {
+        'Projects': {'route': 'segment__wav__project__name',
+                     'name': 'project'},
+    }
+    for v in context['filters'].values():
+        v['available'] = Annotation.objects.values_list(v['route'], flat=True) \
+            .order_by(v['route']).distinct()
+    selected_values = {}
+    for v in context['filters'].values():
+        v['selected'] = request.GET.get(v['name'], "")
+        if v['selected']:
+            selected_values[v['route']] = v['selected']
+    selected_values['user__id'] = request.user.id
+
+    context['query_data'] = Annotation.objects.filter(**selected_values) \
+                                            .order_by('-id')
+    
+    return render(request, 'annotation_tool/completed_annotations.html', context)
+
+
+#@login_required(login_url='../loginsignup')
+def annotation_tool(request):
+    context = {}
+
+    print "GETTTTTTTTTTTT"
+    print request.GET
+    print '\n'
+    print "POSTTTTTTTTTTT"
+    print request.POST
+
+    return render(request, 'annotation_tool/annotation_tool.html', context)

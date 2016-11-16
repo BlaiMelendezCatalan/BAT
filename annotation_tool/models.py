@@ -35,6 +35,9 @@ class Segment(models.Model):
 	start_time = models.FloatField()
 	end_time = models.FloatField()
 	name = models.CharField(max_length=100)
+	number_of_annotations = models.IntegerField(blank=True)
+	difficulty = models.FloatField(blank=True)
+	priority = models.FloatField(blank=True)
 
 	def __str__(self):
 		return str(self.name)

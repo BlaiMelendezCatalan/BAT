@@ -1,0 +1,36 @@
+{% spaceless %}
+{% load staticfiles %}
+
+<html>
+<head>
+<title>Annotation Tool - {% block title %}{% endblock %}</title>
+<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+<link rel="stylesheet" href="{% static 'css/style.css' %}" />
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
+<script src="{% static 'js/wavesurfer.min.js' %}"></script>
+<script src="{% static 'js/wavesurfer.timeline.js' %}"></script>
+<script src="{% static 'js/wavesurfer.regions.js' %}"></script>
+<script src="{% static 'js/sorttable.js' %}"></script>
+<script type="text/javascript" src="{% static 'js/functions.js' %}"></script>
+</head>
+<body>
+    
+<div class="container-fluid">
+    <div class="page-header">
+        <ul class="nav nav-pills pull-right">
+        <li><a href="{% url 'new_annotation' %}">New annotation</a></li>
+        <li><a href="{% url 'completed_annotations' %}">Completed annotations</a></li>
+        </ul>
+        <div class="text-left">
+            <h1>{% block header %}{% endblock %}</h1>
+        </div>
+    </div>
+
+{% block body_block %}{% endblock %}
+
+</div>
+
+</body>
+</html>
+{% endspaceless %}

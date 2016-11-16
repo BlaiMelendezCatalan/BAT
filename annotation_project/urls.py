@@ -15,8 +15,13 @@ Including another URLconf
 """
 from django.conf.urls import include, url
 from django.contrib import admin
+from django.views.static import serve
 
 urlpatterns = [
     url(r'^annotation_tool/', include('annotation_tool.urls')),
     url(r'^admin/', admin.site.urls),
+    url(r'^media/(?P<path>.*)$', serve,
+        {'document_root': '/home/bmelendez/musicspeech_annotation_project/django_test',
+         'show_indexes': True},
+        name='media'),
 ]
