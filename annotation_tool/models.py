@@ -22,7 +22,9 @@ class Class(models.Model):
 
 class Wav(models.Model):
 	project = models.ForeignKey('Project', on_delete=models.CASCADE)
-	file = models.FileField(upload_to="/home/bmelendez/musicspeech_annotation_project/django_test/", max_length=500)
+	file = models.FileField(
+		upload_to="/home/blai/BMAT/musicspeech_annotation_project/django_test/",
+		max_length=500)
 	name = models.CharField(max_length=100)
 	upload_date = models.DateTimeField('upload date')
 
@@ -35,9 +37,9 @@ class Segment(models.Model):
 	start_time = models.FloatField()
 	end_time = models.FloatField()
 	name = models.CharField(max_length=100)
-	number_of_annotations = models.IntegerField(blank=True)
-	difficulty = models.FloatField(blank=True)
-	priority = models.FloatField(blank=True)
+	number_of_annotations = models.IntegerField(default=0)
+	difficulty = models.FloatField(default=1.0)
+	priority = models.FloatField(default=0.0)
 
 	def __str__(self):
 		return str(self.name)
@@ -48,12 +50,13 @@ class Annotation(models.Model):
 	user = models.ForeignKey(User, on_delete=models.CASCADE)
 	name = models.CharField(max_length=100)
 	annotation_date = models.DateTimeField('annotation date')
+	status = models.CharField(max_length=10, default="unfinished")
 
 	class Meta:
 		unique_together = ("segment","user")
 
 	def __str__(self):
-		return str(self.id)
+		return str(self.name)
 
 
 class Event(models.Model):
@@ -75,7 +78,7 @@ class Region(models.Model):
 
 
 class Tag(models.Model):
-	name = models.CharField(max_length=50)
+	name = models.CharField(unique=True, max_length=50)
 
 	def __str__(self):
 		return str(self.name)

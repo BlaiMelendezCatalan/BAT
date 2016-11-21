@@ -1,0 +1,32 @@
+{% extends 'annotation_tool/base.html' %}
+
+{% block title %}Classes{% endblock %}
+
+{% block header %}Classes{% endblock %}
+
+{% block body_block %}
+
+<form action="" method="post">
+    {% csrf_token %}
+    {{ form }}
+    <input type="submit" value="Create new class" />
+</form>
+
+{% if query_data %}
+	<table class="table table-striped table-bordered sortable" style="width: auto;">
+	<tr>
+	<th>ID</th>
+    <th>Class name</th>
+	</tr>
+	{% for class in query_data %}
+		<tr>
+		<td>{{ class.id }}</a></td>
+        <td>{{ class.name }}</td>
+		</tr>
+	{% endfor %}
+    </table>
+    <p>Displaying {{ query_data|length }} classes ordered by ID.</p>
+{% else %}
+	<p>No data is available.</p>
+{% endif %}
+{% endblock %}

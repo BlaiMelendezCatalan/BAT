@@ -2,10 +2,10 @@ from django.utils import timezone
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.http import HttpResponseRedirect
-from annotation_tool.models import Project, Wav, Segment, Annotation, Event
+from annotation_tool.models import Project, Wav, Segment, Annotation, Event, Class
 from django.contrib.auth.models import User
 from django.views.generic.edit import FormView
-from .forms import CreateProjectForm, UploadDataForm, LoginForm
+from .forms import CreateProjectForm, CreateClassForm, UploadDataForm, LoginForm
 import django.core.exceptions as e
 import utils
 from django.contrib.auth.forms import UserCreationForm
@@ -28,14 +28,14 @@ def index(request):
 def projects(request):
     context = {}
 
-    context['projects'] = Project.objects.all()
+    context['query_data'] = Project.objects.all()
 
     if request.method == 'POST':
         context['form'] = CreateProjectForm(request.POST)
         if context['form'].is_valid():
-            p = utils.create_project(
-                        name=context['form'].cleaned_data['project_name'],
-                        creation_date=timezone.now())
+            utils.create_project(
+                name=context['form'].cleaned_data['project_name'],
+                creation_date=timezone.now())
             return HttpResponseRedirect('./')
     else:
         context['form'] = CreateProjectForm()
@@ -157,6 +157,24 @@ def events(request):
 
 #@login_required(login_url='../loginsignup')
 @user_passes_test(superuser_check)
+def classes(request):
+    context = {}
+
+    context['query_data'] = Class.objects.all()
+
+    if request.method == 'POST':
+        context['form'] = CreateClassForm(request.POST)
+        if context['form'].is_valid():
+            utils.create_class(name=context['form'].cleaned_data['class_name'])
+            return HttpResponseRedirect('./')
+    else:
+        context['form'] = CreateClassForm()
+
+    return render(request, 'annotation_tool/classes.html', context)
+
+
+#@login_required(login_url='../loginsignup')
+@user_passes_test(superuser_check)
 def successful_upload(request):
     context = {}
 
@@ -174,6 +192,8 @@ def loginsignup(request):
             user = authenticate(username=username, password=password)
             if user is not None:
                 login(request, user)
+            else:
+                return HttpResponseRedirect('./')
             context['form_login'] = LoginForm(request.POST)
             context['form_signup'] = UserCreationForm()
             if user.is_superuser:
@@ -195,7 +215,7 @@ def loginsignup(request):
             context['form_login'] = LoginForm()
             context['form_signup'] = UserCreationForm(request.POST)
 
-        return HttpResponseRedirect('./')
+            return HttpResponseRedirect('../new_annotation')
 
     else:
         context['form_login'] = LoginForm()
@@ -256,18 +276,25 @@ def new_annotation(request):
         return render(request, 'annotation_tool/new_annotation.html', context)
     else:
         context['segment'] = utils.pick_segment_to_annotate(request.GET['project'], request.user.id)
-        print context['segment']
+        context['annotation'] = utils.create_annotation(context['segment'], request.user)
+        context['classes'] = Class.objects.all()
         return render(request, 'annotation_tool/annotation_tool.html', context)
 
 
 #@login_required(login_url='../loginsignup')
-def completed_annotations(request):
+def my_annotations(request):
     context = {}
 
     # Define filters, extract possibles values and store selections
     context['filters'] = {
         'Projects': {'route': 'segment__wav__project__name',
                      'name': 'project'},
+        'Wavs': {'route': 'segment__wav__name',
+                 'name': 'wav'},
+        'Segments': {'route': 'segment__name',
+                     'name': 'segment'},
+        'Status': {'route': 'status',
+                   'name': 'status'}
     }
     for v in context['filters'].values():
         v['available'] = Annotation.objects.values_list(v['route'], flat=True) \
@@ -282,17 +309,41 @@ def completed_annotations(request):
     context['query_data'] = Annotation.objects.filter(**selected_values) \
                                             .order_by('-id')
     
-    return render(request, 'annotation_tool/completed_annotations.html', context)
+    return render(request, 'annotation_tool/my_annotations.html', context)
 
 
-#@login_required(login_url='../loginsignup')
-def annotation_tool(request):
+def resume_annotation(request):
     context = {}
 
-    print "GETTTTTTTTTTTT"
-    print request.GET
-    print '\n'
-    print "POSTTTTTTTTTTT"
-    print request.POST
+    # Define filters, extract possibles values and store selections
+    context['filters'] = {
+        'Annotations': {'route': 'name',
+                        'name': 'annotation'},
+    }
+    for v in context['filters'].values():
+        v['available'] = Annotation.objects.values_list(v['route'], flat=True) \
+            .order_by(v['route']).distinct()
+    selected_values = {}
+    for v in context['filters'].values():
+        v['selected'] = request.GET.get(v['name'], "")
+        if v['selected']:
+            selected_values[v['route']] = v['selected']
+    selected_values['status'] = "unfinished"
 
-    return render(request, 'annotation_tool/annotation_tool.html', context)
+    context['query_data'] = Annotation.objects.filter(**selected_values) \
+                                            .order_by('-id')
+
+    if v['selected'] == '':
+        return render(request, 'annotation_tool/new_annotation.html', context)
+    else:
+        context['annotation'] = Annotation.objects.get(name=request.GET['annotation'])
+        context['segment'] = context['annotation'].segment
+        context['classes'] = Class.objects.all()
+        return render(request, 'annotation_tool/annotation_tool.html', context)
+
+
+def save_annotation(request):
+    print request.GET
+    return HttpResponseRedirect('./')
+
+    

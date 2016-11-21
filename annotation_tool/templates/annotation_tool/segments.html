@@ -32,6 +32,7 @@
 	<th>End time</th>
 	<th>Wav name</th>
 	<th>Project name</th>
+	<th>Priority</th>
 	</tr>
 	{% for segment in query_data %}
 		<tr>
@@ -41,6 +42,7 @@
 		<td>{{ segment.end_time }}</td>
 		<td>{{ segment.wav.name }}</td>
 		<td>{{ segment.wav.project.name }}</td>
+		<td>{{ segment.priority }}</td>
 		</tr>
 	{% endfor %}
     </table>

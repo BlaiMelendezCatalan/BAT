@@ -7,6 +7,7 @@
 {% block body_block %}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/1.2.4/wavesurfer.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/1.2.3/plugin/wavesurfer.regions.min.js"></script>
 
 <div id="waveform"></div>
 
@@ -30,9 +31,24 @@
     </div>
   </p>
 </div>
+&nbsp;
+<div>Class</div>
+<form id='class_form' class="form-inline">
+    <select class="form-control" id="class_select" onchange="set_class()" style="width: auto;">
+        <option value="" selected></option>
+    	{% for class in classes %}
+        	<option value="{{ class }}" >{{ class }}</option>
+    	{% endfor %}
+    </select>
+</form>
+<div>Tags</div>
+<input type="text" id="tags" value="">
+<button id="tag_button">Save tags</button>
+<div><button id="save_button">Save annotation</button></div>
 
 <script type="text/javascript">
 
+	// WaveSurfer initialization
 	function createBuffer(originalBuffer, duration) {
 		var sampleRate = originalBuffer.sampleRate
 		var frameCount = duration * sampleRate
@@ -66,6 +82,7 @@
 	var duration = end - start
 
 	var isBufferCreated = 0
+	var currentRegionId = -1
 
 	wavesurfer.on('ready', function () {
 		if (isBufferCreated == 0) {
@@ -77,6 +94,8 @@
 			// load the new buffer
 			wavesurfer.empty()
 			wavesurfer.loadDecodedBuffer(buffer)
+
+			wavesurfer.enableDragSelection({})
 		}
 	});
 
@@ -85,6 +104,70 @@
 	slider.oninput = function () {
 		var zoomLevel = Number(15 * slider.value);
 		wavesurfer.zoom(zoomLevel);
+	};
+
+	// WaveSurfer callbacks
+	wavesurfer.on('region-created', function (region) {
+		currentRegionId = region.id
+		document.getElementById("tags").value = ""
+		select = document.getElementById("class_select")
+		select.selectedIndex = 0
+	});
+
+	wavesurfer.on('region-click', function (region, event) {
+		currentRegionId = region.id
+		if ("tags" in region.attributes){
+			document.getElementById("tags").value = region.attributes['tags']
+		} else {
+			document.getElementById("tags").value = ""
+		}
+		if ("class" in region.attributes){
+			$(select).val(region.attributes['class'])
+		} else {
+			select.selectedIndex = 0
+		}
+	});
+
+	// HTML elements callbacks
+	$("#tag_button").click(function() {
+		if (currentRegionId != -1) {
+			region = wavesurfer.regions.list[currentRegionId]
+			tags = document.getElementById("tags").value.split(",")
+			region.attributes['tags'] = tags
+		}
+	});
+
+    $("#save_button").click(function () {
+
+    	regions_data = {}
+    	console.log(wavesurfer.regions.list)
+    	for (var i = 0; i < wavesurfer.regions.list.length; i++) {
+    		region = wavesurfer.regions.list[i]
+    		regions_data[String(i)] = {}
+    		regions_data[String(i)]['start_time'] = region.start
+    		regions_data[String(i)]['end_time'] = region.end
+    		regions_data[String(i)]['event_class'] = region.attributes['class']
+    		regions_data[String(i)]['tags'] = region.attributes['tags']
+    		regions_data[String(i)]['annotation'] = annotation
+    	}
+
+    	console.log(regions_data)
+
+        $.ajax({
+           url: '../save_annotation/',
+           data: { 'regions_data': regions_data },
+           type: 'get',
+           cache: false,
+        });
+    });
+
+	function set_class() {
+		if (currentRegionId != -1) {
+			selected_class = document.getElementById("class_select");
+			c = selected_class.options[selected_class.selectedIndex].value;
+			region = wavesurfer.regions.list[currentRegionId]
+			region.attributes['class'] = c
+		}
 	};
 
 </script>
