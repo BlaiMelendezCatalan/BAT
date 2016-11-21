@@ -337,6 +337,7 @@ def resume_annotation(request):
         return render(request, 'annotation_tool/new_annotation.html', context)
     else:
         context['annotation'] = Annotation.objects.get(name=request.GET['annotation'])
+        context['events'] = Event.objects.filter(annotation=context['annotation'])
         context['segment'] = context['annotation'].segment
         context['classes'] = Class.objects.all()
         return render(request, 'annotation_tool/annotation_tool.html', context)
@@ -344,6 +345,6 @@ def resume_annotation(request):
 
 def save_annotation(request):
     print request.GET
-    return HttpResponseRedirect('./')
+    return HttpResponseRedirect('../new_annotation')
 
     

@@ -33,18 +33,19 @@
 </div>
 &nbsp;
 <div>Class</div>
-<form id='class_form' class="form-inline">
+<form method="post" id='class_form' class="form-inline">
+{% csrf_token %}
     <select class="form-control" id="class_select" onchange="set_class()" style="width: auto;">
         <option value="" selected></option>
     	{% for class in classes %}
         	<option value="{{ class }}" >{{ class }}</option>
     	{% endfor %}
     </select>
-</form>
 <div>Tags</div>
 <input type="text" id="tags" value="">
 <button id="tag_button">Save tags</button>
 <div><button id="save_button">Save annotation</button></div>
+</form>
 
 <script type="text/javascript">
 
@@ -67,6 +68,23 @@
 	    	}
 		}
 	}
+
+	function loadRegions() {
+        //for (var i = 0 ;i < events.length; i++) {
+        {% for event in events %}
+        	tags = []
+        	{% for tag in event.tags.all %}
+        		tags.push( '{{ tag.name }}' )
+        	{% endfor %}
+	        wavesurfer.addRegion({
+	        	attributes: {'class': '{{ event.event_class }}',
+	        				 'tags': tags },
+	            start: {{ event.start_time }},
+	            end: {{ event.end_time }},
+	            color: "rgba(255, 0, 0, 0.2)",
+	        });
+	    {% endfor %}
+    }
 
 	var wavesurfer = WaveSurfer.create({
 	    container: '#waveform',
@@ -96,6 +114,8 @@
 			wavesurfer.loadDecodedBuffer(buffer)
 
 			wavesurfer.enableDragSelection({})
+
+			loadRegions()
 		}
 	});
 
@@ -138,26 +158,24 @@
 	});
 
     $("#save_button").click(function () {
-
     	regions_data = {}
-    	console.log(wavesurfer.regions.list)
-    	for (var i = 0; i < wavesurfer.regions.list.length; i++) {
-    		region = wavesurfer.regions.list[i]
-    		regions_data[String(i)] = {}
-    		regions_data[String(i)]['start_time'] = region.start
-    		regions_data[String(i)]['end_time'] = region.end
-    		regions_data[String(i)]['event_class'] = region.attributes['class']
-    		regions_data[String(i)]['tags'] = region.attributes['tags']
-    		regions_data[String(i)]['annotation'] = annotation
-    	}
-
-    	console.log(regions_data)
+    	Object.keys(wavesurfer.regions.list).forEach(function (id) {
+    		region = wavesurfer.regions.list[id]
+    		regions_data[id] = {}
+    		regions_data[id]['start_time'] = region.start
+    		regions_data[id]['end_time'] = region.end
+    		regions_data[id]['event_class'] = region.attributes['class']
+    		regions_data[id]['tags'] = region.attributes['tags']
+    		regions_data[id]['annotation'] = '{{ annotation }}'
+    		console.log(regions_data)
+    	});
 
         $.ajax({
-           url: '../save_annotation/',
-           data: { 'regions_data': regions_data },
-           type: 'get',
-           cache: false,
+            type: "POST",
+            url: '../save_annotation/',
+            dataType: 'json',
+            data: regions_data,
+            success: function(response) {}
         });
     });
 
