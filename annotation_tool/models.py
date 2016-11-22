@@ -14,7 +14,8 @@ class Project(models.Model):
 
 class Class(models.Model):
 	name = models.CharField(max_length=50)
-	tags = models.ManyToManyField('Tag') # if none -> free tag
+	tags = models.ManyToManyField('Tag', blank=True) # if none -> free tag
+	color = models.CharField(max_length=50)
 
 	def __str__(self):
 		return str(self.name)
@@ -61,10 +62,13 @@ class Annotation(models.Model):
 
 class Event(models.Model):
 	annotation = models.ForeignKey('Annotation', on_delete=models.CASCADE)
-	event_class = models.ForeignKey('Class', on_delete=models.CASCADE)
-	start_time = models.FloatField()
-	end_time = models.FloatField()
+	event_class = models.ForeignKey('Class', blank=True, on_delete=models.CASCADE)
+	start_time = models.FloatField(blank=True)
+	end_time = models.FloatField(blank=True)
 	tags = models.ManyToManyField('Tag', blank=True)
+
+	class Meta:
+		unique_together = ("annotation", "event_class", "start_time", "end_time")
 
 	def __str__(self):
 		return str(self.id)

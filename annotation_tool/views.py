@@ -1,8 +1,10 @@
+import json
+from django.core.serializers.json import DjangoJSONEncoder
 from django.utils import timezone
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.http import HttpResponseRedirect
-from annotation_tool.models import Project, Wav, Segment, Annotation, Event, Class
+from annotation_tool.models import Project, Wav, Segment, Annotation, Event, Class, Tag
 from django.contrib.auth.models import User
 from django.views.generic.edit import FormView
 from .forms import CreateProjectForm, CreateClassForm, UploadDataForm, LoginForm
@@ -277,6 +279,7 @@ def new_annotation(request):
     else:
         context['segment'] = utils.pick_segment_to_annotate(request.GET['project'], request.user.id)
         context['annotation'] = utils.create_annotation(context['segment'], request.user)
+        # Compute priority with current difficulty
         context['classes'] = Class.objects.all()
         return render(request, 'annotation_tool/annotation_tool.html', context)
 
@@ -334,17 +337,41 @@ def resume_annotation(request):
                                             .order_by('-id')
 
     if v['selected'] == '':
-        return render(request, 'annotation_tool/new_annotation.html', context)
+        return render(request, 'annotation_tool/resume_annotation.html', context)
     else:
         context['annotation'] = Annotation.objects.get(name=request.GET['annotation'])
         context['events'] = Event.objects.filter(annotation=context['annotation'])
         context['segment'] = context['annotation'].segment
-        context['classes'] = Class.objects.all()
+        context['classes'] = Class.objects.values_list('name', 'color')
+        context['class_dict'] = json.dumps(list(context['classes']), cls=DjangoJSONEncoder)
         return render(request, 'annotation_tool/annotation_tool.html', context)
 
 
 def save_annotation(request):
-    print request.GET
+    regions = json.loads(request.POST.get('regions_data'))
+
+    for id in regions.keys():
+        annotation = Annotation.objects.get(name=regions[id]['annotation'])
+        start_time = regions[id]['start_time']
+        end_time = regions[id]['end_time']
+        try:
+            event_class = Class.objects.get(name=regions[id]['event_class'])
+            event = Event.objects.get_or_create(
+                annotation=annotation,
+                event_class=event_class,
+                start_time=round(start_time, 3),
+                end_time=round(end_time, 3))
+            try:
+                tags = regions[id]['tags']
+                for t in tags:
+                    tag = Tag.objects.get_or_create(name=t)
+                    event[0].tags.add(tag[0])
+            except:
+                pass
+            # Compute difficulty and update priority
+        except:
+            pass
+        
     return HttpResponseRedirect('../new_annotation')
 
     

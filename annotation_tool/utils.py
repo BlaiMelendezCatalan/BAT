@@ -84,6 +84,9 @@ def create_event(annotation, event_class, start_time, end_time, tags=[]):
 	return annotation
 
 
+#def create_regions(annotation): # Once an annotation is saved, regions are created (old regions should be deleted first)
+
+
 def create_class(name):
 	c = Class(name = name)
 	c.save()
@@ -114,4 +117,15 @@ def pick_segment_to_annotate(project_name, user_id):
 			return segment
 
 
-		
+#def compute_difficulty(segment_id):
+#	classes = Class.objects.values_list('name')
+#	for c in classes:
+#		events = Event.objects.filter(annotation__segment__id=segment_id, event_class=c)
+#		for e in events:
+
+
+
+def compute_priority(segment_id):
+	segment = Segment.objects.get(id=segment_id)
+	segment.priority = segment.number_of_annotations # * segment.difficulty
+	segment.save()

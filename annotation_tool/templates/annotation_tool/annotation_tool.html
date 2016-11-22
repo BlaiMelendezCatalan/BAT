@@ -33,18 +33,24 @@
 </div>
 &nbsp;
 <div>Class</div>
-<form method="post" id='class_form' class="form-inline">
-{% csrf_token %}
-    <select class="form-control" id="class_select" onchange="set_class()" style="width: auto;">
-        <option value="" selected></option>
-    	{% for class in classes %}
-        	<option value="{{ class }}" >{{ class }}</option>
-    	{% endfor %}
-    </select>
+
+<select class="form-control" id="class_select" onchange="set_class()" style="width: auto;">
+    <option value="" selected></option>
+	{% for class in classes %}
+    	<option value="{{ class.0 }}" >{{ class.0 }}</option>
+	{% endfor %}
+</select>
+</form>
 <div>Tags</div>
 <input type="text" id="tags" value="">
 <button id="tag_button">Save tags</button>
-<div><button id="save_button">Save annotation</button></div>
+
+<form method="post" id='class_form' class="form-inline" action="javascript:save_annotation();">
+<button type="submit" >Save annotation</button>
+</form>
+
+<form method="post" id='class_form' class="form-inline" action="javascript:delete_region();">
+<button type="submit" >Delete region</button>
 </form>
 
 <script type="text/javascript">
@@ -157,7 +163,7 @@
 		}
 	});
 
-    $("#save_button").click(function () {
+    function save_annotation() {
     	regions_data = {}
     	Object.keys(wavesurfer.regions.list).forEach(function (id) {
     		region = wavesurfer.regions.list[id]
@@ -167,24 +173,43 @@
     		regions_data[id]['event_class'] = region.attributes['class']
     		regions_data[id]['tags'] = region.attributes['tags']
     		regions_data[id]['annotation'] = '{{ annotation }}'
-    		console.log(regions_data)
     	});
 
         $.ajax({
             type: "POST",
             url: '../save_annotation/',
             dataType: 'json',
-            data: regions_data,
+            data: { regions_data: JSON.stringify(regions_data),
+            		csrfmiddlewaretoken: '{{csrf_token}}'},
             success: function(response) {}
         });
-    });
+    };
 
 	function set_class() {
 		if (currentRegionId != -1) {
 			selected_class = document.getElementById("class_select");
-			c = selected_class.options[selected_class.selectedIndex].value;
+			region_class = selected_class.options[selected_class.selectedIndex].value;
 			region = wavesurfer.regions.list[currentRegionId]
-			region.attributes['class'] = c
+			var class_dict = {{ class_dict|safe }};
+			console.log(region)
+			for (var i = 0; i < class_dict.length; i++) {
+				if (class_dict[i][0] == region_class) {
+					region.update({
+						attributes: {
+							class: region_class
+						},
+						color: class_dict[i][1]
+					})
+				}
+			}
+			console.log(region)
+		}
+	};
+
+	function delete_region() {
+		if (currentRegionId != -1) {
+			region = wavesurfer.regions.list[currentRegionId]
+			region.remove()
 		}
 	};
 
