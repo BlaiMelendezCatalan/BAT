@@ -68,25 +68,6 @@ def create_annotation(segment, user):
 	return annotation
 
 
-def create_event(annotation, event_class, start_time, end_time, tags=[]):
-	event = Event(annotation=annotation,
-				  event_class=event_class,
-				  start_time=start_time,
-				  end_time=end_time)
-	event.save()
-	for t in tags:
-		try:
-			tag = Tag(name=t)
-			event.tags.add(tag)
-		except:
-			pass
-	
-	return annotation
-
-
-#def create_regions(annotation): # Once an annotation is saved, regions are created (old regions should be deleted first)
-
-
 def create_class(name):
 	c = Class(name = name)
 	c.save()

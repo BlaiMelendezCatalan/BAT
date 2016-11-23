@@ -62,9 +62,10 @@ class Annotation(models.Model):
 
 class Event(models.Model):
 	annotation = models.ForeignKey('Annotation', on_delete=models.CASCADE)
-	event_class = models.ForeignKey('Class', blank=True, on_delete=models.CASCADE)
-	start_time = models.FloatField(blank=True)
-	end_time = models.FloatField(blank=True)
+	event_class = models.ForeignKey('Class', null=True, on_delete=models.CASCADE)
+	start_time = models.FloatField(default=0.0)
+	end_time = models.FloatField(default=0.01)
+	color = models.CharField(max_length=50, blank=True)
 	tags = models.ManyToManyField('Tag', blank=True)
 
 	class Meta:

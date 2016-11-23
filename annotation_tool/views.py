@@ -1,4 +1,5 @@
 import json
+from django.http import JsonResponse
 from django.core.serializers.json import DjangoJSONEncoder
 from django.utils import timezone
 from django.shortcuts import render
@@ -347,31 +348,49 @@ def resume_annotation(request):
         return render(request, 'annotation_tool/annotation_tool.html', context)
 
 
-def save_annotation(request):
-    regions = json.loads(request.POST.get('regions_data'))
+def create_event(request):
+    print("create_event")
+    region_data = json.loads(request.POST.get('region_data'))
 
-    for id in regions.keys():
-        annotation = Annotation.objects.get(name=regions[id]['annotation'])
-        start_time = regions[id]['start_time']
-        end_time = regions[id]['end_time']
-        try:
-            event_class = Class.objects.get(name=regions[id]['event_class'])
-            event = Event.objects.get_or_create(
-                annotation=annotation,
-                event_class=event_class,
-                start_time=round(start_time, 3),
-                end_time=round(end_time, 3))
-            try:
-                tags = regions[id]['tags']
-                for t in tags:
-                    tag = Tag.objects.get_or_create(name=t)
-                    event[0].tags.add(tag[0])
-            except:
-                pass
-            # Compute difficulty and update priority
-        except:
-            pass
-        
-    return HttpResponseRedirect('../new_annotation')
+    annotation = Annotation.objects.get(name=region_data['annotation'])
+    event = Event(annotation=annotation)
+    event.color = region_data['color']
+    event.save()
+    return JsonResponse({'event_id': event.id})
 
-    
+def update_end_event(request):
+    print("update_end_event")
+    region_data = json.loads(request.POST.get('region_data'))
+
+    event = Event.objects.get(id=region_data['event_id'])
+    event.start_time = region_data['start_time']
+    event.end_time = region_data['end_time']
+    event.save()
+
+    return JsonResponse({})
+
+
+def update_event(request):
+    print("update_event")
+    region_data = json.loads(request.POST.get('region_data'))
+    event = Event.objects.get(id=region_data['event_id'])
+    for t in region_data['tags']:
+        tag = Tag.objects.get_or_create(name=t)
+        event.tags.add(tag[0])
+    event.save()
+    if 'event_class' in region_data.keys():
+        event = Event.objects.get(id=region_data['event_id'])
+        event_class = Class.objects.get(name=region_data['event_class'])
+        event.event_class = event_class
+        event.color = region_data['color']
+        event.save()
+    return JsonResponse({})
+
+def remove_event(request):
+    print("remove_event")
+    region_data = json.loads(request.POST.get('region_data'))
+
+    event = Event.objects.get(id=region_data['event_id'])
+    event.delete()
+
+    return JsonResponse({})
