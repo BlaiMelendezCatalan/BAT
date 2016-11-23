@@ -280,8 +280,8 @@ def new_annotation(request):
     else:
         context['segment'] = utils.pick_segment_to_annotate(request.GET['project'], request.user.id)
         context['annotation'] = utils.create_annotation(context['segment'], request.user)
-        # Compute priority with current difficulty
-        context['classes'] = Class.objects.all()
+        context['classes'] = Class.objects.values_list('name', 'color')
+        context['class_dict'] = json.dumps(list(context['classes']), cls=DjangoJSONEncoder)
         return render(request, 'annotation_tool/annotation_tool.html', context)
 
 
@@ -348,42 +348,46 @@ def resume_annotation(request):
         return render(request, 'annotation_tool/annotation_tool.html', context)
 
 
-def create_event(request):
-    print("create_event")
-    region_data = json.loads(request.POST.get('region_data'))
-
-    annotation = Annotation.objects.get(name=region_data['annotation'])
-    event = Event(annotation=annotation)
-    event.color = region_data['color']
-    event.save()
-    return JsonResponse({'event_id': event.id})
-
 def update_end_event(request):
     print("update_end_event")
     region_data = json.loads(request.POST.get('region_data'))
 
-    event = Event.objects.get(id=region_data['event_id'])
+    if 'event_id' in region_data.keys():
+        event = Event.objects.get(id=region_data['event_id'])
+    else:
+        annotation = Annotation.objects.get(name=region_data['annotation'])
+        event = Event(annotation=annotation)
+        event.color = region_data['color']
+        
+
     event.start_time = region_data['start_time']
     event.end_time = region_data['end_time']
     event.save()
 
-    return JsonResponse({})
+    return JsonResponse({'event_id': event.id})
 
 
 def update_event(request):
     print("update_event")
     region_data = json.loads(request.POST.get('region_data'))
     event = Event.objects.get(id=region_data['event_id'])
-    for t in region_data['tags']:
-        tag = Tag.objects.get_or_create(name=t)
-        event.tags.add(tag[0])
-    event.save()
-    if 'event_class' in region_data.keys():
+
+    if 'update-tags' in region_data.keys():
+        for t in region_data['tags']:
+            tag = Tag.objects.get_or_create(name=t)
+            event.tags.add(tag[0])
+        event.save()
+    elif 'update-class' in region_data.keys():
         event = Event.objects.get(id=region_data['event_id'])
         event_class = Class.objects.get(name=region_data['event_class'])
         event.event_class = event_class
         event.color = region_data['color']
         event.save()
+    elif 'update-times' in region_data.keys():
+        event.start_time = region_data['start_time']
+        event.end_time = region_data['end_time']
+        event.save()
+
     return JsonResponse({})
 
 def remove_event(request):

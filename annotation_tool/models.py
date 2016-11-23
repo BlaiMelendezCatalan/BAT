@@ -24,7 +24,7 @@ class Class(models.Model):
 class Wav(models.Model):
 	project = models.ForeignKey('Project', on_delete=models.CASCADE)
 	file = models.FileField(
-		upload_to="/home/blai/BMAT/musicspeech_annotation_project/django_test/",
+		upload_to="/home/bmelendez/musicspeech_annotation_project/django_test/",
 		max_length=500)
 	name = models.CharField(max_length=100)
 	upload_date = models.DateTimeField('upload date')

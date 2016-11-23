@@ -45,10 +45,6 @@
 <input type="text" id="tags" value="">
 <button id="tag_button">Save tags</button>
 
-<form method="post" id='class_form' class="form-inline" action="javascript:delete_region();">
-<button type="submit" >Delete region</button>
-</form>
-
 <script type="text/javascript">
 
 	// WaveSurfer initialization
@@ -82,8 +78,7 @@
 	        	attributes: {'class': '{{ event.event_class }}',
 	        				 'tags': tags,
 	        				 'event_id': {{ event.id }},
-	        				 'loaded': true,
-	        				 'id_set': true},
+	        				 'loaded': true},
 	            start: {{ event.start_time }},
 	            end: {{ event.end_time }},
 	            color: '{{ event.color }}',
@@ -139,28 +134,9 @@
 		select = document.getElementById("class_select")
 		select.selectedIndex = 0
 
-		region_data = {}
-		region_data['action'] = 'created'
-		region_data['annotation'] = '{{ annotation }}'
-		region_data['color'] = region.color
-		region_data['tags'] = region.attributes['tags']
-		console.log(region.attributes['tags'])
 		if (!('loaded' in region.attributes)) {
 			region.attributes['class'] = "None"
 			region.attributes['tags'] = []
-			region.attributes['id_set'] = false
-			$.ajax({
-	            type: "POST",
-	            url: '../create_event/',
-	            dataType: 'json',
-	            data: { region_data: JSON.stringify(region_data),
-	            		csrfmiddlewaretoken: '{{csrf_token}}'},
-	            success: function(data) {
-	            	region = wavesurfer.regions.list[currentRegionId]
-			        region.attributes['event_id'] = data.event_id
-			        region.attributes['id_set'] = true
-	            }
-	        });
 		} else {
 			delete region.attributes['loaded']
 		}
@@ -168,35 +144,50 @@
 
 	wavesurfer.on('region-update-end', function (region) {
 		console.log("update-end")
-		if (region.attributes['id_set'] == true) {
-			region_data = {}
-			region_data['action'] = 'update-end'
+		region_data = {}
+		region_data['start_time'] = region.start
+		region_data['end_time'] = region.end
+		region_data['annotation'] = '{{ annotation }}'
+		region_data['color'] = region.color
+		if ('event_id' in region.attributes) {
 			region_data['event_id'] = region.attributes['event_id']
-			region_data['start_time'] = region.start
-			region_data['end_time'] = region.end
+		}
 
-	        $.ajax({
-	            type: "POST",
-	            url: '../update_end_event/',
-	            dataType: 'json',
-	            data: { region_data: JSON.stringify(region_data),
-	            		csrfmiddlewaretoken: '{{csrf_token}}'},
-	            success: function(response) {}
-	        });
-    	}
+        $.ajax({
+            type: "POST",
+            url: '../update_end_event/',
+            dataType: 'json',
+            data: { region_data: JSON.stringify(region_data),
+            		csrfmiddlewaretoken: '{{csrf_token}}'},
+            success: function(data) {
+            	region = wavesurfer.regions.list[currentRegionId]
+		        region.attributes['event_id'] = data.event_id
+            }
+        });
 	});
 
 	wavesurfer.on('region-updated', function (region) {
 		console.log("updated")
-		if (region.attributes['id_set'] == true) {
-			region_data = {}
-			region_data['action'] = 'update'
-			region_data['event_id'] = region.attributes['event_id']
-			if (region.attributes['class'] != "None") {
-				region_data['event_class'] = region.attributes['class']
-				region_data['color'] = region.color
+		region_data = {}
+		region_data['event_id'] = region.attributes['event_id']
+		if ('update-class' in region.attributes || 'update-tags' in region.attributes || 'update-times' in region.attributes) {
+			if ('update-class' in region.attributes) {
+				if (region.attributes['class'] != "None") {
+					region_data['event_class'] = region.attributes['class']
+					region_data['color'] = region.color
+					region_data['update-class'] = true
+				} else {
+					return
+				}
+			} else if ('update-tags' in region.attributes) {
+				region_data['tags'] = region.attributes['tags']
+				region_data['update-tags'] = true
+			} else if('update-times' in region.attributes){
+				region_data['start_time'] = region.start
+				region_data['end_time'] = region.end
+				region_data['update-times'] = true
 			}
-			region_data['tags'] = region.attributes['tags']
+
 			$.ajax({
 	            type: "POST",
 	            url: '../update_event/',
@@ -210,7 +201,6 @@
 
 	wavesurfer.on('region-removed', function (region) {
 		region_data = {}
-		region_data['action'] = 'removed'
 		region_data['event_id'] = region.attributes['event_id']
 
 		$.ajax({
@@ -224,17 +214,57 @@
 	});
 
 	wavesurfer.on('region-click', function (region, event) {
-		currentRegionId = region.id
-		if ("tags" in region.attributes){
-			document.getElementById("tags").value = region.attributes['tags']
-		} else {
-			document.getElementById("tags").value = ""
+		console.log(event)
+		if (event.button == 0 && event.ctrlKey == false) {
+			currentRegionId = region.id
+			if ("tags" in region.attributes){
+				document.getElementById("tags").value = region.attributes['tags']
+			} else {
+				document.getElementById("tags").value = ""
+			}
+			if ("class" in region.attributes){
+				$(select).val(region.attributes['class'])
+			} else {
+				select.selectedIndex = 0
+			}
+		} else if (event.button == 0 && event.ctrlKey == true) {
+			region.remove()
+		} else if (event.button == 1 && event.ctrlKey == false) {
+			if (region.start != 0.0 && region.end != duration){
+				region.update({
+					attributes: {'class': region.attributes['class'],
+						 		 'tags': region.attributes['tags'],
+						 		 'event_id': region.attributes['event_id'],
+						 		 'update-times': true,
+						 		 'old_start_time': region.start,
+						 		 'old_end_time': region.end},
+					start: 0.0,
+					end: duration
+				})
+			}
+		} else if (event.button == 1 && event.ctrlKey == true) {
+			region.update({
+				start: region.attributes['old_start_time'],
+				end: region.attributes['old_end_time'],
+				attributes: {'class': region.attributes['class'],
+					 		 'tags': region.attributes['tags'],
+					 		 'event_id': region.attributes['event_id'],
+					 		 'update-times': true},
+				 
+			})
 		}
-		if ("class" in region.attributes){
-			$(select).val(region.attributes['class'])
-		} else {
-			select.selectedIndex = 0
-		}
+	});
+
+	wavesurfer.on('region-dbclick', function (region, event) {
+		console.log("dbclick")
+		region.update({
+			attributes: {'class': region.attributes['class'],
+				 		 'tags': region.attributes['tags'],
+				 		 'event_id': region.attributes['event_id'],
+				 		 'update-times': true},
+			start: 0.0,
+			end: duration 
+		})
 	});
 
 	// HTML elements callbacks
@@ -246,7 +276,7 @@
 				attributes: {'class': region.attributes['class'],
     				 		 'tags': tags,
     				 		 'event_id': region.attributes['event_id'],
-    				 		 'id_set': true},
+    				 		 'update-tags': true},
 			})
 		}
 	});
@@ -263,19 +293,11 @@
 						attributes: {'class': region_class,
 	        				 		 'tags': region.attributes['tags'],
 	        				 		 'event_id': region.attributes['event_id'],
-	        				 		 'id_set': true},
+	        				 		 'update-class': true},
 						color: class_dict[i][1]
 					})
 				}
 			}
-		}
-	};
-
-	function delete_region() {
-		console.log("delete_region")
-		if (currentRegionId != -1) {
-			region = wavesurfer.regions.list[currentRegionId]
-			region.remove()
 		}
 	};
 
