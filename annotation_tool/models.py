@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 from django.db import models
 from django.contrib.auth.models import User
+from annotation_project.settings import BASE_DIR
 
 
 class Project(models.Model):
@@ -16,6 +17,7 @@ class Class(models.Model):
 	name = models.CharField(max_length=50)
 	tags = models.ManyToManyField('Tag', blank=True) # if none -> free tag
 	color = models.CharField(max_length=50)
+	shortcut = models.CharField(max_length=1)
 
 	def __str__(self):
 		return str(self.name)
@@ -24,7 +26,7 @@ class Class(models.Model):
 class Wav(models.Model):
 	project = models.ForeignKey('Project', on_delete=models.CASCADE)
 	file = models.FileField(
-		upload_to="/home/bmelendez/musicspeech_annotation_project/django_test/",
+		upload_to=BASE_DIR + "/django_test/",
 		max_length=500)
 	name = models.CharField(max_length=100)
 	upload_date = models.DateTimeField('upload date')

@@ -1,3 +1,9 @@
+import os
+import shutil
+from math import ceil, floor
+import numpy as np
+from scipy.io.wavfile import read
+from scipy.io.wavfile import write
 from django.utils import timezone
 import contextlib
 import wave
@@ -6,6 +12,7 @@ import django.core.exceptions as e
 from annotation_tool.models import Project, Wav, Segment, Annotation, Event, Tag, Class
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
+from annotation_project.settings import BASE_DIR
 
 
 def create_project(name, creation_date):
@@ -105,8 +112,43 @@ def pick_segment_to_annotate(project_name, user_id):
 #		for e in events:
 
 
-
 def compute_priority(segment_id):
 	segment = Segment.objects.get(id=segment_id)
 	segment.priority = segment.number_of_annotations # * segment.difficulty
 	segment.save()
+
+
+def delete_tmp_files():
+	if os.path.exists(BASE_DIR + '/tmp/'):
+		shutil.rmtree(BASE_DIR + '/tmp/')
+
+
+def create_tmp_file(segment):
+	os.mkdir(BASE_DIR + '/tmp/')
+	input_file = segment.wav.file.name
+	output_file = 'tmp/' + input_file.split('/')[-1]
+	wav_file = read(input_file, 'r')
+	sample_rate = wav_file[0]
+	start = int(ceil(sample_rate * segment.start_time))
+	end = int(floor(sample_rate * segment.end_time))
+	write(
+		output_file,
+		sample_rate,
+		wav_file[1][start:end])
+
+	return output_file
+
+
+#def annotate_silence(segment_path):
+#	wav_file = read(BASE_DIR + '/' + segment_path, 'r')
+#	max_value = pow(max(wav_file[1]), 2)
+#	signal = pow(np.array(wav_file[1], dtype=np.float), 2)
+#	signal = signal / max(signal)
+#	energy = []
+#	average_range = 200
+#	for i in xrange(len(signal)):
+#		summation = sum(
+#			signal[max(0, i - average_range):min(len(signal), i + 1 + average_range)])
+#		energy.append(summation / len(
+#			signal[max(0, i - average_range):min(len(signal), i + 1 + average_range)]))
+#	print energy

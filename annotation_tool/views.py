@@ -26,7 +26,7 @@ def index(request):
     return HttpResponse("Hello, world. You're at the annotation tool index.")
 
 
-#@login_required(login_url='../loginsignup')
+#@login_required(login_url='../../annotation_tool/loginsignup')
 @user_passes_test(superuser_check)
 def projects(request):
     context = {}
@@ -280,8 +280,11 @@ def new_annotation(request):
     else:
         context['segment'] = utils.pick_segment_to_annotate(request.GET['project'], request.user.id)
         context['annotation'] = utils.create_annotation(context['segment'], request.user)
-        context['classes'] = Class.objects.values_list('name', 'color')
+        context['classes'] = Class.objects.values_list('name', 'color', 'shortcut')
         context['class_dict'] = json.dumps(list(context['classes']), cls=DjangoJSONEncoder)
+        utils.delete_tmp_files()
+        context['tmp_segment_path'] = utils.create_tmp_file(context['segment'])
+
         return render(request, 'annotation_tool/annotation_tool.html', context)
 
 
@@ -343,9 +346,25 @@ def resume_annotation(request):
         context['annotation'] = Annotation.objects.get(name=request.GET['annotation'])
         context['events'] = Event.objects.filter(annotation=context['annotation'])
         context['segment'] = context['annotation'].segment
-        context['classes'] = Class.objects.values_list('name', 'color')
+        context['classes'] = Class.objects.values_list('name', 'color', 'shortcut')
         context['class_dict'] = json.dumps(list(context['classes']), cls=DjangoJSONEncoder)
+        utils.delete_tmp_files()
+        context['tmp_segment_path'] = utils.create_tmp_file(context['segment'])
+        
         return render(request, 'annotation_tool/annotation_tool.html', context)
+
+
+def create_event(request):
+    print("create_event")
+    region_data = json.loads(request.POST.get('region_data'))
+    annotation = Annotation.objects.get(name=region_data['annotation'])
+    event = Event(annotation=annotation)
+    event.color = region_data['color']
+    event.start_time = region_data['start_time']
+    event.end_time = region_data['end_time']
+    event.save()
+
+    return JsonResponse({'event_id': event.id})
 
 
 def update_end_event(request):
@@ -395,6 +414,7 @@ def remove_event(request):
     region_data = json.loads(request.POST.get('region_data'))
 
     event = Event.objects.get(id=region_data['event_id'])
+    print region_data['event_id']
     event.delete()
 
     return JsonResponse({})

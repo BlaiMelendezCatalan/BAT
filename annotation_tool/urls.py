@@ -16,6 +16,7 @@ urlpatterns = [
     url(r'^new_annotation/$', views.new_annotation, name='new_annotation'),
     url(r'^resume_annotation/$', views.resume_annotation, name='resume_annotation'),
     url(r'^my_annotations/$', views.my_annotations, name='my_annotations'),
+    url(r'^create_event/$', views.create_event, name='create_event'),
     url(r'^update_event/$', views.update_event, name='update_event'),
     url(r'^update_end_event/$', views.update_end_event, name='update_end_event'),
     url(r'^remove_event/$', views.remove_event, name='remove_event'),
