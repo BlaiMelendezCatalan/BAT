@@ -278,12 +278,12 @@ def new_annotation(request):
     if v['selected'] == '':
         return render(request, 'annotation_tool/new_annotation.html', context)
     else:
-        context['segment'] = utils.pick_segment_to_annotate(request.GET['project'], request.user.id)
+        segment = utils.pick_segment_to_annotate(request.GET['project'], request.user.id)
         context['annotation'] = utils.create_annotation(context['segment'], request.user)
         context['classes'] = Class.objects.values_list('name', 'color', 'shortcut')
         context['class_dict'] = json.dumps(list(context['classes']), cls=DjangoJSONEncoder)
         utils.delete_tmp_files()
-        context['tmp_segment_path'] = utils.create_tmp_file(context['segment'])
+        context['tmp_segment_path'] = utils.create_tmp_file(segment)
 
         return render(request, 'annotation_tool/annotation_tool.html', context)
 
@@ -345,11 +345,11 @@ def resume_annotation(request):
     else:
         context['annotation'] = Annotation.objects.get(name=request.GET['annotation'])
         context['events'] = Event.objects.filter(annotation=context['annotation'])
-        context['segment'] = context['annotation'].segment
+        segment = context['annotation'].segment
         context['classes'] = Class.objects.values_list('name', 'color', 'shortcut')
         context['class_dict'] = json.dumps(list(context['classes']), cls=DjangoJSONEncoder)
         utils.delete_tmp_files()
-        context['tmp_segment_path'] = utils.create_tmp_file(context['segment'])
+        context['tmp_segment_path'] = utils.create_tmp_file(segment)
         
         return render(request, 'annotation_tool/annotation_tool.html', context)
 
@@ -378,7 +378,7 @@ def update_end_event(request):
         event = Event(annotation=annotation)
         event.color = region_data['color']
         
-
+    print region_data['start_time'], region_data['end_time']
     event.start_time = region_data['start_time']
     event.end_time = region_data['end_time']
     event.save()
@@ -396,13 +396,13 @@ def update_event(request):
             tag = Tag.objects.get_or_create(name=t)
             event.tags.add(tag[0])
         event.save()
-    elif 'update-class' in region_data.keys():
+    if 'update-class' in region_data.keys():
         event = Event.objects.get(id=region_data['event_id'])
         event_class = Class.objects.get(name=region_data['event_class'])
         event.event_class = event_class
         event.color = region_data['color']
         event.save()
-    elif 'update-times' in region_data.keys():
+    if 'update-times' in region_data.keys():
         event.start_time = region_data['start_time']
         event.end_time = region_data['end_time']
         event.save()
