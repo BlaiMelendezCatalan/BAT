@@ -14,7 +14,7 @@
 <div style="text-align: center">
   <button class="btn btn-primary" onclick="wavesurfer.playPause()">
     <i class="glyphicon glyphicon-play"></i>
-    Play
+    Play / Pause
   </button>
 
   <p class="row">
@@ -33,14 +33,7 @@
 </div>
 &nbsp;
 <div>Class</div>
-
-<select class="form-control" id="class_select" onchange="set_class()" style="width: auto;">
-    <option value="" selected></option>
-	{% for class in classes %}
-    	<option value="{{ class.0 }}" >{{ class.0 }}</option>
-	{% endfor %}
-</select>
-</form>
+<input type="text" id="show_class" value="" readonly>
 <div>Tags</div>
 <input type="text" id="tags" value="">
 <button id="tag_button">Save tags</button>
@@ -167,7 +160,7 @@
 		currentRegionId = region.id
 		region.drag = false
 		document.getElementById("tags").value = ""
-		select = document.getElementById("class_select")
+		select = document.getElementById("show_class")
 		select.selectedIndex = 0
 
 		if (!('loaded' in region.attributes) && !('created' in region.attributes)) {
@@ -234,6 +227,7 @@
 		region_data['event_id'] = region.attributes['event_id']
 		if ('update-class' in region.attributes || 'update-tags' in region.attributes || 'update-times' in region.attributes) {
 			if ('update-class' in region.attributes) {
+				delete region.attributes['update-class']
 				if (region.attributes['class'] != "None") {
 					region_data['event_class'] = region.attributes['class']
 					region_data['color'] = region.color
@@ -242,10 +236,12 @@
 					return
 				}
 			} else if ('update-tags' in region.attributes) {
+				delete region.attributes['update-tags']
 				region_data['tags'] = region.attributes['tags']
 				region_data['update-tags'] = true
 			} else if('update-times' in region.attributes){
 				console.log("UPDATE-TIME")
+				delete region.attributes['update-times']
 				region_data['start_time'] = region.start
 				region_data['end_time'] = region.end
 				region_data['update-times'] = true
@@ -282,7 +278,7 @@
 		console.log(region)
 		currentRegionId = region.id
 
-		if (event.button == 0 && event.ctrlKey == false && event.altKey == false) {
+		if (event.button == 0 && event.ctrlKey == false) {
 			if ("tags" in region.attributes){
 				document.getElementById("tags").value = region.attributes['tags']
 			} else {
@@ -293,7 +289,7 @@
 			} else {
 				select.selectedIndex = 0
 			}
-		} else if (event.button == 0 && event.ctrlKey == true && event.altKey == false) {
+		} else if (event.button == 0 && event.ctrlKey == true) {
 			region.remove()
 		}
 	});
@@ -323,8 +319,10 @@
         				 		 'event_id': region.attributes['event_id'],
         				 		 'update-class': true},
 					color: class_dict[i][1],
+					start: region.start,
+					end: region.end,
 				})
-				$("#class_select").val(class_dict[i][0])
+				$("#show_class").val(class_dict[i][0])
 			}
 		}
 		if (key == " ") {
@@ -409,25 +407,6 @@
 			})
 		}
 	});
-
-	function set_class() {
-		if (currentRegionId != -1) {
-			selected_class = document.getElementById("class_select");
-			region_class = selected_class.options[selected_class.selectedIndex].value;
-			region = wavesurfer.regions.list[currentRegionId]
-			for (var i = 0; i < class_dict.length; i++) {
-				if (class_dict[i][0] == region_class) {
-					region.update({
-						attributes: {'class': region_class,
-	        				 		 'tags': region.attributes['tags'],
-	        				 		 'event_id': region.attributes['event_id'],
-	        				 		 'update-class': true},
-						color: class_dict[i][1],
-					})
-				}
-			}
-		}
-	};
 
 </script>
 

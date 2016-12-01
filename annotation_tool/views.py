@@ -279,7 +279,7 @@ def new_annotation(request):
         return render(request, 'annotation_tool/new_annotation.html', context)
     else:
         segment = utils.pick_segment_to_annotate(request.GET['project'], request.user.id)
-        context['annotation'] = utils.create_annotation(context['segment'], request.user)
+        context['annotation'] = utils.create_annotation(segment, request.user)
         context['classes'] = Class.objects.values_list('name', 'color', 'shortcut')
         context['class_dict'] = json.dumps(list(context['classes']), cls=DjangoJSONEncoder)
         utils.delete_tmp_files()
@@ -413,6 +413,7 @@ def update_event(request):
         event.save()
 
     return JsonResponse({})
+
 
 def remove_event(request):
     print("remove_event")
