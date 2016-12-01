@@ -69,6 +69,28 @@
 	    {% endfor %}
     }
 
+    function reloadRegion(region) {
+    	region_dict = {}
+		region_dict['class'] = region.attributes['class']
+		region_dict['tags'] = region.attributes['tags']
+		region_dict['event_id'] = region.attributes['event_id']
+		region_dict['start_time'] = region.start
+		region_dict['end_time'] = region.end
+		region_dict['color'] =  region.color
+		region.remove()            	
+
+		wavesurfer.addRegion({
+        	attributes: {'class': region_dict['class'],
+				 		 'tags': region_dict['tags'],
+				 		 'event_id': region_dict['event_id'],
+				 		 'created': true},
+            start: region_dict['start_time'],
+            end: region_dict['end_time'],
+            color: region_dict['color'],
+            drag: false,
+        });
+    }
+
     function sortRegionsByOption(regions, option) {
     	region_list = []
 		Object.keys(regions).forEach(function (id) {
@@ -125,6 +147,7 @@
 	    progressColor: 'purple',
 	    normalize: true,
 	    fillParent: true,
+	    hideScrollbar: true,
 	});
 
 	wavesurfer.load("{% url 'media' tmp_segment_path %}")
@@ -140,21 +163,24 @@
 	// WaveSurfer callbacks
 	wavesurfer.on('region-created', function (region) {
 		console.log("created")
+		console.log(region)
 		currentRegionId = region.id
 		region.drag = false
 		document.getElementById("tags").value = ""
 		select = document.getElementById("class_select")
 		select.selectedIndex = 0
 
-		if (!('loaded' in region.attributes) && !('create-silence' in region.attributes)) {
+		if (!('loaded' in region.attributes) && !('created' in region.attributes)) {
 			region.attributes['class'] = "None"
 			region.attributes['tags'] = []
 		} else if ('loaded' in region.attributes) {
 			delete region.attributes['loaded']
-		} else if ('create-silence' in region.attributes) {
-			delete region.attributes['create-silence']
+		} else if ('created' in region.attributes) {
+			delete region.attributes['created']
 			region_data = {}
 			region_data['annotation'] = '{{ annotation }}'
+			region_data['event_class'] = region.attributes['class']
+			region_data['tags'] = region.attributes['tags']
 			region_data['start_time'] = region.start
 			region_data['end_time'] = region.end
 			region_data['color'] = region.color
@@ -253,7 +279,7 @@
 
 	wavesurfer.on('region-click', function (region, event) {
 		console.log("clicked")
-		console.log(region.attributes['event_id'])
+		console.log(region)
 		currentRegionId = region.id
 
 		if (event.button == 0 && event.ctrlKey == false && event.altKey == false) {
@@ -350,7 +376,11 @@
 				if (region == region_list[i]) {
 					if (i == 0) {
 						new_start = 0.0
-						new_end = region_list[i + 1].start
+						if (region_list.length == 1){
+							new_end = wavesurfer.getDuration()
+						} else {
+							new_end = region_list[i + 1].start
+						}
 					} else if (i == region_list.length - 1) {
 						new_start = region_list[i - 1].end
 						new_end = wavesurfer.getDuration()	
@@ -358,14 +388,9 @@
 						new_start = region_list[i - 1].end
 						new_end = region_list[i + 1].start
 					}
-					region.update({
-						attributes: {'class': region.attributes['class'],
-		    				 		 'tags': region.attributes['tags'],
-		    				 		 'event_id': region.attributes['event_id'],
-		    				 		 'update-times': true},
-						start: new_start,
-						end: new_end,
-					})
+					region.start = new_start
+					region.end = new_end
+					reloadRegion(region)
 					break;
 				}
 			}

@@ -362,6 +362,12 @@ def create_event(request):
     event.color = region_data['color']
     event.start_time = region_data['start_time']
     event.end_time = region_data['end_time']
+    if region_data['event_class'] != "None":
+        event_class = Class.objects.get(name=region_data['event_class'])
+        event.event_class = event_class
+    for t in region_data['tags']:
+        tag = Tag.objects.get_or_create(name=t)
+        event.tags.add(tag[0])
     event.save()
 
     return JsonResponse({'event_id': event.id})
@@ -378,7 +384,6 @@ def update_end_event(request):
         event = Event(annotation=annotation)
         event.color = region_data['color']
         
-    print region_data['start_time'], region_data['end_time']
     event.start_time = region_data['start_time']
     event.end_time = region_data['end_time']
     event.save()
