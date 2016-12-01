@@ -396,21 +396,20 @@ def update_event(request):
     region_data = json.loads(request.POST.get('region_data'))
     event = Event.objects.get(id=region_data['event_id'])
 
-    if 'update-tags' in region_data.keys():
-        for t in region_data['tags']:
-            tag = Tag.objects.get_or_create(name=t)
-            event.tags.add(tag[0])
-        event.save()
-    if 'update-class' in region_data.keys():
-        event = Event.objects.get(id=region_data['event_id'])
+    for t in region_data['tags']:
+        tag = Tag.objects.get_or_create(name=t)
+        event.tags.add(tag[0])
+
+    if region_data['event_class'] != "None":
         event_class = Class.objects.get(name=region_data['event_class'])
         event.event_class = event_class
         event.color = region_data['color']
-        event.save()
-    if 'update-times' in region_data.keys():
-        event.start_time = region_data['start_time']
-        event.end_time = region_data['end_time']
-        event.save()
+
+    event.start_time = region_data['start_time']
+    event.end_time = region_data['end_time']
+    event.save()
+    print event.start_time
+    print event.end_time
 
     return JsonResponse({})
 

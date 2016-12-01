@@ -14,7 +14,9 @@
 <div style="text-align: center">
   <button class="btn btn-primary" onclick="wavesurfer.playPause()">
     <i class="glyphicon glyphicon-play"></i>
-    Play / Pause
+    Play / 
+    <i class="glyphicon glyphicon-pause"></i>
+    Pause
   </button>
 
   <p class="row">
@@ -38,8 +40,6 @@
 <input type="text" id="tags" value="">
 <button id="tag_button">Save tags</button>
 
-<div><button id="autofill_button">Auto-fill</button></div>
-
 <script type="text/javascript">
 
 	function loadRegions() {
@@ -62,28 +62,6 @@
 	    {% endfor %}
     }
 
-    function reloadRegion(region) {
-    	region_dict = {}
-		region_dict['class'] = region.attributes['class']
-		region_dict['tags'] = region.attributes['tags']
-		region_dict['event_id'] = region.attributes['event_id']
-		region_dict['start_time'] = region.start
-		region_dict['end_time'] = region.end
-		region_dict['color'] =  region.color
-		region.remove()            	
-
-		wavesurfer.addRegion({
-        	attributes: {'class': region_dict['class'],
-				 		 'tags': region_dict['tags'],
-				 		 'event_id': region_dict['event_id'],
-				 		 'created': true},
-            start: region_dict['start_time'],
-            end: region_dict['end_time'],
-            color: region_dict['color'],
-            drag: false,
-        });
-    }
-
     function sortRegionsByOption(regions, option) {
     	region_list = []
 		Object.keys(regions).forEach(function (id) {
@@ -96,42 +74,89 @@
 		return region_list
     }
 
-    function preventOverlappings(current_region, increment=0.) {
-    	if (increment > 0.0) {
+    function getDuration() {
+    	return wavesurfer.getDuration() - 0.1
+    }
+
+    function preventOverlappingsOnArrow(current_region, inc=0.) {
+    	if (inc > 0.0) {
     		new_start = current_region.start
-	    	new_end = current_region.end + increment
-    	} else if (increment < 0.0) {
-    		new_start = current_region.start + increment
-	    	new_end = current_region.end
-    	} else {
-	    	new_start = current_region.start
+	    	new_end = current_region.end + inc
+	    	if (new_end > getDuration()) {
+	    		new_end = getDuration()
+	    	}
+    	} else if (inc < 0.0) {
+    		new_start = current_region.start + inc
+    		if (new_start < 0.0) {
+	    		new_end = 0.0
+	    	}
 	    	new_end = current_region.end
     	}
     	Object.keys(wavesurfer.regions.list).forEach(function (id) {
 			region = wavesurfer.regions.list[id]
-			if ((current_region.end + increment < region.end && current_region.end + increment > region.start) && current_region != region) {
+			if (new_start < region.start && new_end > region.start) {
 				console.log('WRONG END')
 				new_end = region.start
-				current_region.update({
-					attributes: {'class': current_region.attributes['class'],
-	    				 		 'tags': current_region.attributes['tags'],
-	    				 		 'event_id': current_region.attributes['event_id'],
-	    				 		 'update-times': true},
-					end: new_end,
-				})
-			} else if ((current_region.start + increment < region.end && current_region.start + increment > region.start) && current_region != region) {
+			} else if (new_start < region.end && new_end > region.end) {
 				console.log('WRONG START')
 				new_start = region.end
-				current_region.update({
-					attributes: {'class': current_region.attributes['class'],
-	    				 		 'tags': current_region.attributes['tags'],
-	    				 		 'event_id': current_region.attributes['event_id'],
-	    				 		 'update-times': true},
-					start: new_start,
-				})
 			}
 		});
+
 		return [new_start, new_end]
+    }
+
+    function preventOverlappingsOnCreation(current_region) {
+    	new_start = current_region.start
+    	new_end = current_region.end
+    	if (new_end > getDuration()) {
+    		new_end = getDuration()
+    	} 
+    	Object.keys(wavesurfer.regions.list).forEach(function (id) {
+			region = wavesurfer.regions.list[id]
+			if (current_region.start < region.start && current_region.end > region.start) {
+				console.log('WRONG END')
+				new_end = region.start
+			} else if (current_region.end > region.end && current_region.start < region.end) {
+				console.log('WRONG START')
+				new_start = region.end
+			}
+		});
+
+		return [new_start, new_end]
+    }
+
+    function updateEvent(region) {
+    	region_data = {}
+    	region_data['event_id'] = region.attributes['event_id']
+    	region_data['color'] = region.color
+    	region_data['start_time'] = region.start
+    	region_data['end_time'] = region.end
+    	region_data['event_class'] = region.attributes['class']
+    	region_data['tags'] = region.attributes['tags']
+
+    	$.ajax({
+            type: "POST",
+            url: '../update_event/',
+            dataType: 'json',
+            data: { region_data: JSON.stringify(region_data),
+            		csrfmiddlewaretoken: '{{csrf_token}}'},
+            success: function(response) {}
+        });
+    }
+
+    function resetHTML() {
+    	document.getElementById("tags").value = ""
+		select = document.getElementById("show_class")
+		select.selectedIndex = 0
+    }
+
+    function setCurrentRegion(id) {
+    	currentRegionId = id
+    }
+
+    function disableDrag(region) {
+    	region.drag = false
     }
 
 	var wavesurfer = WaveSurfer.create({
@@ -156,12 +181,9 @@
 	// WaveSurfer callbacks
 	wavesurfer.on('region-created', function (region) {
 		console.log("created")
-		console.log(region)
-		currentRegionId = region.id
-		region.drag = false
-		document.getElementById("tags").value = ""
-		select = document.getElementById("show_class")
-		select.selectedIndex = 0
+		setCurrentRegion(region.id)
+		disableDrag(region)
+		resetHTML()
 
 		if (!('loaded' in region.attributes) && !('created' in region.attributes)) {
 			region.attributes['class'] = "None"
@@ -185,8 +207,8 @@
 		        data: { region_data: JSON.stringify(region_data),
 		        		csrfmiddlewaretoken: '{{csrf_token}}'},
 		        success: function(data) {
-		        	region = wavesurfer.regions.list[currentRegionId]
-			        region.attributes['event_id'] = data.event_id
+					region = wavesurfer.regions.list[currentRegionId]
+					region.attributes['event_id'] = data.event_id
 		        }
 			});
 		}
@@ -194,10 +216,13 @@
 
 	wavesurfer.on('region-update-end', function (region) {
 		console.log("update-end")
-		currentRegionId = region.id
+		setCurrentRegion(region.id)
 		region_data = {}
-		times = preventOverlappings(region)
-		console.log(times)
+		times = preventOverlappingsOnCreation(region)
+		region.update({
+			start: times[0],
+			end: times[1],
+		})
 		region_data['start_time'] = times[0]
 		region_data['end_time'] = times[1]
 		region_data['annotation'] = '{{ annotation }}'
@@ -205,7 +230,6 @@
 		if ('event_id' in region.attributes) {
 			region_data['event_id'] = region.attributes['event_id']
 		}
-		console.log("SENDING AJAX")
         $.ajax({
             type: "POST",
             url: '../update_end_event/',
@@ -217,49 +241,15 @@
 				region.attributes['event_id'] = data.event_id
             }
         });
-        console.log("AJAX SENT")
 	});
 
 	wavesurfer.on('region-updated', function (region) {
 		console.log("updated")
-		currentRegionId = region.id
-		region_data = {}
-		region_data['event_id'] = region.attributes['event_id']
-		if ('update-class' in region.attributes || 'update-tags' in region.attributes || 'update-times' in region.attributes) {
-			if ('update-class' in region.attributes) {
-				delete region.attributes['update-class']
-				if (region.attributes['class'] != "None") {
-					region_data['event_class'] = region.attributes['class']
-					region_data['color'] = region.color
-					region_data['update-class'] = true
-				} else {
-					return
-				}
-			} else if ('update-tags' in region.attributes) {
-				delete region.attributes['update-tags']
-				region_data['tags'] = region.attributes['tags']
-				region_data['update-tags'] = true
-			} else if('update-times' in region.attributes){
-				console.log("UPDATE-TIME")
-				delete region.attributes['update-times']
-				region_data['start_time'] = region.start
-				region_data['end_time'] = region.end
-				region_data['update-times'] = true
-			}
-
-			$.ajax({
-	            type: "POST",
-	            url: '../update_event/',
-	            dataType: 'json',
-	            data: { region_data: JSON.stringify(region_data),
-	            		csrfmiddlewaretoken: '{{csrf_token}}'},
-	            success: function(response) {}
-	        });
-		}
 	});
 
 	wavesurfer.on('region-removed', function (region) {
 		console.log("removed")
+		setCurrentRegion(-1)
 		region_data = {}
 		region_data['event_id'] = region.attributes['event_id']
 
@@ -276,7 +266,7 @@
 	wavesurfer.on('region-click', function (region, event) {
 		console.log("clicked")
 		console.log(region)
-		currentRegionId = region.id
+		setCurrentRegion(region.id)
 
 		if (event.button == 0 && event.ctrlKey == false) {
 			if ("tags" in region.attributes){
@@ -295,10 +285,7 @@
 	});
 
 	// HTML elements callbacks
-	//document.addEventListener("keydown", keyDown, false);
-
 	document.onkeydown = function (e) {
-		e.preventDefault()
 		e.stopPropagation()
 		region = wavesurfer.regions.list[currentRegionId]
 		key = e.key;
@@ -315,55 +302,39 @@
 			if (class_dict[i][2] == key && e.ctrlKey == false) {
 				region.update({
 					attributes: {'class': class_dict[i][0],
-        				 		 'tags': region.attributes['tags'],
-        				 		 'event_id': region.attributes['event_id'],
-        				 		 'update-class': true},
+	    				 		 'tags': region.attributes['tags'],
+	    				 		 'event_id': region.attributes['event_id']},
 					color: class_dict[i][1],
-					start: region.start,
-					end: region.end,
 				})
+				updateEvent(region)
 				$("#show_class").val(class_dict[i][0])
 			}
 		}
 		if (key == " ") {
 			wavesurfer.playPause()
 		} else if (key == "ArrowLeft" && e.ctrlKey == true && e.shiftKey == false) {
-			times = preventOverlappings(region, increment=-1./100)
+			times = preventOverlappingsOnArrow(region, increment=-1./100)
 			region.update({
-				attributes: {'class': region.attributes['class'],
-    				 		 'tags': region.attributes['tags'],
-    				 		 'event_id': region.attributes['event_id'],
-    				 		 'update-times': true},
 				start: times[0],
 			})
+			//updateEvent(region)
 		} else if (key == "ArrowRight" && e.ctrlKey == true && e.shiftKey == false) {
 			region.update({
-				attributes: {'class': region.attributes['class'],
-    				 		 'tags': region.attributes['tags'],
-    				 		 'event_id': region.attributes['event_id'],
-    				 		 'update-times': true},
 				start: region.start + 1. / 100,
 			})
+			//updateEvent(region)
 		} else if (key == "ArrowLeft" && e.ctrlKey == true && e.shiftKey == true) {
 			region.update({
-				attributes: {'class': region.attributes['class'],
-    				 		 'tags': region.attributes['tags'],
-    				 		 'event_id': region.attributes['event_id'],
-    				 		 'update-times': true},
 				end: region.end - 1. / 100,
 			})
+			//updateEvent(region)
 		} else if (key == "ArrowRight" && e.ctrlKey == true && e.shiftKey == true) {
-			times = preventOverlappings(region, increment=1./100)
-			if (times[1] > wavesurfer.getDuration()) {
-				times[1] = wavesurfer.getDuration()
-			}
+			times = preventOverlappingsOnArrow(region, increment=1./100)
 			region.update({
-				attributes: {'class': region.attributes['class'],
-    				 		 'tags': region.attributes['tags'],
-    				 		 'event_id': region.attributes['event_id'],
-    				 		 'update-times': true},
+				start: region.start,
 				end: times[1],
 			})
+			//updateEvent(region)
 		} else if (key == 'b') {
 			wavesurfer.seekTo(region.start / wavesurfer.getDuration())
 		} else if (key == 's') {
@@ -375,23 +346,35 @@
 					if (i == 0) {
 						new_start = 0.0
 						if (region_list.length == 1){
-							new_end = wavesurfer.getDuration()
+							new_end = getDuration()
 						} else {
 							new_end = region_list[i + 1].start
 						}
 					} else if (i == region_list.length - 1) {
 						new_start = region_list[i - 1].end
-						new_end = wavesurfer.getDuration()	
+						new_end = getDuration()	
 					} else {
 						new_start = region_list[i - 1].end
 						new_end = region_list[i + 1].start
 					}
-					region.start = new_start
-					region.end = new_end
-					reloadRegion(region)
+					region.update({
+						start: new_start,
+						end: new_end,
+					})
+					updateEvent(region)
 					break;
 				}
 			}
+		}
+	}
+
+	document.onkeyup = function (e) {
+		key = e.key
+		if (key == "ArrowLeft" || key == "ArrowRight") {
+			Object.keys(wavesurfer.regions.list).forEach(function (id) {
+				region = wavesurfer.regions.list[id]
+				updateEvent(region)
+			});
 		}
 	}
 
