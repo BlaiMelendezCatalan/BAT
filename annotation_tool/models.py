@@ -77,13 +77,6 @@ class Event(models.Model):
 		return str(self.id)
 
 
-class Region(models.Model):
-	annotation = models.ForeignKey('Annotation', on_delete=models.CASCADE)
-	start_time = models.FloatField()
-	end_time = models.FloatField()
-	weight = models.FloatField(null=True, blank=True)
-
-
 class Tag(models.Model):
 	name = models.CharField(unique=True, max_length=50)
 
