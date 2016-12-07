@@ -139,16 +139,44 @@ def create_tmp_file(segment):
 	return output_file
 
 
-#def annotate_silence(segment_path):
-#	wav_file = read(BASE_DIR + '/' + segment_path, 'r')
-#	max_value = pow(max(wav_file[1]), 2)
-#	signal = pow(np.array(wav_file[1], dtype=np.float), 2)
-#	signal = signal / max(signal)
-#	energy = []
-#	average_range = 200
-#	for i in xrange(len(signal)):
-#		summation = sum(
-#			signal[max(0, i - average_range):min(len(signal), i + 1 + average_range)])
-#		energy.append(summation / len(
-#			signal[max(0, i - average_range):min(len(signal), i + 1 + average_range)]))
-#	print energy
+# Implemented for non-overlapping events
+# It doesn't handle not annotated (unknown) parts of the segments yet
+def merge_segment_annotations(segment):
+	annotations = Annotation.objects.filter(segment=segment)
+	boundaries = [0.0, segment.end_time - segment.start_time]
+	# Depending on how we handle overlappings, this should probably include class mixtures.
+	classes = Class.objects.values_list("name")
+	class_score = np.zeros(len(classes))
+	segment_events = []
+	for annotation in annotations:
+		events = Event.objects.filter(annotation=annotation)
+		segment_events.append(events)
+		for event in events:
+			boundaries.append(event.start_time)
+			boundaries.append(event.end_time)
+	boundaries = list(set(boundaries))
+	for i in xrange(len(boundaries) - 1):
+		for event in segment_events:
+			if event.start_time <= boundaries[i] and event.end_time >= boundaries[i+1]:
+				class_score[classes.indexOf(event.event_class)] += 1
+		class_name = classes[np.argmax(class_score)]
+		region = Region(segment=segment,
+						class_name=class_name,
+						start_time=boundaries[i],
+						end_time=boundaries[i+1])
+		region.save()
+
+# Still unfinished due to the undefinition of the necessary output format
+def generate_ground_truth(project):
+	wavs = Wavs.objects.filter(project=project)
+	gt_dict = {}
+	for wav in wavs:
+		gt_dict[wav.name] = {}
+		segments = Segment.objects.filter(wav=wav)
+		for segment in segments:
+			gt_dict[wav.name][segment.name] = {}
+			regions = Region.objects.filter(segment=segment)
+			for region in regions:
+				gt_dict[wav.name][segment.name]['class'] = region.class_name
+				gt_dict[wav.name][segment.name]['start_time'] = region.start_time
+				gt_dict[wav.name][segment.name]['end_time'] = region.end_time

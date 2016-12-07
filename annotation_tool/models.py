@@ -45,7 +45,7 @@ class Segment(models.Model):
 	priority = models.FloatField(default=0.0)
 
 	def __str__(self):
-		return str(self.name)
+		return str(self.start_time) + '_' + str(self.end_time)
 
 
 class Annotation(models.Model):
@@ -75,6 +75,20 @@ class Event(models.Model):
 
 	def __str__(self):
 		return str(self.id)
+
+
+class Region(models.Model):
+	segment = models.ForeignKey('Segment', on_delete=models.CASCADE)
+	# class_name is the name of a Class object if no overlappings are allowed. Otherwise, it is a secondary (mixture) class name
+	class_name = models.FloatField(null=True, blank=True)
+	start_time = models.FloatField()
+	end_time = models.FloatField()
+
+	class Meta:
+		unique_together = ("segment", "start_time", "end_time")
+
+	def __str__(self):
+		return str(self.class_name)
 
 
 class Tag(models.Model):
