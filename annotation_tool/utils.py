@@ -104,18 +104,36 @@ def pick_segment_to_annotate(project_name, user_id):
 		else:
 			return segment
 
+# Implemented for non-overlapping events
+def modify_segment_priority(segment):
+	annotations = Annotation.objects.filter(segment=segment, status="finished")
+	if len(annotations) > 1:
+		# Get the set of boundaries of all events
+		boundaries = [0.0, segment.end_time - segment.start_time]
+		classes = list(Class.objects.values_list("name", flat=True)) # Depending on how we handle overlappings, this should probably include class mixtures.
+		class_score = np.zeros(len(classes))
+		segment_events = []
+		for annotation in annotations:
+			events = Event.objects.filter(annotation=annotation)
+			segment_events.append(events)
+			for event in events:
+				boundaries.append(event.start_time)
+				boundaries.append(event.end_time)
+		boundaries = list(set(boundaries))
+		# Compute agreement between annotations
+		agreement = 0.0
+		for i in xrange(len(boundaries) - 1):
+			class_score = np.zeros(len(classes))
+			for event in segment_events:
+				if event.start_time <= boundaries[i] and event.end_time >= boundaries[i+1]:
+					class_score[classes.index(event.event_class)] += 1
+			max_score = max(class_score)
+			duration = boundaries[i+1] - boundaries[i]
+			agreement += float(max_score) * duration / len(annotations)
 
-#def compute_difficulty(segment_id):
-#	classes = Class.objects.values_list('name')
-#	for c in classes:
-#		events = Event.objects.filter(annotation__segment__id=segment_id, event_class=c)
-#		for e in events:
-
-
-def compute_priority(segment_id):
-	segment = Segment.objects.get(id=segment_id)
-	segment.priority = segment.number_of_annotations # * segment.difficulty
-	segment.save()
+		segment.priority = (1 - agreement / (segment.end_time - segment.start_time)) / len(annotations)
+	else:
+		segment.priority = 1.0
 
 
 def delete_tmp_files():
@@ -140,13 +158,12 @@ def create_tmp_file(segment):
 
 
 # Implemented for non-overlapping events
-# It doesn't handle not annotated (unknown) parts of the segments yet
+# It doesn't handle not annotated (unknown) parts of the segments yet		
 def merge_segment_annotations(segment):
 	annotations = Annotation.objects.filter(segment=segment)
+	# Get the set of boundaries of all events
 	boundaries = [0.0, segment.end_time - segment.start_time]
-	# Depending on how we handle overlappings, this should probably include class mixtures.
-	classes = Class.objects.values_list("name")
-	class_score = np.zeros(len(classes))
+	classes = list(Class.objects.values_list("name", flat=True)) # Depending on how we handle overlappings, this should probably include class mixtures.
 	segment_events = []
 	for annotation in annotations:
 		events = Event.objects.filter(annotation=annotation)
@@ -156,9 +173,10 @@ def merge_segment_annotations(segment):
 			boundaries.append(event.end_time)
 	boundaries = list(set(boundaries))
 	for i in xrange(len(boundaries) - 1):
+		class_score = np.zeros(len(classes))
 		for event in segment_events:
 			if event.start_time <= boundaries[i] and event.end_time >= boundaries[i+1]:
-				class_score[classes.indexOf(event.event_class)] += 1
+				class_score[classes.index(event.event_class)] += 1
 		class_name = classes[np.argmax(class_score)]
 		region = Region(segment=segment,
 						class_name=class_name,
