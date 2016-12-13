@@ -67,11 +67,6 @@ def create_annotation(segment, user):
 							annotation_date=timezone.now())
 	annotation.save()
 
-	segment.number_of_annotations += 1
-	# Compute difficulty(inter-annotation difference)
-	# Compute priority = f(difficulty, number_of_annotations)
-	segment.save()
-
 	return annotation
 
 
@@ -132,8 +127,11 @@ def modify_segment_priority(segment):
 			agreement += float(max_score) * duration / len(annotations)
 
 		segment.priority = (1 - agreement / (segment.end_time - segment.start_time)) / len(annotations)
+		segment.save()
 	else:
+		print "modifying priority to 1.0"
 		segment.priority = 1.0
+		segment.save()
 
 
 def delete_tmp_files():

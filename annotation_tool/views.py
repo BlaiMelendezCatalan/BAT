@@ -354,6 +354,28 @@ def resume_annotation(request):
         return render(request, 'annotation_tool/annotation_tool.html', context)
 
 
+def submit_annotation(request):
+    context = {}
+    # Set annotation to finished
+    data = json.loads(request.POST.get('data'))
+    annotation = Annotation.objects.get(name=data['annotation'])
+    annotation.status = "finished"
+    annotation.save()
+    project = Project.objects.get(name=annotation.segment.wav.project.name)
+    submitted_segment = Segment.objects.get(name=annotation.segment.name)
+    # Compute new priority values
+    utils.modify_segment_priority(submitted_segment)
+    # Create next annotation
+    #next_segment = utils.pick_segment_to_annotate(project.name, request.user.id)
+    #context['annotation'] = utils.create_annotation(next_segment, request.user)
+    #context['classes'] = Class.objects.values_list('name', 'color', 'shortcut')
+    #context['class_dict'] = json.dumps(list(context['classes']), cls=DjangoJSONEncoder)
+    #utils.delete_tmp_files()
+    #context['tmp_segment_path'] = utils.create_tmp_file(next_segment)
+    #print "REACH"
+    return render(request, 'annotation_tool/annotation_tool.html', context)
+
+
 def create_event(request):
     print("create_event")
     region_data = json.loads(request.POST.get('region_data'))

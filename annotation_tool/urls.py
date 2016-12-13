@@ -20,5 +20,6 @@ urlpatterns = [
     url(r'^update_event/$', views.update_event, name='update_event'),
     url(r'^update_end_event/$', views.update_end_event, name='update_end_event'),
     url(r'^remove_event/$', views.remove_event, name='remove_event'),
+    url(r'^submit_annotation/$', views.submit_annotation, name='submit_annotation'),
     
 ]

@@ -9,6 +9,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/1.2.4/wavesurfer.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/1.2.3/plugin/wavesurfer.regions.min.js"></script>
 
+<h3>Annotation Tips:</h3>
+<h5>- Read and get used to the commands below. Annotation will be much easier.</h5>
+<h5>- Do not worry about small silences, we will annotate them for you.</h5>
+<h3>Classes:</h3>
+<h5>- <strong>1: Music</strong> | <strong>2: Speech</strong> | <strong>3: Bgmusic</strong> | <strong>4: Quiet bgmusic</strong> | <strong>5: Loud bgmusic</strong></h5>
+&nbsp;
 <div id="waveform"></div>
 
 <div style="text-align: center">
@@ -39,6 +45,21 @@
 <div>Tags</div>
 <input type="text" id="tags" value="">
 <button id="tag_button">Save tags</button>
+<div><button id="submit_button">Submit annotation</button></div>
+&nbsp;
+&nbsp;
+<h3>Controls:</h3>
+<h5>- Space bar plays and pauses the audio.</h5>
+<h5>- <strong>Click</strong> and <strong>drag</strong> on the waveform to create a <strong>new region</strong>. This is now the <strong>selected region</strong>.</h5>
+<h5>- <strong>Click</strong> on another <strong>region</strong> to <strong>select it</strong>.</h5>
+<h5>- <strong>Ctrl-Click</strong> on any <strong>region</strong> to <strong>delete it</strong>.</h5>
+<h5>- <strong>Click</strong> a <strong>number</strong> to <strong>set</strong> the <strong>class</strong> of the selected region.</h5>
+<h5>- To tag a region: select it, write the tags separated by comas and click save tags.</h5>
+<h5>- <strong>Regions does not overlap</strong>. <strong>Placing a region limit inside another region glues it to that region</strong>. Use this to <strong>easily concatenate regions.</strong></h5>
+<h5>- Press <strong>"f"</strong> to <strong>glue</strong> the selected region limits to the closer borders. Do it with <strong>Ctrl (+ Shift)</strong> to glue only the <strong>left (right) limit</strong>.</h5>
+<h5>- Press <strong>"s"</strong> to set the <strong>player</strong> at the <strong>beginning</strong> of the <strong>audio</strong>.</h5>
+<h5>- Press <strong>"b"</strong> to set the <strong>player</strong> at the <strong>beginning</strong> of the <strong>selected region</strong>.</h5>
+<h5>- <strong>Ctrl (+ Shift) + Left/Right Arrows</strong> precisely <strong>adjusts</strong> left (right) region <strong>limits</strong>.</h5>
 
 <script type="text/javascript">
 
@@ -176,6 +197,7 @@
 	wavesurfer.on('ready', function () {
 		wavesurfer.enableDragSelection({})
 		loadRegions()
+		wavesurfer.play()
 	});
 
 	// WaveSurfer callbacks
@@ -287,6 +309,7 @@
 	// HTML elements callbacks
 	document.onkeydown = function (e) {
 		e.stopPropagation()
+		e.preventDefault()
 		region = wavesurfer.regions.list[currentRegionId]
 		key = e.key;
 		console.log(e)
@@ -339,23 +362,37 @@
 			wavesurfer.seekTo(region.start / wavesurfer.getDuration())
 		} else if (key == 's') {
 			wavesurfer.seekTo(0.0)
-		} else if (key == 'f') {
+		} else if (key == 'f' || key == 'F') {
 			region_list = sortRegionsByOption(wavesurfer.regions.list, "start")
 			for (var i = 0; i < region_list.length; i++) {
 				if (region == region_list[i]) {
 					if (i == 0) {
-						new_start = 0.0
+						if (e.shiftKey == false) {
+							new_start = 0.0
+						}
 						if (region_list.length == 1){
-							new_end = getDuration()
+							if (e.ctrlKey == e.shiftKey) {
+								new_end = getDuration()
+							}
 						} else {
-							new_end = region_list[i + 1].start
+							if (e.ctrlKey == e.shiftKey) {
+								new_end = region_list[i + 1].start
+							}
 						}
 					} else if (i == region_list.length - 1) {
-						new_start = region_list[i - 1].end
-						new_end = getDuration()	
+						if (e.shiftKey == false) {
+							new_start = region_list[i - 1].end
+						}
+						if(e.ctrlKey == e.shiftKey) {
+							new_end = getDuration()
+						}
 					} else {
-						new_start = region_list[i - 1].end
-						new_end = region_list[i + 1].start
+						if (e.shiftKey == false) {
+							new_start = region_list[i - 1].end
+						}
+						if(e.ctrlKey == e.shiftKey) {
+							new_end = region_list[i + 1].start
+						}
 					}
 					region.update({
 						start: new_start,
@@ -385,11 +422,24 @@
 			region.update({
 				attributes: {'class': region.attributes['class'],
     				 		 'tags': tags,
-    				 		 'event_id': region.attributes['event_id'],
-    				 		 'update-tags': true},
+    				 		 'event_id': region.attributes['event_id']},
 			})
+			updateEvent(region)
 		}
 	});
+
+	//$("#submit_button").click(function() {
+	//	data = {}
+	//	data['annotation'] = '{{ annotation.name }}'
+	//	$.ajax({
+    //        type: "POST",
+    //        url: '../submit_annotation/',
+    //        dataType: 'json',
+    //        data: { data: JSON.stringify(data),
+    //        		csrfmiddlewaretoken: '{{csrf_token}}'},
+    //        success: function(response) {}
+    //    });
+	//});
 
 </script>
 
