@@ -14,6 +14,7 @@ class Project(models.Model):
 
 
 class Class(models.Model):
+	project = models.ForeignKey('Project', on_delete=models.CASCADE)
 	name = models.CharField(max_length=50)
 	tags = models.ManyToManyField('Tag', blank=True) # if none -> free tag
 	color = models.CharField(max_length=50)
