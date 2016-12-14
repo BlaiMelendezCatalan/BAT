@@ -175,12 +175,19 @@ def merge_segment_annotations(segment):
 		for event in segment_events:
 			if event.start_time <= boundaries[i] and event.end_time >= boundaries[i+1]:
 				class_score[classes.index(event.event_class)] += 1
-		class_name = classes[np.argmax(class_score)]
-		region = Region(segment=segment,
-						class_name=class_name,
-						start_time=boundaries[i],
-						end_time=boundaries[i+1])
-		region.save()
+		if max(class_score) != 0:
+			class_name = classes[np.argmax(class_score)]
+			region = Region(segment=segment,
+							class_name=class_name,
+							start_time=boundaries[i],
+							end_time=boundaries[i+1])
+			region.save()
+		else:
+			region = Region(segment=segment,
+							class_name="unknown",
+							start_time=boundaries[i],
+							end_time=boundaries[i+1])
+			region.save()
 
 # Still unfinished due to the undefinition of the necessary output format
 def generate_ground_truth(project):
