@@ -354,7 +354,6 @@
 		} else if (key == "ArrowRight" && e.ctrlKey == true && e.shiftKey == true) {
 			times = preventOverlappingsOnArrow(region, increment=1./100)
 			region.update({
-				start: region.start,
 				end: times[1],
 			})
 			//updateEvent(region)
