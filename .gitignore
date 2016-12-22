@@ -91,3 +91,6 @@ ENV/
 .ropeproject
 
 .idea/
+static/
+db.sqlite3
+django_test/
