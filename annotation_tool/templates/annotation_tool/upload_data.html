@@ -1,4 +1,5 @@
 {% extends 'annotation_tool/base.html' %}
+{% load rest_framework %}
 
 {% block title %}Upload data{% endblock %}
 
@@ -8,7 +9,7 @@
 
 <form action="" method="post" enctype="multipart/form-data">
     {% csrf_token %}
-    {{ form }}
+    {% render_form serializer %}
     <input type="submit" value="Upload files" />
 </form>
 

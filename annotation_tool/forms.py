@@ -1,11 +1,5 @@
 from django import forms
 
-class CreateProjectForm(forms.Form):
-    project_name = forms.CharField(label='Add new project', max_length=50)
-
-class CreateClassForm(forms.Form):
-    class_name = forms.CharField(label='Add new class', max_length=50)
-
 class UploadDataForm(forms.Form):
     project_name = forms.CharField(label='Project name', max_length=50)
     segments_length = forms.FloatField(label='Segment length')
