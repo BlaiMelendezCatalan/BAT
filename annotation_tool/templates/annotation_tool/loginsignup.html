@@ -5,29 +5,30 @@
   <html>
   <head>
     <title>Annotation Tool{% block title %}{% endblock %}</title>
-    <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
     <link rel="stylesheet" href="{% static 'css/style.css' %}"/>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
+    <script src="{% static 'js/jquery-1.11.2.min.js' %}"></script>
+    <script src="{% static 'js//bootstrap.min.js' %}"></script>
     <script src="{% static 'js/wavesurfer.min.js' %}"></script>
     <script src="{% static 'js/wavesurfer.timeline.js' %}"></script>
     <script src="{% static 'js/wavesurfer.regions.js' %}"></script>
     <script src="{% static 'js/sorttable.js' %}"></script>
     <script type="text/javascript" src="{% static 'js/functions.js' %}"></script>
   </head>
-{% endspaceless %}
 
 
+  <body>
   <div class="row">
-    <div class="col-lg-4 col-lg-offset-4 col-sm-6 col-sm-offset-4 col-xs-10 col-xs-offset-1">
+    <div class="col-lg-4 col-lg-offset-4 col-sm-6 col-sm-offset-4 col-xs-10 col-xs-offset-1"
+         id="login-signup-container">
       <div class="well">
         <ul class="nav nav-tabs">
-          <li class="active"><a href="#login" data-toggle="tab">Login</a></li>
-          <li><a href="#create" data-toggle="tab">Create Account</a></li>
+          <li{% if login_tab %} class="active"{% endif %}><a href="#login" data-toggle="tab">Login</a></li>
+          <li{% if signup_tab %} class="active"{% endif %}><a href="#create" data-toggle="tab">Create Account</a></li>
         </ul>
         <div id="myTabContent" class="tab-content">
-          <div class="tab-pane active in" id="login">
-          <br>
+          <div class="tab-pane {% if login_tab %}active in{% else %}fade{% endif %}" id="login">
+            <br>
             <form action="" method="post">
               {% csrf_token %}
               {% render_form login_serializer %}
@@ -46,8 +47,8 @@
               </div>
             </form>
           </div>
-          <div class="tab-pane fade" id="create">
-          <br>
+          <div class="tab-pane {% if signup_tab %}active in{% else %}fade{% endif %}" id="create">
+            <br>
             <form action="" method="post" id="tab">
               {% csrf_token %}
               {% render_form signup_serializer %}
@@ -71,3 +72,6 @@
       </div>
     </div>
   </div>
+  </body>
+  </html>
+{% endspaceless %}

@@ -204,7 +204,8 @@ class LoginSignup(GenericAPIView):
 
     def get(self, request, *args, **kwargs):
         return Response({'login_serializer': LoginSerializer(),
-                         'signup_serializer': UserRegistrationSerializer()})
+                         'signup_serializer': UserRegistrationSerializer(),
+                         'login_tab': True})
 
     def post(self, request, *args, **kwargs):
         username = request.data.get('username')
@@ -214,7 +215,8 @@ class LoginSignup(GenericAPIView):
             serializer = LoginSerializer(data=request.data)
             user = authenticate(username=username, password=password)
             context = {'login_serializer': serializer,
-                       'signup_serializer': UserRegistrationSerializer()}
+                       'signup_serializer': UserRegistrationSerializer(),
+                       'login_tab': True}
             if serializer.is_valid():
                 if user:
                     login(request, user)
@@ -231,7 +233,8 @@ class LoginSignup(GenericAPIView):
         elif 'signup' in request.POST:
             serializer = UserRegistrationSerializer(data=request.data)
             context = {'login_serializer': LoginSerializer(),
-                       'signup_serializer': serializer}
+                       'signup_serializer': serializer,
+                       'signup_tab': True}
             if serializer.is_valid():
                 u = serializer.save()
                 utils.set_user_permissions(u)
