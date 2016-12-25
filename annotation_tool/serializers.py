@@ -5,7 +5,8 @@ from annotation_tool.models import Project
 
 
 class ProjectSerializer(serializers.Serializer):
-    project_name = serializers.CharField(label='Add new project', max_length=50)
+    project_name = serializers.CharField(label='Project name', max_length=50)
+    overlap = serializers.BooleanField(label='Allow class overlap in this project', default=False)
 
 
 class ClassSerializer(serializers.Serializer):

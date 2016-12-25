@@ -8,6 +8,7 @@ from config.settings.common import BASE_DIR
 class Project(models.Model):
     name = models.CharField(max_length=50, unique=True)
     creation_date = models.DateTimeField('creation date')
+    overlap = models.BooleanField(default=False)
 
     def __str__(self):
         return str(self.name)
