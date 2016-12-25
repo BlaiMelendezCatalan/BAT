@@ -8,22 +8,18 @@ from django.shortcuts import render
 from django.http import HttpResponse
 from django.http import HttpResponseRedirect
 from rest_framework.generics import GenericAPIView
-from rest_framework.parsers import FileUploadParser
+from rest_framework.parsers import FileUploadParser, MultiPartParser
 from rest_framework.renderers import TemplateHTMLRenderer
 from rest_framework.response import Response
 
 from annotation_tool.models import Project, Wav, Segment, Annotation, Event, Class, Tag
 from django.contrib.auth.models import User
-from django.views.generic.edit import FormView
 
-from annotation_tool.serializers import ProjectSerializer, ClassSerializer, UploadDataSerializer
-from .forms import UploadDataForm, LoginForm
-import django.core.exceptions as e
+from annotation_tool.serializers import ProjectSerializer, ClassSerializer, UploadDataSerializer, LoginSerializer, \
+    UserRegistrationSerializer
 import utils
-from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import user_passes_test
-from django.utils.decorators import method_decorator
 
 
 def superuser_check(user):
@@ -202,65 +198,66 @@ def successful_upload(request):
     return render(request, 'annotation_tool/successful_upload.html', context)
 
 
-def loginsignup(request):
-    context = {}
+class LoginSignup(GenericAPIView):
+    renderer_classes = [TemplateHTMLRenderer]
+    template_name = 'annotation_tool/loginsignup.html'
 
-    if request.method == 'POST':
-        username = request.POST.get('username')
+    def get(self, request, *args, **kwargs):
+        return Response({'login_serializer': LoginSerializer(),
+                         'signup_serializer': UserRegistrationSerializer()})
+
+    def post(self, request, *args, **kwargs):
+        username = request.data.get('username')
 
         if 'login' in request.POST:
             password = request.POST.get('password')
+            serializer = LoginSerializer(data=request.data)
             user = authenticate(username=username, password=password)
-            if user is not None:
-                login(request, user)
+            context = {'login_serializer': serializer,
+                       'signup_serializer': UserRegistrationSerializer()}
+            if serializer.is_valid():
+                if user:
+                    login(request, user)
+                else:
+                    context['login_error'] = 'Invalid login or password.'
+                    return Response(context)
             else:
-                return HttpResponseRedirect('./')
-            context['form_login'] = LoginForm(request.POST)
-            context['form_signup'] = UserCreationForm()
+                return Response(context)
             if user.is_superuser:
                 return HttpResponseRedirect('../projects')
             else:
                 return HttpResponseRedirect('../new_annotation')
 
         elif 'signup' in request.POST:
-            password1 = request.POST.get('password1')
-            password2 = request.POST.get('password2')
-            if password1 == password2:
-                u = User(username=username, password=password1)
-                u.save()
+            serializer = UserRegistrationSerializer(data=request.data)
+            context = {'login_serializer': LoginSerializer(),
+                       'signup_serializer': serializer}
+            if serializer.is_valid():
+                serializer.save()
+                u = User.objects.get(username=username)
                 utils.set_user_permissions(u)
-                
-            else:
-                # better redirect to signup with message
-                raise e("Passwords do not match")
-            context['form_login'] = LoginForm()
-            context['form_signup'] = UserCreationForm(request.POST)
-
-            return HttpResponseRedirect('../new_annotation')
-
-    else:
-        context['form_login'] = LoginForm()
-        context['form_signup'] = UserCreationForm()
-
-    return render(request, 'annotation_tool/loginsignup.html', context)
+                return HttpResponseRedirect('../new_annotation')
+            if 'non_field_errors' in serializer.errors:
+                context['signup_error'] = serializer.errors['non_field_errors'][0]
+            return Response(context)
 
 
 class UploadFileView(LoginRequiredMixin, GenericAPIView):
     serializer_class = UploadDataSerializer
     renderer_classes = [TemplateHTMLRenderer]
     template_name = 'annotation_tool/upload_data.html'
-    parser_classes = (FileUploadParser,)
+    parser_classes = (MultiPartParser, FileUploadParser)
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
-        project_name = request.data.get('project_name')
+        project_id = request.data.get('project')
         segments_length = request.data.get('segments_length')
         files = request.FILES.getlist('upload_file_field')
-        p = utils.get_project(name=project_name)
 
         if serializer.is_valid():
+            project = Project.objects.get(pk=project_id)
             for f in files:
-                w = utils.create_wav(project=p, file=f, name=f.name, upload_date=timezone.now())
+                w = utils.create_wav(project=project, file=f, name=f.name, upload_date=timezone.now())
                 duration = utils.get_wav_duration(w)
                 utils.create_segments(wav=w, duration=duration, segments_length=segments_length)
             return HttpResponseRedirect('./')
@@ -305,35 +302,39 @@ def new_annotation(request):
         return render(request, 'annotation_tool/annotation_tool.html', context)
 
 
-#@login_required(login_url='../loginsignup')
-def my_annotations(request):
-    context = {}
+class MyAnnotations(LoginRequiredMixin, GenericAPIView):
+    renderer_classes = [TemplateHTMLRenderer]
+    template_name = 'annotation_tool/my_annotations.html'
 
-    # Define filters, extract possibles values and store selections
-    context['filters'] = {
-        'Projects': {'route': 'segment__wav__project__name',
-                     'name': 'project'},
-        'Wavs': {'route': 'segment__wav__name',
-                 'name': 'wav'},
-        'Segments': {'route': 'segment__name',
-                     'name': 'segment'},
-        'Status': {'route': 'status',
-                   'name': 'status'}
-    }
-    for v in context['filters'].values():
-        v['available'] = Annotation.objects.values_list(v['route'], flat=True) \
-            .order_by(v['route']).distinct()
-    selected_values = {}
-    for v in context['filters'].values():
-        v['selected'] = request.GET.get(v['name'], "")
-        if v['selected']:
-            selected_values[v['route']] = v['selected']
-    selected_values['user__id'] = request.user.id
+    def _filters(self):
+        return {
+            'Projects': {'route': 'segment__wav__project__name',
+                         'name': 'project'},
+            'Wavs': {'route': 'segment__wav__name',
+                     'name': 'wav'},
+            'Segments': {'route': 'segment__name',
+                         'name': 'segment'},
+            'Status': {'route': 'status',
+                       'name': 'status'}
+        }
 
-    context['query_data'] = Annotation.objects.filter(**selected_values) \
-                                            .order_by('-id')
-    
-    return render(request, 'annotation_tool/my_annotations.html', context)
+    def get(self, request, *args, **kwargs):
+        # Define filters, extract possibles values and store selections
+        context = {'filters': self._filters()}
+        for v in context['filters'].values():
+            v['available'] = Annotation.objects.values_list(v['route'], flat=True) \
+                .order_by(v['route']).distinct()
+        selected_values = {}
+        for v in context['filters'].values():
+            v['selected'] = request.GET.get(v['name'])
+            if v['selected']:
+                selected_values[v['route']] = v['selected']
+        selected_values['user__id'] = request.user.id
+
+        context['query_data'] = Annotation.objects.filter(**selected_values) \
+            .order_by('-id')
+
+        return Response(context)
 
 
 def resume_annotation(request):
