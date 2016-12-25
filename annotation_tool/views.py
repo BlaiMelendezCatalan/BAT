@@ -233,8 +233,7 @@ class LoginSignup(GenericAPIView):
             context = {'login_serializer': LoginSerializer(),
                        'signup_serializer': serializer}
             if serializer.is_valid():
-                serializer.save()
-                u = User.objects.get(username=username)
+                u = serializer.save()
                 utils.set_user_permissions(u)
                 return HttpResponseRedirect('../new_annotation')
             if 'non_field_errors' in serializer.errors:
