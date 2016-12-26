@@ -37,7 +37,8 @@ class Projects(LoginRequiredMixin, GenericAPIView):
 
     def get(self, request, *args, **kwargs):
         return Response({'query_data': self.get_queryset(),
-                         'serializer': self.get_serializer()})
+                         'serializer': self.get_serializer(),
+                         'errors': None})
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -47,7 +48,9 @@ class Projects(LoginRequiredMixin, GenericAPIView):
                 creation_date=timezone.now()
             )
             return HttpResponseRedirect('./')
-        return Response({'query_data': self.get_queryset(), 'serializer': serializer})
+        return Response({'query_data': self.get_queryset(),
+                         'serializer': serializer,
+                         'errors': serializer.errors})
 
 
 class Project(LoginRequiredMixin, DestroyAPIView):
