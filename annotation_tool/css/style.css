@@ -10,3 +10,7 @@
 .table tbody tr > td.success {
   background-color: #dff0d8 !important;
 }
+
+.ui-widget.ui-autocomplete {
+    z-index: 1100;
+}

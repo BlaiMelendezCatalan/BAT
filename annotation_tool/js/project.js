@@ -1,4 +1,5 @@
 $(function () {
+  // delete items with ajax DELETE request
   $('.delete-item').on('click', function () {
     var url = $(this).data('delete-url');
     $('#delete-url').val(url);
@@ -17,6 +18,7 @@ $(function () {
     });
   });
 
+  // autocomplete for tag field
   if (typeof TAGS_NAMES != 'undefined') {
     $('#tokenfield').tokenfield({
       autocomplete: {
@@ -26,5 +28,12 @@ $(function () {
       showAutocompleteOnFocus: true
     })
   }
+
+  // open modal when page was opened
+  if (typeof OPEN_MODAL != 'undefined' && OPEN_MODAL) {
+    $('#add-item-button').trigger('click');
+  }
+
+  // color picker init
   $('#color-picker').colorpicker({'format': 'hex'});
 });

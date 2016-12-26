@@ -12,6 +12,7 @@
   <script src="{% static 'js/bootstrap-colorpicker.min.js' %}"></script>
   <script>
     var TAGS_NAMES = {% if tags_names %}'{{ tags_names }}'.split(','){% else %}[]{% endif %};
+    var OPEN_MODAL = {% if errors %}true{% else %}false{% endif %};
   </script>
 {% endblock %}
 
@@ -22,22 +23,44 @@
 {% endblock %}
 
 {% block body_block %}
-  <h3>Add new class</h3>
-  <div class="row">
-    <div class="col-md-4">
+  <div id="add-modal" class="modal fade" role="dialog">
+    <div class="modal-dialog">
+
+      <!-- Modal content-->
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">Add class</h4>
+        </div>
       <form action="" method="post">
-        {% csrf_token %}
-        {% render_form serializer %}
-        {% if serializer.errors and serializer.errors.non_field_errors %}
-            <div class="alert alert-danger">
-              {{ serializer.errors.non_field_errors.0 }}
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-md-8 col-md-offset-2">
+                {% csrf_token %}
+                {% render_form serializer %}
+                {% if errors and errors.non_field_errors %}
+                  <div class="alert alert-danger">
+                    {{ errors.non_field_errors.0 }}
+                  </div>
+                {% endif %}
+
             </div>
-        {% endif %}
-        <input type="submit" value="Create new class" class="btn btn-success"/>
-      </form>
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <input type="hidden" id="delete-url">
+
+          <input type="submit" value="Create new class" class="btn btn-success"/>
+          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        </div>
+          </form>
+      </div>
     </div>
   </div>
-  <hr>
+
+  <button class="btn btn-success" id="add-item-button" data-toggle="modal" data-target="#add-modal">Add class</button>
+
   {% if query_data %}
     <table class="table table-striped table-bordered sortable" style="width: auto;">
       <tr>
@@ -57,9 +80,11 @@
           <td>{% for tag in class.tags.all %}{{ tag.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
           <td>{{ class.color }}</td>
           <td>{{ class.shortcut }}</td>
-          <td><button data-delete-url="{% url 'class' class.id %}" class="btn btn-danger delete-item"
+          <td>
+            <button data-delete-url="{% url 'class' class.id %}" class="btn btn-danger delete-item"
                     data-toggle="modal" data-target="#delete-modal">Delete
-            </button></td>
+            </button>
+          </td>
         </tr>
       {% endfor %}
     </table>

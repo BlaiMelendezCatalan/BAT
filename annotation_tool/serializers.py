@@ -18,10 +18,10 @@ class ClassSerializer(serializers.Serializer):
     project = serializers.PrimaryKeyRelatedField(queryset=models.Project.objects.all())
     name = serializers.CharField(label='Class name', max_length=50)
     tags = TagSerializer(many=True,
-                         style={'template': 'annotation_tool/_tag_field.html'})
+                         style={'template': 'fields/_tag_field.html'})
     color = serializers.CharField(label='Color',
                                   max_length=50,
-                                  style={'template': 'annotation_tool/_colorpicker_field.html'})
+                                  style={'template': 'fields/_colorpicker_field.html'})
     shortcut = serializers.CharField(max_length=1)
 
     def validate(self, data):

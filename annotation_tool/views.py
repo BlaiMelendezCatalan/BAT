@@ -185,7 +185,8 @@ class Classes(LoginRequiredMixin, GenericAPIView):
     def get(self, request, *args, **kwargs):
         return Response({'query_data': self.get_queryset(),
                          'serializer': self.get_serializer(),
-                         'tags_names': models.Tag.get_tag_names()})
+                         'tags_names': models.Tag.get_tag_names(),
+                         'errors': None})
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -194,7 +195,8 @@ class Classes(LoginRequiredMixin, GenericAPIView):
             return HttpResponseRedirect('./')
         return Response({'query_data': self.get_queryset(),
                          'serializer': serializer,
-                         'tags_names': models.Tag.get_tag_names()})
+                         'tags_names': models.Tag.get_tag_names(),
+                         'errors': serializer.errors})
 
 
 class Class(LoginRequiredMixin, DestroyAPIView):
