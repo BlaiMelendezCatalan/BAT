@@ -11,6 +11,7 @@ urlpatterns = [
     url(r'^annotations/$', views.Annotations.as_view(), name='annotations'),
     url(r'^events/$', views.Events.as_view(), name='events'),
     url(r'^classes/$', views.Classes.as_view(), name='classes'),
+    url(r'^class/(?P<id>\d+)/$', views.Class.as_view(), name='class'),
     url(r'^upload_data/$', views.UploadFileView.as_view(), name='upload_data'),
     url(r'^successful_upload/$', views.successful_upload, name='successful_upload'),
     url(r'^loginsignup/$', views.LoginSignup.as_view(), name='loginsignup'),

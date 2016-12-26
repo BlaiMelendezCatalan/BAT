@@ -184,15 +184,23 @@ class Classes(LoginRequiredMixin, GenericAPIView):
 
     def get(self, request, *args, **kwargs):
         return Response({'query_data': self.get_queryset(),
-                         'serializer': self.get_serializer()})
+                         'serializer': self.get_serializer(),
+                         'tags_names': models.Tag.get_tag_names()})
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
-            utils.create_class(name=serializer.data['class_name'])
+            serializer.save()
             return HttpResponseRedirect('./')
         return Response({'query_data': self.get_queryset(),
-                         'serializer': serializer})
+                         'serializer': serializer,
+                         'tags_names': models.Tag.get_tag_names()})
+
+
+class Class(LoginRequiredMixin, DestroyAPIView):
+    queryset = models.Class.objects.all()
+    lookup_field = 'id'
+
 
 #@login_required(login_url='../loginsignup')
 @user_passes_test(superuser_check)

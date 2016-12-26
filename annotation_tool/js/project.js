@@ -16,4 +16,15 @@ $(function () {
       }
     });
   });
+
+  if (typeof TAGS_NAMES != 'undefined') {
+    $('#tokenfield').tokenfield({
+      autocomplete: {
+        source: TAGS_NAMES,
+        delay: 100
+      },
+      showAutocompleteOnFocus: true
+    })
+  }
+  $('#color-picker').colorpicker({'format': 'hex'});
 });

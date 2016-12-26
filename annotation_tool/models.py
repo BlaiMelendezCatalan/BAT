@@ -100,5 +100,10 @@ class Region(models.Model):
 class Tag(models.Model):
     name = models.CharField(unique=True, max_length=50)
 
+    @staticmethod
+    def get_tag_names():
+        return ','.join([tag.name for tag in Tag.objects.all()])
+
+
     def __str__(self):
         return str(self.name)
