@@ -14,6 +14,7 @@
 
 .ui-widget.ui-autocomplete {
     z-index: 1100;
+}
 
 .modal-dialog {
     z-index: 1050;
