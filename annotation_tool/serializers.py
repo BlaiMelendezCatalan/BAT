@@ -25,29 +25,28 @@ class ClassSerializer(serializers.Serializer):
     shortcut = serializers.CharField(max_length=1)
 
     def validate(self, data):
-        try:
-            models.Class.objects.get(Q(name=data.get('name')) |
-                                     Q(shortcut=data.get('shortcut')) |
-                                     Q(color=data.get('color')))
-        except models.Class.DoesNotExist:
-            pass
-        else:
+        objects = models.Class.objects.filter(project=data.get('project'))\
+            .filter(Q(name=data.get('name')) |
+                    Q(shortcut=data.get('shortcut')) |
+                    Q(color=data.get('color')))
+        if objects:
             raise serializers.ValidationError('Class with current params already exists.')
 
         return data
 
     def create(self, validated_data):
         del validated_data['tags']
-        c = models.Class(**validated_data)
-        c.save()
+        class_object = models.Class(**validated_data)
+        class_object.save()
         # add tags
         tags = []
         for tag_name in self.initial_data['tags'].split(', '):
-            tag, _ = models.Tag.objects.get_or_create(name=tag_name)
-            tags.append(tag)
-        c.tags = tags
-        c.save()
-        return c
+            if tag_name:
+                tag, _ = models.Tag.objects.get_or_create(name=tag_name)
+                tags.append(tag)
+        class_object.tags = tags
+        class_object.save()
+        return class_object
 
 
 class UploadDataSerializer(serializers.Serializer):

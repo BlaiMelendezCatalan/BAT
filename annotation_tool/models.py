@@ -102,8 +102,7 @@ class Tag(models.Model):
 
     @staticmethod
     def get_tag_names():
-        return ','.join([tag.name for tag in Tag.objects.all()])
-
+        return Tag.objects.values_list('name', flat=True)
 
     def __str__(self):
         return str(self.name)
