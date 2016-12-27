@@ -125,7 +125,9 @@ class Annotations(LoginRequiredMixin, GenericAPIView):
             'Segments': {'route': 'segment__name',
                          'name': 'segment'},
             'Users': {'route': 'user__username',
-                      'name': 'user'}
+                      'name': 'user'},
+            'Status': {'route': 'status',
+                       'name': 'status'}
         }
 
     def get(self, request, *args, **kwargs):
