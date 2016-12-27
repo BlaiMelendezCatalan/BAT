@@ -7,13 +7,12 @@ from django.utils import timezone
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.http import HttpResponseRedirect
-from rest_framework.generics import GenericAPIView
+from rest_framework.generics import GenericAPIView, RetrieveDestroyAPIView, DestroyAPIView
 from rest_framework.parsers import FileUploadParser, MultiPartParser
 from rest_framework.renderers import TemplateHTMLRenderer
 from rest_framework.response import Response
 
-from annotation_tool.models import Project, Wav, Segment, Annotation, Event, Class, Tag
-from django.contrib.auth.models import User
+from annotation_tool import models
 
 from annotation_tool.serializers import ProjectSerializer, ClassSerializer, UploadDataSerializer, LoginSerializer, \
     UserRegistrationSerializer
@@ -34,21 +33,26 @@ class Projects(LoginRequiredMixin, GenericAPIView):
     renderer_classes = [TemplateHTMLRenderer]
     template_name = 'annotation_tool/projects.html'
     serializer_class = ProjectSerializer
-    queryset = Project.objects.all()
+    queryset = models.Project.objects.all()
 
     def get(self, request, *args, **kwargs):
         return Response({'query_data': self.get_queryset(),
-                         'serializer': self.get_serializer()})
+                         'serializer': self.get_serializer(),
+                         'errors': None})
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
-            utils.create_project(
-                name=serializer.data['project_name'],
-                creation_date=timezone.now()
-            )
+            serializer.save()
             return HttpResponseRedirect('./')
-        return Response({'query_data': self.get_queryset(), 'serializer': serializer})
+        return Response({'query_data': self.get_queryset(),
+                         'serializer': serializer,
+                         'errors': serializer.errors})
+
+
+class Project(LoginRequiredMixin, DestroyAPIView):
+    queryset = models.Project.objects.all()
+    lookup_field = 'id'
 
 
 class Wavs(LoginRequiredMixin, GenericAPIView):
@@ -62,7 +66,7 @@ class Wavs(LoginRequiredMixin, GenericAPIView):
         # Define filters, extract possibles values and store selections
         context = {'filters': self._filters()}
         for v in context['filters'].values():
-            v['available'] = Wav.objects.values_list(v['route'], flat=True) \
+            v['available'] = models.Wav.objects.values_list(v['route'], flat=True) \
                 .order_by(v['route']).distinct()
         selected_values = {}
         for v in context['filters'].values():
@@ -70,7 +74,7 @@ class Wavs(LoginRequiredMixin, GenericAPIView):
             if v['selected']:
                 selected_values[v['route']] = v['selected']
 
-        context['query_data'] = Wav.objects.filter(**selected_values) \
+        context['query_data'] = models.Wav.objects.filter(**selected_values) \
             .order_by('-id')
         return Response(context)
 
@@ -91,7 +95,7 @@ class Segments(LoginRequiredMixin, GenericAPIView):
         # Define filters, extract possibles values and store selections
         context = {'filters': self._filters()}
         for v in context['filters'].values():
-            v['available'] = Segment.objects.values_list(v['route'], flat=True) \
+            v['available'] = models.Segment.objects.values_list(v['route'], flat=True) \
                 .order_by(v['route']).distinct()
         selected_values = {}
         for v in context['filters'].values():
@@ -99,7 +103,7 @@ class Segments(LoginRequiredMixin, GenericAPIView):
             if v['selected']:
                 selected_values[v['route']] = v['selected']
 
-        context['query_data'] = Segment.objects.filter(**selected_values) \
+        context['query_data'] = models.Segment.objects.filter(**selected_values) \
             .order_by('-id')
         return Response(context)
 
@@ -124,7 +128,7 @@ class Annotations(LoginRequiredMixin, GenericAPIView):
         # Define filters, extract possibles values and store selections
         context = {'filters': self._filters()}
         for v in context['filters'].values():
-            v['available'] = Annotation.objects.values_list(v['route'], flat=True) \
+            v['available'] = models.Annotation.objects.values_list(v['route'], flat=True) \
                 .order_by(v['route']).distinct()
         selected_values = {}
         for v in context['filters'].values():
@@ -132,7 +136,7 @@ class Annotations(LoginRequiredMixin, GenericAPIView):
             if v['selected']:
                 selected_values[v['route']] = v['selected']
 
-        context['query_data'] = Annotation.objects.filter(**selected_values) \
+        context['query_data'] = models.Annotation.objects.filter(**selected_values) \
             .order_by('-id')
         return Response(context)
 
@@ -159,7 +163,7 @@ class Events(LoginRequiredMixin, GenericAPIView):
         # Define filters, extract possibles values and store selections
         context = {'filters': self._filters()}
         for v in context['filters'].values():
-            v['available'] = Event.objects.values_list(v['route'], flat=True) \
+            v['available'] = models.Event.objects.values_list(v['route'], flat=True) \
                 .order_by(v['route']).distinct()
         selected_values = {}
         for v in context['filters'].values():
@@ -167,7 +171,7 @@ class Events(LoginRequiredMixin, GenericAPIView):
             if v['selected']:
                 selected_values[v['route']] = v['selected']
 
-        context['query_data'] = Event.objects.filter(**selected_values) \
+        context['query_data'] = models.Event.objects.filter(**selected_values) \
             .order_by('-id')
         return Response(context)
 
@@ -176,7 +180,7 @@ class Classes(LoginRequiredMixin, GenericAPIView):
     renderer_classes = [TemplateHTMLRenderer]
     template_name = 'annotation_tool/classes.html'
     serializer_class = ClassSerializer
-    queryset = Class.objects.all()
+    queryset = models.Class.objects.all()
 
     def get(self, request, *args, **kwargs):
         return Response({'query_data': self.get_queryset(),
@@ -262,7 +266,7 @@ class UploadFileView(LoginRequiredMixin, GenericAPIView):
         files = request.FILES.getlist('upload_file_field')
 
         if serializer.is_valid():
-            project = Project.objects.get(pk=project_id)
+            project = models.Project.objects.get(pk=project_id)
             for f in files:
                 w = utils.create_wav(project=project, file=f, name=f.name, upload_date=timezone.now())
                 duration = utils.get_wav_duration(w)
@@ -285,7 +289,7 @@ def new_annotation(request):
                      'name': 'project'},
     }
     for v in context['filters'].values():
-        v['available'] = Project.objects.values_list(v['route'], flat=True) \
+        v['available'] = models.Project.objects.values_list(v['route'], flat=True) \
             .order_by(v['route']).distinct()
     selected_values = {}
     for v in context['filters'].values():
@@ -293,7 +297,7 @@ def new_annotation(request):
         if v['selected']:
             selected_values[v['route']] = v['selected']
 
-    context['query_data'] = Project.objects.filter(**selected_values) \
+    context['query_data'] = models.Project.objects.filter(**selected_values) \
                                             .order_by('-id')
 
     if v['selected'] == '':
@@ -301,7 +305,7 @@ def new_annotation(request):
     else:
         segment = utils.pick_segment_to_annotate(request.GET['project'], request.user.id)
         context['annotation'] = utils.create_annotation(segment, request.user)
-        context['classes'] = Class.objects.values_list('name', 'color', 'shortcut')
+        context['classes'] = models.Class.objects.values_list('name', 'color', 'shortcut')
         context['class_dict'] = json.dumps(list(context['classes']), cls=DjangoJSONEncoder)
         utils.delete_tmp_files()
         context['tmp_segment_path'] = utils.create_tmp_file(segment)
@@ -329,7 +333,7 @@ class MyAnnotations(LoginRequiredMixin, GenericAPIView):
         # Define filters, extract possibles values and store selections
         context = {'filters': self._filters()}
         for v in context['filters'].values():
-            v['available'] = Annotation.objects.values_list(v['route'], flat=True) \
+            v['available'] = models.Annotation.objects.values_list(v['route'], flat=True) \
                 .order_by(v['route']).distinct()
         selected_values = {}
         for v in context['filters'].values():
@@ -338,7 +342,7 @@ class MyAnnotations(LoginRequiredMixin, GenericAPIView):
                 selected_values[v['route']] = v['selected']
         selected_values['user__id'] = request.user.id
 
-        context['query_data'] = Annotation.objects.filter(**selected_values) \
+        context['query_data'] = models.Annotation.objects.filter(**selected_values) \
             .order_by('-id')
 
         return Response(context)
@@ -353,7 +357,7 @@ def resume_annotation(request):
                         'name': 'annotation'},
     }
     for v in context['filters'].values():
-        v['available'] = Annotation.objects.values_list(v['route'], flat=True) \
+        v['available'] = models.Annotation.objects.values_list(v['route'], flat=True) \
             .order_by(v['route']).distinct()
     selected_values = {}
     for v in context['filters'].values():
@@ -362,16 +366,16 @@ def resume_annotation(request):
             selected_values[v['route']] = v['selected']
     selected_values['status'] = "unfinished"
 
-    context['query_data'] = Annotation.objects.filter(**selected_values) \
+    context['query_data'] = models.Annotation.objects.filter(**selected_values) \
                                             .order_by('-id')
 
     if v['selected'] == '':
         return render(request, 'annotation_tool/resume_annotation.html', context)
     else:
-        context['annotation'] = Annotation.objects.get(name=request.GET['annotation'])
-        context['events'] = Event.objects.filter(annotation=context['annotation'])
+        context['annotation'] = models.Annotation.objects.get(name=request.GET['annotation'])
+        context['events'] = models.Event.objects.filter(annotation=context['annotation'])
         segment = context['annotation'].segment
-        context['classes'] = Class.objects.values_list('name', 'color', 'shortcut')
+        context['classes'] = models.Class.objects.values_list('name', 'color', 'shortcut')
         context['class_dict'] = json.dumps(list(context['classes']), cls=DjangoJSONEncoder)
         utils.delete_tmp_files()
         context['tmp_segment_path'] = utils.create_tmp_file(segment)
@@ -383,11 +387,11 @@ def submit_annotation(request):
     context = {}
     # Set annotation to finished
     data = json.loads(request.POST.get('data'))
-    annotation = Annotation.objects.get(name=data['annotation'])
+    annotation = models.Annotation.objects.get(name=data['annotation'])
     annotation.status = "finished"
     annotation.save()
-    project = Project.objects.get(name=annotation.segment.wav.project.name)
-    submitted_segment = Segment.objects.get(name=annotation.segment.name)
+    project = models.Project.objects.get(name=annotation.segment.wav.project.name)
+    submitted_segment = models.Segment.objects.get(name=annotation.segment.name)
     # Compute new priority values
     utils.modify_segment_priority(submitted_segment)
     # Create next annotation
@@ -404,16 +408,16 @@ def submit_annotation(request):
 def create_event(request):
     print("create_event")
     region_data = json.loads(request.POST.get('region_data'))
-    annotation = Annotation.objects.get(name=region_data['annotation'])
-    event = Event(annotation=annotation)
+    annotation = models.Annotation.objects.get(name=region_data['annotation'])
+    event = models.Event(annotation=annotation)
     event.color = region_data['color']
     event.start_time = region_data['start_time']
     event.end_time = region_data['end_time']
     if region_data['event_class'] != "None":
-        event_class = Class.objects.get(name=region_data['event_class'])
+        event_class = models.Class.objects.get(name=region_data['event_class'])
         event.event_class = event_class
     for t in region_data['tags']:
-        tag = Tag.objects.get_or_create(name=t)
+        tag = models.Tag.objects.get_or_create(name=t)
         event.tags.add(tag[0])
     event.save()
 
@@ -425,10 +429,10 @@ def update_end_event(request):
     region_data = json.loads(request.POST.get('region_data'))
 
     if 'event_id' in region_data.keys():
-        event = Event.objects.get(id=region_data['event_id'])
+        event = models.Event.objects.get(id=region_data['event_id'])
     else:
-        annotation = Annotation.objects.get(name=region_data['annotation'])
-        event = Event(annotation=annotation)
+        annotation = models.Annotation.objects.get(name=region_data['annotation'])
+        event = models.Event(annotation=annotation)
         event.color = region_data['color']
         
     event.start_time = region_data['start_time']
@@ -441,14 +445,14 @@ def update_end_event(request):
 def update_event(request):
     print("update_event")
     region_data = json.loads(request.POST.get('region_data'))
-    event = Event.objects.get(id=region_data['event_id'])
+    event = models.Event.objects.get(id=region_data['event_id'])
 
     for t in region_data['tags']:
-        tag = Tag.objects.get_or_create(name=t)
+        tag = models.Tag.objects.get_or_create(name=t)
         event.tags.add(tag[0])
 
     if region_data['event_class'] != "None":
-        event_class = Class.objects.get(name=region_data['event_class'])
+        event_class = models.Class.objects.get(name=region_data['event_class'])
         event.event_class = event_class
         event.color = region_data['color']
 
@@ -465,7 +469,7 @@ def remove_event(request):
     print("remove_event")
     region_data = json.loads(request.POST.get('region_data'))
 
-    event = Event.objects.get(id=region_data['event_id'])
+    event = models.Event.objects.get(id=region_data['event_id'])
     print region_data['event_id']
     event.delete()
 
