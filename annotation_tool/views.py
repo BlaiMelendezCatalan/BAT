@@ -43,10 +43,7 @@ class Projects(LoginRequiredMixin, GenericAPIView):
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
-            utils.create_project(
-                name=serializer.data['project_name'],
-                creation_date=timezone.now()
-            )
+            serializer.save()
             return HttpResponseRedirect('./')
         return Response({'query_data': self.get_queryset(),
                          'serializer': serializer,

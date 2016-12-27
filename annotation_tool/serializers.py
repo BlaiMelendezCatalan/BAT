@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
+from django.utils import timezone
 
 from annotation_tool.models import Project
 
@@ -7,6 +8,13 @@ from annotation_tool.models import Project
 class ProjectSerializer(serializers.Serializer):
     project_name = serializers.CharField(label='Project name', max_length=50)
     overlap = serializers.BooleanField(label='Allow class overlap in this project', default=False)
+
+    def create(self, validated_data):
+        project = Project(name=validated_data['project_name'],
+                          overlap=validated_data['overlap'],
+                          creation_date=timezone.now())
+        project.save()
+        return project
 
 
 class ClassSerializer(serializers.Serializer):
