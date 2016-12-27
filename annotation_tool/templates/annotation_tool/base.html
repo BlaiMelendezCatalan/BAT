@@ -6,9 +6,10 @@
 <title>Annotation Tool - {% block title %}{% endblock %}</title>
 <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
 <link rel="stylesheet" href="{% static 'css/style.css' %}">
-
 <script src="{% static 'js/jquery-3.1.1.min.js' %}"></script>
 <script src="{% static 'js/bootstrap.min.js' %}"></script>
+{% block extra_css %}{% endblock %}
+{% block extra_js %}{% endblock %}
 <script src="{% static 'js/project.js' %}"></script>
 </head>
 <body>

@@ -12,6 +12,8 @@ services:
       - postgres_backup_dev:/backups
     environment:
       - POSTGRES_USER=musicspeach_annotation
+    ports:
+      - "5432:5432"
 
   django:
     build:
