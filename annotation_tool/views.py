@@ -148,7 +148,7 @@ class Annotations(LoginRequiredMixin, GenericAPIView):
 
 
 class Annotation(LoginRequiredMixin, DestroyAPIView):
-    queryset = models.Project.objects.all()
+    queryset = models.Annotation.objects.all()
     lookup_field = 'id'
 
 
