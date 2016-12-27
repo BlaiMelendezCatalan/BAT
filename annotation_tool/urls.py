@@ -5,6 +5,7 @@ from . import views
 urlpatterns = [
     url(r'^$', views.index, name='index'),
     url(r'^projects/$', views.Projects.as_view(), name='projects'),
+    url(r'^project/(?P<id>\d+)/$', views.Project.as_view(), name='project'),
     url(r'^wavs/$', views.Wavs.as_view(), name='wavs'),
     url(r'^segments/$', views.Segments.as_view(), name='segments'),
     url(r'^annotations/$', views.Annotations.as_view(), name='annotations'),
