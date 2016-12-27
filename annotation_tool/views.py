@@ -114,6 +114,7 @@ class Segments(LoginRequiredMixin, GenericAPIView):
 class Annotations(LoginRequiredMixin, GenericAPIView):
     renderer_classes = [TemplateHTMLRenderer]
     template_name = 'annotation_tool/annotations.html'
+    queryset = models.Annotation.objects.all()
 
     def _filters(self):
         return {
@@ -139,7 +140,7 @@ class Annotations(LoginRequiredMixin, GenericAPIView):
             if v['selected']:
                 selected_values[v['route']] = v['selected']
 
-        context['query_data'] = models.Annotation.objects.filter(**selected_values) \
+        context['query_data'] = self.get_queryset().filter(**selected_values) \
             .order_by('-id')
         return Response(context)
 
