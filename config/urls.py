@@ -23,10 +23,6 @@ from django.views import defaults as default_views
 urlpatterns = [
     url(r'^annotation_tool/', include('annotation_tool.urls')),
     url(r'^admin/', admin.site.urls),
-    url(r'^media/(?P<path>.*)$', serve,
-        {'document_root': settings.BASE_DIR,
-         'show_indexes': True},
-        name='media'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 if settings.DEBUG:

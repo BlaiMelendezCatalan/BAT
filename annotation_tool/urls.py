@@ -9,6 +9,7 @@ urlpatterns = [
     url(r'^wavs/$', views.Wavs.as_view(), name='wavs'),
     url(r'^segments/$', views.Segments.as_view(), name='segments'),
     url(r'^annotations/$', views.Annotations.as_view(), name='annotations'),
+    url(r'^annotation/(?P<id>\d+)/$', views.Annotation.as_view(), name='annotation'),
     url(r'^events/$', views.Events.as_view(), name='events'),
     url(r'^classes/$', views.Classes.as_view(), name='classes'),
     url(r'^class/(?P<id>\d+)/$', views.Class.as_view(), name='class'),

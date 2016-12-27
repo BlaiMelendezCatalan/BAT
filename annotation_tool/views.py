@@ -147,6 +147,11 @@ class Annotations(LoginRequiredMixin, GenericAPIView):
         return Response(context)
 
 
+class Annotation(LoginRequiredMixin, DestroyAPIView):
+    queryset = models.Project.objects.all()
+    lookup_field = 'id'
+
+
 class Events(LoginRequiredMixin, GenericAPIView):
     renderer_classes = [TemplateHTMLRenderer]
     template_name = 'annotation_tool/events.html'
