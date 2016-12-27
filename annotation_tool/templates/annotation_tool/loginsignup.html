@@ -1,5 +1,6 @@
 {% spaceless %}
 {% load staticfiles %}
+{% load rest_framework %}
 
 <html>
 <head>
@@ -18,12 +19,22 @@
 
 <form action="" method="post">
     {% csrf_token %}
-    {{ form_login }}
+    {% render_form login_serializer %}
+    {% if login_error %}
+      <div class="alert alert-danger">
+        {{ login_error }}
+      </div>
+    {% endif %}
     <input type="submit" name="login" value="Log in" />
 </form>
 
 <form action="" method="post">
     {% csrf_token %}
-    {{ form_signup }}
+    {% render_form signup_serializer %}
+    {% if signup_error %}
+      <div class="alert alert-danger">
+        {{ signup_error }}
+      </div>
+    {% endif %}
     <input type="submit" name="signup" value="Sign up" />
 </form>
