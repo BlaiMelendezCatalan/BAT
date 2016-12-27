@@ -21,6 +21,9 @@ class Class(models.Model):
     color = models.CharField(max_length=50)
     shortcut = models.CharField(max_length=1)
 
+    class Meta:
+        unique_together = (('project', 'name'), ('project', 'color'), ('project', 'shortcut'))
+
     def __str__(self):
         return str(self.name)
 
@@ -99,6 +102,10 @@ class Region(models.Model):
 
 class Tag(models.Model):
     name = models.CharField(unique=True, max_length=50)
+
+    @staticmethod
+    def get_tag_names():
+        return Tag.objects.values_list('name', flat=True)
 
     def __str__(self):
         return str(self.name)
