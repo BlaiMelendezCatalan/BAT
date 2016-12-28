@@ -47,6 +47,7 @@
         <tr>
           <th>ID</th>
           <th>Project name</th>
+          <th>Overlap</th>
           <th>Creation date</th>
           <th>Delete</th>
         </tr>
@@ -54,6 +55,7 @@
           <tr>
             <td>{{ project.id }}</td>
             <td>{{ project.name }}</td>
+            <td>{% if project.overlap %}Yes{% else %}No{% endif %}</td>
             <td>{{ project.creation_date }}</td>
             <td>
               <button data-delete-url="{% url 'project' project.id %}" class="btn btn-danger delete-item"
