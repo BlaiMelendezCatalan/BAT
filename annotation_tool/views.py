@@ -216,11 +216,20 @@ class LoginSignup(GenericAPIView):
     renderer_classes = [TemplateHTMLRenderer]
     template_name = 'annotation_tool/loginsignup.html'
 
+    def redirect_after_login(self, user):
+        path = '../projects' if user.is_superuser else '../new_annotation'
+        return HttpResponseRedirect(path)
+
     def get(self, request, *args, **kwargs):
+        if request.user.is_authenticated():
+            return self.redirect_after_login(request.user)
         return Response({'login_serializer': LoginSerializer(),
-                         'signup_serializer': UserRegistrationSerializer()})
+                         'signup_serializer': UserRegistrationSerializer(),
+                         'login_tab': True})
 
     def post(self, request, *args, **kwargs):
+        if request.user.is_authenticated():
+            return self.redirect_after_login(request.user)
         username = request.data.get('username')
 
         if 'login' in request.POST:
@@ -228,7 +237,8 @@ class LoginSignup(GenericAPIView):
             serializer = LoginSerializer(data=request.data)
             user = authenticate(username=username, password=password)
             context = {'login_serializer': serializer,
-                       'signup_serializer': UserRegistrationSerializer()}
+                       'signup_serializer': UserRegistrationSerializer(),
+                       'login_tab': True}
             if serializer.is_valid():
                 if user:
                     login(request, user)
@@ -237,19 +247,17 @@ class LoginSignup(GenericAPIView):
                     return Response(context)
             else:
                 return Response(context)
-            if user.is_superuser:
-                return HttpResponseRedirect('../projects')
-            else:
-                return HttpResponseRedirect('../new_annotation')
+            return self.redirect_after_login(user)
 
         elif 'signup' in request.POST:
             serializer = UserRegistrationSerializer(data=request.data)
             context = {'login_serializer': LoginSerializer(),
-                       'signup_serializer': serializer}
+                       'signup_serializer': serializer,
+                       'signup_tab': True}
             if serializer.is_valid():
                 u = serializer.save()
                 utils.set_user_permissions(u)
-                return HttpResponseRedirect('../new_annotation')
+                return self.redirect_after_login(u)
             if 'non_field_errors' in serializer.errors:
                 context['signup_error'] = serializer.errors['non_field_errors'][0]
             return Response(context)
