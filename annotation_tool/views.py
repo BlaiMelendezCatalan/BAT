@@ -55,7 +55,7 @@ class Project(LoginRequiredMixin, DestroyAPIView):
     lookup_field = 'id'
 
 
-class Wavs(LoginRequiredMixin, GenericAPIView):
+class WavsView(LoginRequiredMixin, GenericAPIView):
     renderer_classes = [TemplateHTMLRenderer]
     template_name = 'annotation_tool/wavs.html'
 
@@ -79,7 +79,12 @@ class Wavs(LoginRequiredMixin, GenericAPIView):
         return Response(context)
 
 
-class Segments(LoginRequiredMixin, GenericAPIView):
+class WavView(LoginRequiredMixin, DestroyAPIView):
+    queryset = models.Wav.objects.all()
+    lookup_field = 'id'
+
+
+class SegmentsView(LoginRequiredMixin, GenericAPIView):
     renderer_classes = [TemplateHTMLRenderer]
     template_name = 'annotation_tool/segments.html'
 
@@ -106,6 +111,11 @@ class Segments(LoginRequiredMixin, GenericAPIView):
         context['query_data'] = models.Segment.objects.filter(**selected_values) \
             .order_by('-id')
         return Response(context)
+
+
+class SegmentView(LoginRequiredMixin, DestroyAPIView):
+    queryset = models.Segment.objects.all()
+    lookup_field = 'id'
 
 
 class Annotations(LoginRequiredMixin, GenericAPIView):
@@ -149,7 +159,7 @@ class Annotation(LoginRequiredMixin, DestroyAPIView):
     lookup_field = 'id'
 
 
-class Events(LoginRequiredMixin, GenericAPIView):
+class EventsView(LoginRequiredMixin, GenericAPIView):
     renderer_classes = [TemplateHTMLRenderer]
     template_name = 'annotation_tool/events.html'
 
@@ -182,6 +192,11 @@ class Events(LoginRequiredMixin, GenericAPIView):
         context['query_data'] = models.Event.objects.filter(**selected_values) \
             .order_by('-id')
         return Response(context)
+
+
+class EventView(LoginRequiredMixin, DestroyAPIView):
+    queryset = models.Event.objects.all()
+    lookup_field = 'id'
 
 
 class ClassesView(LoginRequiredMixin, GenericAPIView):
