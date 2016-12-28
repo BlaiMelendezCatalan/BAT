@@ -36,6 +36,7 @@
 	<th>Project name</th>
 	<th>Annotation date</th>
 	<th>Status</th>
+  <th></th>
 	</tr>
 	{% for annotation in query_data %}
 		<tr>
@@ -49,6 +50,9 @@
 		<td>{{ annotation.segment.wav.project.name }}</td>
 		<td>{{ annotation.annotation_date }}</td>
 		<td>{{ annotation.status }}</td>
+    <td><button data-delete-url="{% url 'annotation' annotation.id %}" class="btn btn-danger delete-item"
+                    data-toggle="modal" data-target="#delete-modal">Delete
+            </button></td>
 		</tr>
 	{% endfor %}
     </table>
@@ -56,4 +60,5 @@
 {% else %}
 	<p>No data is available.</p>
 {% endif %}
+  {% include 'annotation_tool/_modal_delete.html' with text='Are you sure you want to delete this annotation?' %}
 {% endblock %}

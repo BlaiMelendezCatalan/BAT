@@ -1,8 +1,10 @@
 from __future__ import unicode_literals
 
+import os
+
 from django.db import models
 from django.contrib.auth.models import User
-from config.settings.common import BASE_DIR
+from django.utils.text import slugify
 
 
 class Project(models.Model):
@@ -32,9 +34,12 @@ class Class(models.Model):
 
 
 class Wav(models.Model):
+    def get_file_path(self, filename):
+        return os.path.join('uploaded_wavs', '%s' % slugify(self.project.name), filename)
+
     project = models.ForeignKey('Project', on_delete=models.CASCADE)
     file = models.FileField(
-        upload_to=BASE_DIR + "/django_test/",
+        upload_to=get_file_path,
         max_length=500)
     name = models.CharField(max_length=100)
     upload_date = models.DateTimeField('upload date')
@@ -55,11 +60,17 @@ class Segment(models.Model):
 
 
 class Annotation(models.Model):
+    FINISHED = 'finished'
+    UNFINISHED = 'unfinished'
+    STATUS_CHOICES = (
+        (FINISHED, FINISHED),
+        (UNFINISHED, UNFINISHED)
+    )
     segment = models.ForeignKey('Segment', on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=100)
     annotation_date = models.DateTimeField('annotation date')
-    status = models.CharField(max_length=10, default="unfinished")
+    status = models.CharField(max_length=10, default=UNFINISHED, choices=STATUS_CHOICES)
 
     class Meta:
         unique_together = ("segment", "user")

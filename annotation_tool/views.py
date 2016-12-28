@@ -111,6 +111,7 @@ class Segments(LoginRequiredMixin, GenericAPIView):
 class Annotations(LoginRequiredMixin, GenericAPIView):
     renderer_classes = [TemplateHTMLRenderer]
     template_name = 'annotation_tool/annotations.html'
+    queryset = models.Annotation.objects.all()
 
     def _filters(self):
         return {
@@ -121,7 +122,9 @@ class Annotations(LoginRequiredMixin, GenericAPIView):
             'Segments': {'route': 'segment__name',
                          'name': 'segment'},
             'Users': {'route': 'user__username',
-                      'name': 'user'}
+                      'name': 'user'},
+            'Status': {'route': 'status',
+                       'name': 'status'}
         }
 
     def get(self, request, *args, **kwargs):
@@ -136,9 +139,14 @@ class Annotations(LoginRequiredMixin, GenericAPIView):
             if v['selected']:
                 selected_values[v['route']] = v['selected']
 
-        context['query_data'] = models.Annotation.objects.filter(**selected_values) \
+        context['query_data'] = self.get_queryset().filter(**selected_values) \
             .order_by('-id')
         return Response(context)
+
+
+class Annotation(LoginRequiredMixin, DestroyAPIView):
+    queryset = models.Annotation.objects.all()
+    lookup_field = 'id'
 
 
 class Events(LoginRequiredMixin, GenericAPIView):
