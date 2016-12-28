@@ -57,17 +57,17 @@ class Segment(models.Model):
 
 
 class Annotation(models.Model):
-    FINISHED_STATUS = 'finished'
-    UNFINISHED_STATUS = 'unfinished'
+    FINISHED = 'finished'
+    UNFINISHED = 'unfinished'
     STATUS_CHOICES = (
-        (FINISHED_STATUS, FINISHED_STATUS),
-        (UNFINISHED_STATUS, UNFINISHED_STATUS)
+        (FINISHED, FINISHED),
+        (UNFINISHED, UNFINISHED)
     )
     segment = models.ForeignKey('Segment', on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=100)
     annotation_date = models.DateTimeField('annotation date')
-    status = models.CharField(max_length=10, default=UNFINISHED_STATUS, choices=STATUS_CHOICES)
+    status = models.CharField(max_length=10, default=UNFINISHED, choices=STATUS_CHOICES)
 
     class Meta:
         unique_together = ("segment", "user")
