@@ -13,7 +13,6 @@ from rest_framework.renderers import TemplateHTMLRenderer
 from rest_framework.response import Response
 
 from annotation_tool import models
-from annotation_tool.mixins import SuperuserRequiredMixin
 
 from annotation_tool.serializers import ProjectSerializer, ClassSerializer, UploadDataSerializer, LoginSerializer, \
     UserRegistrationSerializer
@@ -30,7 +29,7 @@ def index(request):
     return HttpResponse("Hello, world. You're at the annotation tool index.")
 
 
-class Projects(SuperuserRequiredMixin, GenericAPIView):
+class Projects(LoginRequiredMixin, GenericAPIView):
     renderer_classes = [TemplateHTMLRenderer]
     template_name = 'annotation_tool/projects.html'
     serializer_class = ProjectSerializer
@@ -51,12 +50,12 @@ class Projects(SuperuserRequiredMixin, GenericAPIView):
                          'errors': serializer.errors})
 
 
-class Project(SuperuserRequiredMixin, DestroyAPIView):
+class Project(LoginRequiredMixin, DestroyAPIView):
     queryset = models.Project.objects.all()
     lookup_field = 'id'
 
 
-class Wavs(SuperuserRequiredMixin, GenericAPIView):
+class WavsView(LoginRequiredMixin, GenericAPIView):
     renderer_classes = [TemplateHTMLRenderer]
     template_name = 'annotation_tool/wavs.html'
 
@@ -80,7 +79,12 @@ class Wavs(SuperuserRequiredMixin, GenericAPIView):
         return Response(context)
 
 
-class Segments(SuperuserRequiredMixin, GenericAPIView):
+class WavView(LoginRequiredMixin, DestroyAPIView):
+    queryset = models.Wav.objects.all()
+    lookup_field = 'id'
+
+
+class SegmentsView(LoginRequiredMixin, GenericAPIView):
     renderer_classes = [TemplateHTMLRenderer]
     template_name = 'annotation_tool/segments.html'
 
@@ -109,7 +113,12 @@ class Segments(SuperuserRequiredMixin, GenericAPIView):
         return Response(context)
 
 
-class Annotations(SuperuserRequiredMixin, GenericAPIView):
+class SegmentView(LoginRequiredMixin, DestroyAPIView):
+    queryset = models.Segment.objects.all()
+    lookup_field = 'id'
+
+
+class Annotations(LoginRequiredMixin, GenericAPIView):
     renderer_classes = [TemplateHTMLRenderer]
     template_name = 'annotation_tool/annotations.html'
     queryset = models.Annotation.objects.all()
@@ -145,12 +154,12 @@ class Annotations(SuperuserRequiredMixin, GenericAPIView):
         return Response(context)
 
 
-class Annotation(SuperuserRequiredMixin, DestroyAPIView):
+class Annotation(LoginRequiredMixin, DestroyAPIView):
     queryset = models.Annotation.objects.all()
     lookup_field = 'id'
 
 
-class Events(SuperuserRequiredMixin, GenericAPIView):
+class EventsView(LoginRequiredMixin, GenericAPIView):
     renderer_classes = [TemplateHTMLRenderer]
     template_name = 'annotation_tool/events.html'
 
@@ -185,7 +194,12 @@ class Events(SuperuserRequiredMixin, GenericAPIView):
         return Response(context)
 
 
-class ClassesView(SuperuserRequiredMixin, GenericAPIView):
+class EventView(LoginRequiredMixin, DestroyAPIView):
+    queryset = models.Event.objects.all()
+    lookup_field = 'id'
+
+
+class ClassesView(LoginRequiredMixin, GenericAPIView):
     renderer_classes = [TemplateHTMLRenderer]
     template_name = 'annotation_tool/classes.html'
     serializer_class = ClassSerializer
@@ -208,7 +222,7 @@ class ClassesView(SuperuserRequiredMixin, GenericAPIView):
                          'errors': serializer.errors})
 
 
-class ClassView(SuperuserRequiredMixin, DestroyAPIView):
+class ClassView(LoginRequiredMixin, DestroyAPIView):
     queryset = models.Class.objects.all()
     lookup_field = 'id'
 
@@ -272,7 +286,7 @@ class LoginSignup(GenericAPIView):
             return Response(context)
 
 
-class UploadFileView(SuperuserRequiredMixin, GenericAPIView):
+class UploadFileView(LoginRequiredMixin, GenericAPIView):
     serializer_class = UploadDataSerializer
     renderer_classes = [TemplateHTMLRenderer]
     template_name = 'annotation_tool/upload_data.html'
