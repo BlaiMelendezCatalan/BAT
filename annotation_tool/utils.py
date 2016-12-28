@@ -11,7 +11,7 @@ import django.core.exceptions as e
 from annotation_tool.models import Project, Wav, Segment, Annotation, Event, Tag, Class
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
-from config.settings.common import BASE_DIR
+from config.settings.common import BASE_DIR, MEDIA_ROOT
 
 
 def create_project(name, creation_date):
@@ -142,7 +142,7 @@ def delete_tmp_files():
 
 def create_tmp_file(segment):
     os.mkdir(BASE_DIR + '/tmp/')
-    input_file = segment.wav.file.name
+    input_file = os.path.join(MEDIA_ROOT, segment.wav.file.name)
     output_file = 'tmp/' + input_file.split('/')[-1]
     wav_file = read(input_file, 'r')
     sample_rate = wav_file[0]

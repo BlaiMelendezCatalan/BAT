@@ -15,6 +15,7 @@ Including another URLconf
 """
 from django.conf.urls import include, url
 from django.contrib import admin
+from django.views.static import serve
 from django.conf import settings
 from django.conf.urls.static import static
 from django.views import defaults as default_views
@@ -22,6 +23,10 @@ from django.views import defaults as default_views
 urlpatterns = [
     url(r'^annotation_tool/', include('annotation_tool.urls')),
     url(r'^admin/', admin.site.urls),
+    url(r'^tmp/(?P<path>.*)$', serve,
+        {'document_root': settings.BASE_DIR,
+         'show_indexes': True},
+        name='media'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 if settings.DEBUG:
