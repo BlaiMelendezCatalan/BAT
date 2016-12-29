@@ -13,6 +13,7 @@ from rest_framework.renderers import TemplateHTMLRenderer
 from rest_framework.response import Response
 
 from annotation_tool import models
+from annotation_tool.mixins import SuperuserRequiredMixin
 
 from annotation_tool.serializers import ProjectSerializer, ClassSerializer, UploadDataSerializer, LoginSerializer, \
     UserRegistrationSerializer
@@ -29,7 +30,7 @@ def index(request):
     return HttpResponse("Hello, world. You're at the annotation tool index.")
 
 
-class Projects(LoginRequiredMixin, GenericAPIView):
+class Projects(SuperuserRequiredMixin, GenericAPIView):
     renderer_classes = [TemplateHTMLRenderer]
     template_name = 'annotation_tool/projects.html'
     serializer_class = ProjectSerializer
@@ -50,12 +51,12 @@ class Projects(LoginRequiredMixin, GenericAPIView):
                          'errors': serializer.errors})
 
 
-class Project(LoginRequiredMixin, DestroyAPIView):
+class Project(SuperuserRequiredMixin, DestroyAPIView):
     queryset = models.Project.objects.all()
     lookup_field = 'id'
 
 
-class WavsView(LoginRequiredMixin, GenericAPIView):
+class WavsView(SuperuserRequiredMixin, GenericAPIView):
     renderer_classes = [TemplateHTMLRenderer]
     template_name = 'annotation_tool/wavs.html'
 
@@ -79,12 +80,12 @@ class WavsView(LoginRequiredMixin, GenericAPIView):
         return Response(context)
 
 
-class WavView(LoginRequiredMixin, DestroyAPIView):
+class WavView(SuperuserRequiredMixin, DestroyAPIView):
     queryset = models.Wav.objects.all()
     lookup_field = 'id'
 
 
-class SegmentsView(LoginRequiredMixin, GenericAPIView):
+class SegmentsView(SuperuserRequiredMixin, GenericAPIView):
     renderer_classes = [TemplateHTMLRenderer]
     template_name = 'annotation_tool/segments.html'
 
@@ -113,12 +114,12 @@ class SegmentsView(LoginRequiredMixin, GenericAPIView):
         return Response(context)
 
 
-class SegmentView(LoginRequiredMixin, DestroyAPIView):
+class SegmentView(SuperuserRequiredMixin, DestroyAPIView):
     queryset = models.Segment.objects.all()
     lookup_field = 'id'
 
 
-class Annotations(LoginRequiredMixin, GenericAPIView):
+class Annotations(SuperuserRequiredMixin, GenericAPIView):
     renderer_classes = [TemplateHTMLRenderer]
     template_name = 'annotation_tool/annotations.html'
     queryset = models.Annotation.objects.all()
@@ -154,12 +155,12 @@ class Annotations(LoginRequiredMixin, GenericAPIView):
         return Response(context)
 
 
-class Annotation(LoginRequiredMixin, DestroyAPIView):
+class Annotation(SuperuserRequiredMixin, DestroyAPIView):
     queryset = models.Annotation.objects.all()
     lookup_field = 'id'
 
 
-class EventsView(LoginRequiredMixin, GenericAPIView):
+class EventsView(SuperuserRequiredMixin, GenericAPIView):
     renderer_classes = [TemplateHTMLRenderer]
     template_name = 'annotation_tool/events.html'
 
@@ -194,12 +195,12 @@ class EventsView(LoginRequiredMixin, GenericAPIView):
         return Response(context)
 
 
-class EventView(LoginRequiredMixin, DestroyAPIView):
+class EventView(SuperuserRequiredMixin, DestroyAPIView):
     queryset = models.Event.objects.all()
     lookup_field = 'id'
 
 
-class ClassesView(LoginRequiredMixin, GenericAPIView):
+class ClassesView(SuperuserRequiredMixin, GenericAPIView):
     renderer_classes = [TemplateHTMLRenderer]
     template_name = 'annotation_tool/classes.html'
     serializer_class = ClassSerializer
@@ -222,7 +223,7 @@ class ClassesView(LoginRequiredMixin, GenericAPIView):
                          'errors': serializer.errors})
 
 
-class ClassView(LoginRequiredMixin, DestroyAPIView):
+class ClassView(SuperuserRequiredMixin, DestroyAPIView):
     queryset = models.Class.objects.all()
     lookup_field = 'id'
 
@@ -286,7 +287,7 @@ class LoginSignup(GenericAPIView):
             return Response(context)
 
 
-class UploadFileView(LoginRequiredMixin, GenericAPIView):
+class UploadFileView(SuperuserRequiredMixin, GenericAPIView):
     serializer_class = UploadDataSerializer
     renderer_classes = [TemplateHTMLRenderer]
     template_name = 'annotation_tool/upload_data.html'
