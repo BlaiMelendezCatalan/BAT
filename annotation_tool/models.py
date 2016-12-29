@@ -4,6 +4,7 @@ import os
 
 from django.db import models
 from django.contrib.auth.models import User
+from django.dispatch import receiver
 from django.utils.text import slugify
 
 
@@ -46,6 +47,16 @@ class Wav(models.Model):
 
     def __str__(self):
         return str(self.name)
+
+
+@receiver(models.signals.post_delete, sender=Wav)
+def auto_delete_file_on_delete(sender, instance, **kwargs):
+    """
+        Deletes file from filesystem
+        when corresponding `Wav` object is deleted.
+    """
+    if instance.file and os.path.isfile(instance.file.path):
+        os.remove(instance.file.path)
 
 
 class Segment(models.Model):
