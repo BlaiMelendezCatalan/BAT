@@ -366,41 +366,6 @@ class MyAnnotations(LoginRequiredMixin, GenericAPIView):
         return Response(context)
 
 
-def resume_annotation(request):
-    context = {}
-
-    # Define filters, extract possibles values and store selections
-    context['filters'] = {
-        'Annotations': {'route': 'name',
-                        'name': 'annotation'},
-    }
-    for v in context['filters'].values():
-        v['available'] = models.Annotation.objects.values_list(v['route'], flat=True) \
-            .order_by(v['route']).distinct()
-    selected_values = {}
-    for v in context['filters'].values():
-        v['selected'] = request.GET.get(v['name'], "")
-        if v['selected']:
-            selected_values[v['route']] = v['selected']
-    selected_values['status'] = "unfinished"
-
-    context['query_data'] = models.Annotation.objects.filter(**selected_values) \
-                                            .order_by('-id')
-
-    if v['selected'] == '':
-        return render(request, 'annotation_tool/resume_annotation.html', context)
-    else:
-        context['annotation'] = models.Annotation.objects.get(name=request.GET['annotation'])
-        context['events'] = models.Event.objects.filter(annotation=context['annotation'])
-        segment = context['annotation'].segment
-        context['classes'] = models.Class.objects.values_list('name', 'color', 'shortcut')
-        context['class_dict'] = json.dumps(list(context['classes']), cls=DjangoJSONEncoder)
-        utils.delete_tmp_files()
-        context['tmp_segment_path'] = utils.create_tmp_file(segment)
-        
-        return render(request, 'annotation_tool/annotation_tool.html', context)
-
-
 def submit_annotation(request):
     context = {}
     # Set annotation to finished

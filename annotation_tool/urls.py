@@ -17,7 +17,6 @@ urlpatterns = [
     url(r'^successful_upload/$', views.successful_upload, name='successful_upload'),
     url(r'^loginsignup/$', views.LoginSignup.as_view(), name='loginsignup'),
     url(r'^new_annotation/$', views.new_annotation, name='new_annotation'),
-    url(r'^resume_annotation/$', views.resume_annotation, name='resume_annotation'),
     url(r'^my_annotations/$', views.MyAnnotations.as_view(), name='my_annotations'),
     url(r'^create_event/$', views.create_event, name='create_event'),
     url(r'^update_event/$', views.update_event, name='update_event'),
