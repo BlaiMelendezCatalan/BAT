@@ -6,48 +6,55 @@
 
 {% block body_block %}
 
-{% if query_data %}
+  {% if query_data %}
     <form id='filterParams' class="form-inline">
-    {% for filter, values in filters.items %}
+      {% for filter, values in filters.items %}
         <label style="padding-left: 10px; padding-right: 5px;">{{ filter }}</label>
-        <select class="form-control" name="{{ values.name }}"  onchange="this.form.submit()" style="width: auto;">
-            <option value=""></option>
-        {% for choice in values.available %}
+        <select class="form-control" name="{{ values.name }}" onchange="this.form.submit()" style="width: auto;">
+          <option value=""></option>
+          {% for choice in values.available %}
             {% if choice == values.selected %}
-            	<option value="{{ choice }}" selected>{{ choice }}</option>
-	    	{% elif choice == None %}
+              <option value="{{ choice }}" selected>{{ choice }}</option>
+            {% elif choice == None %}
             {% else %}
-            	<option value="{{ choice }}">{{ choice }}</option>
+              <option value="{{ choice }}">{{ choice }}</option>
             {% endif %}
-        {% endfor %}
+          {% endfor %}
         </select>
-    {% endfor %}
+      {% endfor %}
     </form>
 
-	<table class="table table-striped table-bordered sortable" style="width: auto;">
-	<tr>
-	<th>ID</th>
-	<th>Segment name</th>
-	<th>Start time</th>
-	<th>End time</th>
-	<th>Wav name</th>
-	<th>Project name</th>
-	<th>Priority</th>
-	</tr>
-	{% for segment in query_data %}
-		<tr>
-		<td>{{ segment.id }}</td>
-		<td>{{ segment.name }}</td>
-		<td>{{ segment.start_time }}</td>
-		<td>{{ segment.end_time }}</td>
-		<td>{{ segment.wav.name }}</td>
-		<td>{{ segment.wav.project.name }}</td>
-		<td>{{ segment.priority }}</td>
-		</tr>
-	{% endfor %}
+    <table class="table table-striped table-bordered sortable" style="width: auto;">
+      <tr>
+        <th>ID</th>
+        <th>Segment name</th>
+        <th>Start time</th>
+        <th>End time</th>
+        <th>Wav name</th>
+        <th>Project name</th>
+        <th>Priority</th>
+        <th></th>
+      </tr>
+      {% for segment in query_data %}
+        <tr>
+          <td>{{ segment.id }}</td>
+          <td>{{ segment.name }}</td>
+          <td>{{ segment.start_time }}</td>
+          <td>{{ segment.end_time }}</td>
+          <td>{{ segment.wav.name }}</td>
+          <td>{{ segment.wav.project.name }}</td>
+          <td>{{ segment.priority }}</td>
+          <td>
+            <button data-delete-url="{% url 'segment' segment.id %}" class="btn btn-danger delete-item"
+                      data-toggle="modal" data-target="#delete-modal">Delete
+              </button>
+          </td>
+        </tr>
+      {% endfor %}
     </table>
     <p>Displaying {{ query_data|length }} segments ordered by ID.</p>
-{% else %}
-	<p>No data is available.</p>
-{% endif %}
+    {% include 'annotation_tool/_modal_delete.html' with text='Are you sure you want to delete this segment?' %}
+  {% else %}
+    <p>No data is available.</p>
+  {% endif %}
 {% endblock %}

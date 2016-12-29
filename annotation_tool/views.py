@@ -13,6 +13,7 @@ from rest_framework.renderers import TemplateHTMLRenderer
 from rest_framework.response import Response
 
 from annotation_tool import models
+from annotation_tool.mixins import SuperuserRequiredMixin
 
 from annotation_tool.serializers import ProjectSerializer, ClassSerializer, UploadDataSerializer, LoginSerializer, \
     UserRegistrationSerializer
@@ -29,7 +30,7 @@ def index(request):
     return HttpResponse("Hello, world. You're at the annotation tool index.")
 
 
-class Projects(LoginRequiredMixin, GenericAPIView):
+class Projects(SuperuserRequiredMixin, GenericAPIView):
     renderer_classes = [TemplateHTMLRenderer]
     template_name = 'annotation_tool/projects.html'
     serializer_class = ProjectSerializer
@@ -50,12 +51,12 @@ class Projects(LoginRequiredMixin, GenericAPIView):
                          'errors': serializer.errors})
 
 
-class Project(LoginRequiredMixin, DestroyAPIView):
+class Project(SuperuserRequiredMixin, DestroyAPIView):
     queryset = models.Project.objects.all()
     lookup_field = 'id'
 
 
-class Wavs(LoginRequiredMixin, GenericAPIView):
+class WavsView(SuperuserRequiredMixin, GenericAPIView):
     renderer_classes = [TemplateHTMLRenderer]
     template_name = 'annotation_tool/wavs.html'
 
@@ -79,7 +80,12 @@ class Wavs(LoginRequiredMixin, GenericAPIView):
         return Response(context)
 
 
-class Segments(LoginRequiredMixin, GenericAPIView):
+class WavView(SuperuserRequiredMixin, DestroyAPIView):
+    queryset = models.Wav.objects.all()
+    lookup_field = 'id'
+
+
+class SegmentsView(SuperuserRequiredMixin, GenericAPIView):
     renderer_classes = [TemplateHTMLRenderer]
     template_name = 'annotation_tool/segments.html'
 
@@ -108,7 +114,12 @@ class Segments(LoginRequiredMixin, GenericAPIView):
         return Response(context)
 
 
-class Annotations(LoginRequiredMixin, GenericAPIView):
+class SegmentView(SuperuserRequiredMixin, DestroyAPIView):
+    queryset = models.Segment.objects.all()
+    lookup_field = 'id'
+
+
+class Annotations(SuperuserRequiredMixin, GenericAPIView):
     renderer_classes = [TemplateHTMLRenderer]
     template_name = 'annotation_tool/annotations.html'
     queryset = models.Annotation.objects.all()
@@ -144,12 +155,12 @@ class Annotations(LoginRequiredMixin, GenericAPIView):
         return Response(context)
 
 
-class Annotation(LoginRequiredMixin, DestroyAPIView):
+class Annotation(SuperuserRequiredMixin, DestroyAPIView):
     queryset = models.Annotation.objects.all()
     lookup_field = 'id'
 
 
-class Events(LoginRequiredMixin, GenericAPIView):
+class EventsView(SuperuserRequiredMixin, GenericAPIView):
     renderer_classes = [TemplateHTMLRenderer]
     template_name = 'annotation_tool/events.html'
 
@@ -184,7 +195,12 @@ class Events(LoginRequiredMixin, GenericAPIView):
         return Response(context)
 
 
-class ClassesView(LoginRequiredMixin, GenericAPIView):
+class EventView(SuperuserRequiredMixin, DestroyAPIView):
+    queryset = models.Event.objects.all()
+    lookup_field = 'id'
+
+
+class ClassesView(SuperuserRequiredMixin, GenericAPIView):
     renderer_classes = [TemplateHTMLRenderer]
     template_name = 'annotation_tool/classes.html'
     serializer_class = ClassSerializer
@@ -207,7 +223,7 @@ class ClassesView(LoginRequiredMixin, GenericAPIView):
                          'errors': serializer.errors})
 
 
-class ClassView(LoginRequiredMixin, DestroyAPIView):
+class ClassView(SuperuserRequiredMixin, DestroyAPIView):
     queryset = models.Class.objects.all()
     lookup_field = 'id'
 
@@ -271,7 +287,7 @@ class LoginSignup(GenericAPIView):
             return Response(context)
 
 
-class UploadFileView(LoginRequiredMixin, GenericAPIView):
+class UploadFileView(SuperuserRequiredMixin, GenericAPIView):
     serializer_class = UploadDataSerializer
     renderer_classes = [TemplateHTMLRenderer]
     template_name = 'annotation_tool/upload_data.html'
@@ -368,41 +384,6 @@ class MyAnnotations(LoginRequiredMixin, GenericAPIView):
             .order_by('-id')
 
         return Response(context)
-
-
-def resume_annotation(request):
-    context = {}
-
-    # Define filters, extract possibles values and store selections
-    context['filters'] = {
-        'Annotations': {'route': 'name',
-                        'name': 'annotation'},
-    }
-    for v in context['filters'].values():
-        v['available'] = models.Annotation.objects.values_list(v['route'], flat=True) \
-            .order_by(v['route']).distinct()
-    selected_values = {}
-    for v in context['filters'].values():
-        v['selected'] = request.GET.get(v['name'], "")
-        if v['selected']:
-            selected_values[v['route']] = v['selected']
-    selected_values['status'] = "unfinished"
-
-    context['query_data'] = models.Annotation.objects.filter(**selected_values) \
-                                            .order_by('-id')
-
-    if v['selected'] == '':
-        return render(request, 'annotation_tool/resume_annotation.html', context)
-    else:
-        context['annotation'] = models.Annotation.objects.get(name=request.GET['annotation'])
-        context['events'] = models.Event.objects.filter(annotation=context['annotation'])
-        segment = context['annotation'].segment
-        context['classes'] = models.Class.objects.values_list('name', 'color', 'shortcut')
-        context['class_dict'] = json.dumps(list(context['classes']), cls=DjangoJSONEncoder)
-        utils.delete_tmp_files()
-        context['tmp_segment_path'] = utils.create_tmp_file(segment)
-        
-        return render(request, 'annotation_tool/annotation_tool.html', context)
 
 
 def submit_annotation(request):

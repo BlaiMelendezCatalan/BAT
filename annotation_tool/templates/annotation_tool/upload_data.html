@@ -7,10 +7,14 @@
 
 {% block body_block %}
 
-<form action="" method="post" enctype="multipart/form-data">
-    {% csrf_token %}
-    {% render_form serializer %}
-    <input type="submit" value="Upload files" />
-</form>
+  <div class="row">
+    <div class="col-md-3">
+      <form action="" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {% render_form serializer %}
+        <input type="submit" class="btn btn-success" value="Upload files"/>
+      </form>
+    </div>
+  </div>
 
 {% endblock %}
