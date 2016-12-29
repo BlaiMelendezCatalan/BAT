@@ -4,14 +4,14 @@ from . import views
 
 urlpatterns = [
     url(r'^$', views.index, name='index'),
-    url(r'^projects/$', views.Projects.as_view(), name='projects'),
-    url(r'^project/(?P<id>\d+)/$', views.Project.as_view(), name='project'),
+    url(r'^projects/$', views.ProjectsView.as_view(), name='projects'),
+    url(r'^project/(?P<id>\d+)/$', views.ProjectView.as_view(), name='project'),
     url(r'^wavs/$', views.WavsView.as_view(), name='wavs'),
     url(r'^wav/(?P<id>\d+)/$', views.WavView.as_view(), name='wav'),
     url(r'^segments/$', views.SegmentsView.as_view(), name='segments'),
     url(r'^segment/(?P<id>\d+)/$', views.SegmentView.as_view(), name='segment'),
-    url(r'^annotations/$', views.Annotations.as_view(), name='annotations'),
-    url(r'^annotation/(?P<id>\d+)/$', views.Annotation.as_view(), name='annotation'),
+    url(r'^annotations/$', views.AnnotationsView.as_view(), name='annotations'),
+    url(r'^annotation/(?P<id>\d+)/$', views.AnnotationView.as_view(), name='annotation'),
     url(r'^events/$', views.EventsView.as_view(), name='events'),
     url(r'^event/(?P<id>\d+)/$', views.EventView.as_view(), name='event'),
     url(r'^classes/$', views.ClassesView.as_view(), name='classes'),
