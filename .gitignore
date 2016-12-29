@@ -95,3 +95,4 @@ static/
 media/
 db.sqlite3
 django_test/
+tmp/

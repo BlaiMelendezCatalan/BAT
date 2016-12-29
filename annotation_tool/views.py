@@ -313,38 +313,42 @@ class UploadFileView(SuperuserRequiredMixin, GenericAPIView):
         return Response({'serializer': self.get_serializer()})
 
 
-#@login_required(login_url='../loginsignup')
-def new_annotation(request):
-    context = {}
+class NewAnnotationView(LoginRequiredMixin, GenericAPIView):
+    renderer_classes = [TemplateHTMLRenderer]
+    template_name = 'annotation_tool/new_annotation.html'
 
-    # Define filters, extract possibles values and store selections
-    context['filters'] = {
-        'Projects': {'route': 'name',
-                     'name': 'project'},
-    }
-    for v in context['filters'].values():
-        v['available'] = models.Project.objects.values_list(v['route'], flat=True) \
-            .order_by(v['route']).distinct()
-    selected_values = {}
-    for v in context['filters'].values():
-        v['selected'] = request.GET.get(v['name'], "")
-        if v['selected']:
-            selected_values[v['route']] = v['selected']
+    def _filters(self):
+        return {
+            'Projects': {'route': 'name',
+                         'name': 'project'},
+        }
 
-    context['query_data'] = models.Project.objects.filter(**selected_values) \
-                                            .order_by('-id')
+    def get(self, request, *args, **kwargs):
+        # Define filters, extract possibles values and store selections
+        context = {'filters': self._filters()}
+        for v in context['filters'].values():
+            v['available'] = models.Project.objects.values_list(v['route'], flat=True) \
+                .order_by(v['route']).distinct()
+        selected_values = {}
+        for v in context['filters'].values():
+            v['selected'] = request.GET.get(v['name'])
+            if v['selected']:
+                selected_values[v['route']] = v['selected']
 
-    if v['selected'] == '':
-        return render(request, 'annotation_tool/new_annotation.html', context)
-    else:
-        segment = utils.pick_segment_to_annotate(request.GET['project'], request.user.id)
-        context['annotation'] = utils.create_annotation(segment, request.user)
-        context['classes'] = models.Class.objects.values_list('name', 'color', 'shortcut')
-        context['class_dict'] = json.dumps(list(context['classes']), cls=DjangoJSONEncoder)
-        utils.delete_tmp_files()
-        context['tmp_segment_path'] = utils.create_tmp_file(segment)
+        context['query_data'] = models.Project.objects.filter(**selected_values) \
+            .order_by('-id')
 
-        return render(request, 'annotation_tool/annotation_tool.html', context)
+        if not v['selected']:
+            return Response(context)
+        else:
+            segment = utils.pick_segment_to_annotate(request.GET['project'], request.user.id)
+            context['annotation'] = utils.create_annotation(segment, request.user)
+            context['classes'] = models.Class.objects.values_list('name', 'color', 'shortcut')
+            context['class_dict'] = json.dumps(list(context['classes']), cls=DjangoJSONEncoder)
+            utils.delete_tmp_files()
+            context['tmp_segment_path'] = utils.create_tmp_file(segment)
+            self.template_name = 'annotation_tool/annotation_tool.html'
+            return Response(context)
 
 
 class MyAnnotations(LoginRequiredMixin, GenericAPIView):
