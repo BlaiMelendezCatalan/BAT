@@ -317,7 +317,7 @@ class NewAnnotationView(LoginRequiredMixin, GenericAPIView):
 
     def get(self, request, *args, **kwargs):
         # Define filters, extract possibles values and store selections
-        context = {'filters': self._filters()}
+        context = {'filters': self._filters(), 'error': False}
         for v in context['filters'].values():
             v['available'] = models.Project.objects.values_list(v['route'], flat=True) \
                 .order_by(v['route']).distinct()
