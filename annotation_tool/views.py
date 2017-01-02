@@ -5,9 +5,8 @@ from django.http import JsonResponse
 from django.core.serializers.json import DjangoJSONEncoder
 from django.utils import timezone
 from django.shortcuts import render
-from django.http import HttpResponse
 from django.http import HttpResponseRedirect
-from rest_framework.generics import GenericAPIView, RetrieveDestroyAPIView, DestroyAPIView
+from rest_framework.generics import GenericAPIView, DestroyAPIView
 from rest_framework.parsers import FileUploadParser, MultiPartParser
 from rest_framework.renderers import TemplateHTMLRenderer
 from rest_framework.response import Response
@@ -21,14 +20,6 @@ from annotation_tool.serializers import ProjectSerializer, ClassSerializer, Uplo
 import utils
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import user_passes_test
-
-
-def superuser_check(user):
-    return user.is_superuser
-
-
-def index(request):
-    return HttpResponse("Hello, world. You're at the annotation tool index.")
 
 
 class ProjectsView(SuperuserRequiredMixin, GenericAPIView):
@@ -230,7 +221,7 @@ class ClassView(SuperuserRequiredMixin, DestroyAPIView):
 
 
 #@login_required(login_url='../loginsignup')
-@user_passes_test(superuser_check)
+#@user_passes_test(superuser_check)
 def successful_upload(request):
     context = {}
 

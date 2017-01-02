@@ -35,5 +35,8 @@ $(function () {
   }
 
   // color picker init
-  $('#color-picker').colorpicker({'format': 'hex'});
+  var color_input = $('#color-picker');
+  if (color_input.length) {
+    color_input.colorpicker({'format': 'hex'});
+  }
 });
