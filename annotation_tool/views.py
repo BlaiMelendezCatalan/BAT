@@ -325,7 +325,7 @@ class NewAnnotationView(LoginRequiredMixin, GenericAPIView):
 
     def get(self, request, *args, **kwargs):
         # Define filters, extract possibles values and store selections
-        context = {'filters': self._filters()}
+        context = {'filters': self._filters(), 'error': False}
         for v in context['filters'].values():
             v['available'] = models.Project.objects.values_list(v['route'], flat=True) \
                 .order_by(v['route']).distinct()
@@ -342,12 +342,16 @@ class NewAnnotationView(LoginRequiredMixin, GenericAPIView):
             return Response(context)
         else:
             segment = utils.pick_segment_to_annotate(request.GET['project'], request.user.id)
-            context['annotation'] = utils.create_annotation(segment, request.user)
-            context['classes'] = models.Class.objects.values_list('name', 'color', 'shortcut')
-            context['class_dict'] = json.dumps(list(context['classes']), cls=DjangoJSONEncoder)
-            utils.delete_tmp_files()
-            context['tmp_segment_path'] = utils.create_tmp_file(segment)
-            self.template_name = 'annotation_tool/annotation_tool.html'
+            if segment:
+                context['annotation'] = utils.create_annotation(segment, request.user)
+                context['classes'] = models.Class.objects.values_list('name', 'color', 'shortcut')
+                context['class_dict'] = json.dumps(list(context['classes']), cls=DjangoJSONEncoder)
+                utils.delete_tmp_files()
+                context['tmp_segment_path'] = utils.create_tmp_file(segment)
+                self.template_name = 'annotation_tool/annotation_tool.html'
+            else:
+                # There are no more segments to annotate
+                context['error'] = True
             return Response(context)
 
 
