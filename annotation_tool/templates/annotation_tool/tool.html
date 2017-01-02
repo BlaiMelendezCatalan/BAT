@@ -282,7 +282,7 @@
       })
       region_data['start_time'] = times[0]
       region_data['end_time'] = times[1]
-      region_data['annotation'] = '{{ annotation }}'
+      region_data['annotation'] = '{{ annotation.id }}'
       region_data['color'] = region.color
       if ('event_id' in region.attributes) {
         region_data['event_id'] = region.attributes['event_id']

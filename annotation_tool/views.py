@@ -333,20 +333,31 @@ class NewAnnotationView(LoginRequiredMixin, GenericAPIView):
         if not v['selected']:
             return Response(context)
         else:
+            annotation_id = request.GET.get('annotation')
             segment = utils.pick_segment_to_annotate(request.GET['project'], request.user.id)
-            if segment:
-                project = models.Project.objects.get(name=request.GET['project'])
-                context['annotation'] = utils.create_annotation(segment, request.user)
-                context['classes'] = models.Class.objects.filter(project=project).values_list('name',
-                                                                                              'color',
-                                                                                              'shortcut')
-                context['class_dict'] = json.dumps(list(context['classes']), cls=DjangoJSONEncoder)
-                utils.delete_tmp_files()
-                context['tmp_segment_path'] = utils.create_tmp_file(segment)
-                self.template_name = 'annotation_tool/annotation_tool.html'
-            else:
+            if not annotation_id and not segment:
                 # There are no more segments to annotate
                 context['error'] = True
+                return Response(context)
+
+            project = models.Project.objects.get(name=request.GET['project'])
+            # if resume
+            if annotation_id:
+                try:
+                    context['annotation'] = models.Annotation.objects.get(id=annotation_id, user=request.user)
+                    context['events'] = models.Event.objects.filter(annotation=annotation_id)
+                    segment = context['annotation'].segment
+                except models.Annotation.DoesNotExist:
+                    return HttpResponseRedirect(reverse('new_annotation'))
+            else:
+                context['annotation'] = utils.create_annotation(segment, request.user)
+            context['classes'] = models.Class.objects.filter(project=project).values_list('name',
+                                                                                          'color',
+                                                                                          'shortcut')
+            context['class_dict'] = json.dumps(list(context['classes']), cls=DjangoJSONEncoder)
+            utils.delete_tmp_files()
+            context['tmp_segment_path'] = utils.create_tmp_file(segment)
+            self.template_name = 'annotation_tool/tool.html'
             return Response(context)
 
 
@@ -433,7 +444,7 @@ def update_end_event(request):
     if 'event_id' in region_data.keys():
         event = models.Event.objects.get(id=region_data['event_id'])
     else:
-        annotation = models.Annotation.objects.get(name=region_data['annotation'])
+        annotation = models.Annotation.objects.get(id=region_data['annotation'])
         event = models.Event(annotation=annotation)
         event.color = region_data['color']
         
