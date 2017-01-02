@@ -343,7 +343,7 @@ class NewAnnotationView(LoginRequiredMixin, GenericAPIView):
                 context['class_dict'] = json.dumps(list(context['classes']), cls=DjangoJSONEncoder)
                 utils.delete_tmp_files()
                 context['tmp_segment_path'] = utils.create_tmp_file(segment)
-                self.template_name = 'annotation_tool/annotation_tool.html'
+                self.template_name = 'annotation_tool/tool.html'
             else:
                 # There are no more segments to annotate
                 context['error'] = True
