@@ -334,13 +334,19 @@ class NewAnnotationView(LoginRequiredMixin, GenericAPIView):
             return Response(context)
         else:
             segment = utils.pick_segment_to_annotate(request.GET['project'], request.user.id)
-            project = models.Project.objects.get(name=request.GET['project'])
-            context['annotation'] = utils.create_annotation(segment, request.user)
-            context['classes'] = models.Class.objects.filter(project=project).values_list('name', 'color', 'shortcut')
-            context['class_dict'] = json.dumps(list(context['classes']), cls=DjangoJSONEncoder)
-            utils.delete_tmp_files()
-            context['tmp_segment_path'] = utils.create_tmp_file(segment)
-            self.template_name = 'annotation_tool/tool.html'
+            if segment:
+                project = models.Project.objects.get(name=request.GET['project'])
+                context['annotation'] = utils.create_annotation(segment, request.user)
+                context['classes'] = models.Class.objects.filter(project=project).values_list('name',
+                                                                                              'color',
+                                                                                              'shortcut')
+                context['class_dict'] = json.dumps(list(context['classes']), cls=DjangoJSONEncoder)
+                utils.delete_tmp_files()
+                context['tmp_segment_path'] = utils.create_tmp_file(segment)
+                self.template_name = 'annotation_tool/annotation_tool.html'
+            else:
+                # There are no more segments to annotate
+                context['error'] = True
             return Response(context)
 
 
