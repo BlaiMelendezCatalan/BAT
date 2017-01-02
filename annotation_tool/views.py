@@ -5,12 +5,12 @@ from django.http import JsonResponse
 from django.core.serializers.json import DjangoJSONEncoder
 from django.utils import timezone
 from django.shortcuts import render
-from django.http import HttpResponse
 from django.http import HttpResponseRedirect
-from rest_framework.generics import GenericAPIView, RetrieveDestroyAPIView, DestroyAPIView
+from rest_framework.generics import GenericAPIView, DestroyAPIView
 from rest_framework.parsers import FileUploadParser, MultiPartParser
 from rest_framework.renderers import TemplateHTMLRenderer
 from rest_framework.response import Response
+from rest_framework.reverse import reverse
 
 from annotation_tool import models
 from annotation_tool.mixins import SuperuserRequiredMixin
@@ -22,15 +22,7 @@ from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import user_passes_test
 
 
-def superuser_check(user):
-    return user.is_superuser
-
-
-def index(request):
-    return HttpResponse("Hello, world. You're at the annotation tool index.")
-
-
-class Projects(SuperuserRequiredMixin, GenericAPIView):
+class ProjectsView(SuperuserRequiredMixin, GenericAPIView):
     renderer_classes = [TemplateHTMLRenderer]
     template_name = 'annotation_tool/projects.html'
     serializer_class = ProjectSerializer
@@ -51,7 +43,7 @@ class Projects(SuperuserRequiredMixin, GenericAPIView):
                          'errors': serializer.errors})
 
 
-class Project(SuperuserRequiredMixin, DestroyAPIView):
+class ProjectView(SuperuserRequiredMixin, DestroyAPIView):
     queryset = models.Project.objects.all()
     lookup_field = 'id'
 
@@ -119,7 +111,7 @@ class SegmentView(SuperuserRequiredMixin, DestroyAPIView):
     lookup_field = 'id'
 
 
-class Annotations(SuperuserRequiredMixin, GenericAPIView):
+class AnnotationsView(SuperuserRequiredMixin, GenericAPIView):
     renderer_classes = [TemplateHTMLRenderer]
     template_name = 'annotation_tool/annotations.html'
     queryset = models.Annotation.objects.all()
@@ -155,7 +147,7 @@ class Annotations(SuperuserRequiredMixin, GenericAPIView):
         return Response(context)
 
 
-class Annotation(SuperuserRequiredMixin, DestroyAPIView):
+class AnnotationView(SuperuserRequiredMixin, DestroyAPIView):
     queryset = models.Annotation.objects.all()
     lookup_field = 'id'
 
@@ -229,7 +221,7 @@ class ClassView(SuperuserRequiredMixin, DestroyAPIView):
 
 
 #@login_required(login_url='../loginsignup')
-@user_passes_test(superuser_check)
+#@user_passes_test(superuser_check)
 def successful_upload(request):
     context = {}
 
@@ -241,7 +233,7 @@ class LoginSignup(GenericAPIView):
     template_name = 'annotation_tool/loginsignup.html'
 
     def redirect_after_login(self, user):
-        path = '../projects' if user.is_superuser else '../new_annotation'
+        path = reverse('projects') if user.is_superuser else reverse('new_annotation')
         return HttpResponseRedirect(path)
 
     def get(self, request, *args, **kwargs):
@@ -325,7 +317,7 @@ class NewAnnotationView(LoginRequiredMixin, GenericAPIView):
 
     def get(self, request, *args, **kwargs):
         # Define filters, extract possibles values and store selections
-        context = {'filters': self._filters(), 'error': False}
+        context = {'filters': self._filters()}
         for v in context['filters'].values():
             v['available'] = models.Project.objects.values_list(v['route'], flat=True) \
                 .order_by(v['route']).distinct()
@@ -342,16 +334,13 @@ class NewAnnotationView(LoginRequiredMixin, GenericAPIView):
             return Response(context)
         else:
             segment = utils.pick_segment_to_annotate(request.GET['project'], request.user.id)
-            if segment:
-                context['annotation'] = utils.create_annotation(segment, request.user)
-                context['classes'] = models.Class.objects.values_list('name', 'color', 'shortcut')
-                context['class_dict'] = json.dumps(list(context['classes']), cls=DjangoJSONEncoder)
-                utils.delete_tmp_files()
-                context['tmp_segment_path'] = utils.create_tmp_file(segment)
-                self.template_name = 'annotation_tool/annotation_tool.html'
-            else:
-                # There are no more segments to annotate
-                context['error'] = True
+            project = models.Project.objects.get(name=request.GET['project'])
+            context['annotation'] = utils.create_annotation(segment, request.user)
+            context['classes'] = models.Class.objects.filter(project=project).values_list('name', 'color', 'shortcut')
+            context['class_dict'] = json.dumps(list(context['classes']), cls=DjangoJSONEncoder)
+            utils.delete_tmp_files()
+            context['tmp_segment_path'] = utils.create_tmp_file(segment)
+            self.template_name = 'annotation_tool/tool.html'
             return Response(context)
 
 

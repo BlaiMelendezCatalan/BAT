@@ -1,0 +1,483 @@
+{% extends 'annotation_tool/base_normal.html' %}
+{% load staticfiles %}
+
+{% block title %}Annotation tool{% endblock %}
+
+{% block header %}Annotation tool{% endblock %}
+
+{% block body_block %}
+
+  <script src="{% static 'js/annotator/lib/wavesurfer.min.js' %}"></script>
+  <script src="{% static 'js/annotator/src/wavesurfer.regions.js' %}"></script>
+  <script type="text/javascript" src="{% static 'js/annotator/src/components.js' %}"></script>
+  <script type="text/javascript" src="{% static 'js/annotator/src/wavesurfer.labels.js' %}"></script>
+  <link rel="stylesheet" href="{% static 'css/annotator/font-awesome.min.css' %}">
+
+  <h3>Annotation Tips:</h3>
+  <h5>- Read and get used to the commands below. Annotation will be much easier.</h5>
+  <h5>- Do not worry about small silences, we will annotate them for you.</h5>
+  <h3>Classes:</h3>
+  <h5>- <strong>1: Music</strong> | <strong>2: Speech</strong> | <strong>3: Bgmusic</strong> | <strong>4: Quiet
+    bgmusic</strong> | <strong>5: Loud bgmusic</strong></h5>
+  &nbsp;
+  <div id="labels"></div>
+  <div id="waveform"></div>
+
+  <div style="text-align: center">
+    <button class="btn btn-primary" onclick="wavesurfer.playPause()">
+      <i class="glyphicon glyphicon-play"></i>
+      Play /
+      <i class="glyphicon glyphicon-pause"></i>
+      Pause
+    </button>
+
+    <p class="row">
+    <div class="col-xs-1">
+      <i class="glyphicon glyphicon-zoom-in"></i>
+    </div>
+
+    <div class="col-xs-10">
+      <input id="slider" type="range" min="1" max="200" value="1" style="width: 100%"/>
+    </div>
+
+    <div class="col-xs-1">
+      <i class="glyphicon glyphicon-zoom-out"></i>
+    </div>
+    </p>
+  </div>
+  &nbsp;
+  <div>Class</div>
+  <input type="text" id="show_class" value="" readonly>
+  <div>Tags</div>
+  <input type="text" id="tags" value="">
+  <button id="tag_button">Save tags</button>
+  <div>
+    <button id="submit_button" style="display:none;">Submit annotation</button>
+  </div>
+  &nbsp;
+  &nbsp;
+  <h3>Controls:</h3>
+  <h5>- Space bar plays and pauses the audio.</h5>
+  <h5>- <strong>Click</strong> and <strong>drag</strong> on the waveform to create a <strong>new region</strong>. This
+    is now the <strong>selected region</strong>.</h5>
+  <h5>- <strong>Click</strong> on another <strong>region</strong> to <strong>select it</strong>.</h5>
+  <h5>- <strong>Ctrl-Click</strong> on any <strong>region</strong> to <strong>delete it</strong>.</h5>
+  <h5>- <strong>Click</strong> a <strong>number</strong> to <strong>set</strong> the <strong>class</strong> of the
+    selected region.</h5>
+  <h5>- To <strong>tag a region</strong>: <strong>select it</strong>, write the <strong>tags separated by comas</strong>
+    and click <strong>save tags</strong>.</h5>
+  <h5>- <strong>Regions does not overlap</strong>. <strong>Placing a region limit inside another region adjusts the
+    first to the second</strong>. Use this to <strong>easily concatenate regions.</strong></h5>
+  <h5>- Press <strong>"f"</strong> to <strong>glue</strong> the selected region limits to the closer borders. Do it with
+    <strong>Ctrl (+ Shift)</strong> to glue only the <strong>left (right) limit</strong>.</h5>
+  <h5>- Press <strong>"s"</strong> to set the <strong>player</strong> at the <strong>beginning</strong> of the <strong>audio</strong>.
+  </h5>
+  <h5>- Press <strong>"b"</strong> to set the <strong>player</strong> at the <strong>beginning</strong> of the <strong>selected
+    region</strong>.</h5>
+  <h5>- <strong>Ctrl (+ Shift) + Left/Right Arrows</strong> precisely <strong>adjusts</strong> left (right) region
+    <strong>limits</strong>.</h5>
+
+  <script type="text/javascript">
+
+    var select = document.getElementById("show_class");
+    function loadRegions() {
+      // Do it with AJAX and return all info for all regions
+      {% for event in events %}
+        tags = []
+        {% for tag in event.tags.all %}
+          tags.push('{{ tag.name }}')
+        {% endfor %}
+        wavesurfer.addRegion({
+          attributes: {
+            'class': '{{ event.event_class }}',
+            'tags': tags,
+            'event_id': {{ event.id }},
+            'loaded': true
+          },
+          start: {{ event.start_time }},
+          end: {{ event.end_time }},
+          color: '{{ event.color }}',
+          drag: false,
+        });
+      {% endfor %}
+    }
+
+    function sortRegionsByOption(regions, option) {
+      var region_list = [];
+      Object.keys(regions).forEach(function (id) {
+        region_list.push(regions[id]);
+      });
+      region_list.sort(function (a, b) {
+        return a[option] - b[option];
+      });
+
+      return region_list
+    }
+
+    function getDuration() {
+      return wavesurfer.getDuration() - 0.1;
+    }
+
+    function preventOverlappingsOnArrow(current_region, inc=0.) {
+      if (inc > 0.0) {
+        new_start = current_region.start
+        new_end = current_region.end + inc
+        if (new_end > getDuration()) {
+          new_end = getDuration()
+        }
+      } else if (inc < 0.0) {
+        new_start = current_region.start + inc
+        if (new_start < 0.0) {
+          new_end = 0.0
+        }
+        new_end = current_region.end
+      }
+      Object.keys(wavesurfer.regions.list).forEach(function (id) {
+        region = wavesurfer.regions.list[id]
+        if (new_start < region.start && new_end > region.start) {
+          console.log('WRONG END')
+          new_end = region.start
+        } else if (new_start < region.end && new_end > region.end) {
+          console.log('WRONG START')
+          new_start = region.end
+        }
+      });
+
+      return [new_start, new_end]
+    }
+
+    function preventOverlappingsOnCreation(current_region) {
+      new_start = current_region.start
+      new_end = current_region.end
+      if (new_end > getDuration()) {
+        new_end = getDuration()
+      }
+      Object.keys(wavesurfer.regions.list).forEach(function (id) {
+        region = wavesurfer.regions.list[id]
+        if (current_region.start < region.start && current_region.end > region.start) {
+          console.log('WRONG END')
+          new_end = region.start
+        } else if (current_region.end > region.end && current_region.start < region.end) {
+          console.log('WRONG START')
+          new_start = region.end
+        }
+      });
+
+      return [new_start, new_end]
+    }
+
+    function updateEvent(region) {
+      var region_data = {
+        event_id: region.attributes['event_id'],
+        color: region.color,
+        start_time: region.start,
+        end_time: region.end,
+        event_class: region.attributes['class'],
+        tags: region.attributes['tags']
+      }
+
+      $.ajax({
+        type: "POST",
+        url: '../update_event/',
+        dataType: 'json',
+        data: {
+          region_data: JSON.stringify(region_data),
+          csrfmiddlewaretoken: '{{csrf_token}}'
+        },
+        success: function (response) {
+        }
+      });
+    }
+
+    function resetHTML() {
+      document.getElementById("tags").value = ""
+      select.selectedIndex = 0
+    }
+
+    function setCurrentRegion(id) {
+      currentRegionId = id
+    }
+
+    function disableDrag(region) {
+      region.drag = false
+    }
+
+    var wavesurfer = WaveSurfer.create({
+      container: '#waveform',
+      waveColor: 'violet',
+      progressColor: 'purple',
+      normalize: true,
+      fillParent: true,
+      hideScrollbar: true,
+    });
+
+    wavesurfer.load("{% url 'media' tmp_segment_path %}");
+
+    // Create labels (labels that appear above each region)
+    var labels = Object.create(WaveSurfer.Labels);
+    labels.init({
+      wavesurfer: wavesurfer,
+      container: '#labels'
+    });
+
+    // Create the play button and time that appear below the wavesurfer
+    var playBar = new PlayBar(wavesurfer);
+    playBar.create();
+
+    var class_dict = {{ class_dict|safe }};
+    var currentRegionId = -1;
+
+    wavesurfer.on('ready', function () {
+      wavesurfer.enableDragSelection({})
+      loadRegions()
+      wavesurfer.play()
+    });
+
+    // WaveSurfer callbacks
+    wavesurfer.on('region-created', function (region) {
+      setCurrentRegion(region.id)
+      disableDrag(region)
+
+      resetHTML()
+
+      if (!('loaded' in region.attributes) && !('created' in region.attributes)) {
+        region.attributes['class'] = "None"
+        region.attributes['tags'] = []
+      } else if ('loaded' in region.attributes) {
+        delete region.attributes['loaded']
+      } else if ('created' in region.attributes) {
+        delete region.attributes['created']
+        var region_data = {
+          annotation: '{{ annotation }}',
+          event_class: region.attributes['class'],
+          tags: region.attributes['tags'],
+          start_time: region.start,
+          end_time: region.end,
+          color: region.color
+        }
+
+        $.ajax({
+          type: "POST",
+          url: '../create_event/',
+          dataType: 'json',
+          data: {
+            region_data: JSON.stringify(region_data),
+            csrfmiddlewaretoken: '{{csrf_token}}'
+          },
+          success: function (data) {
+            region = wavesurfer.regions.list[currentRegionId]
+            region.attributes['event_id'] = data.event_id
+          }
+        });
+      }
+    });
+
+    wavesurfer.on('region-update-end', function (region) {
+      setCurrentRegion(region.id)
+      var region_data = {}
+      times = preventOverlappingsOnCreation(region)
+      region.update({
+        start: times[0],
+        end: times[1],
+      })
+      region_data['start_time'] = times[0]
+      region_data['end_time'] = times[1]
+      region_data['annotation'] = '{{ annotation }}'
+      region_data['color'] = region.color
+      if ('event_id' in region.attributes) {
+        region_data['event_id'] = region.attributes['event_id']
+      }
+      $.ajax({
+        type: "POST",
+        url: '../update_end_event/',
+        dataType: 'json',
+        data: {
+          region_data: JSON.stringify(region_data),
+          csrfmiddlewaretoken: '{{csrf_token}}'
+        },
+        success: function (data) {
+          region = wavesurfer.regions.list[currentRegionId]
+          region.attributes['event_id'] = data.event_id
+        }
+      });
+    });
+
+
+    wavesurfer.on('region-removed', function (region) {
+      setCurrentRegion(-1)
+      var region_data = {event_id: region.attributes['event_id']}
+
+      $.ajax({
+        type: "POST",
+        url: '../remove_event/',
+        dataType: 'json',
+        data: {
+          region_data: JSON.stringify(region_data),
+          csrfmiddlewaretoken: '{{csrf_token}}'
+        },
+        success: function (response) {
+        }
+      });
+    });
+
+    wavesurfer.on('region-click', function (region, event) {
+      console.log("clicked")
+      setCurrentRegion(region.id)
+
+      if (event.button == 0 && event.ctrlKey == false) {
+        if ("tags" in region.attributes) {
+          document.getElementById("tags").value = region.attributes['tags']
+        } else {
+          document.getElementById("tags").value = ""
+        }
+        if ("class" in region.attributes) {
+          $(select).val(region.attributes['class'])
+        } else {
+          select.selectedIndex = 0
+        }
+      } else if (event.button == 0 && event.ctrlKey == true) {
+        region.remove()
+      }
+    });
+
+    // HTML elements callbacks
+    document.onkeydown = function (e) {
+      e.stopPropagation()
+      e.preventDefault()
+      region = wavesurfer.regions.list[currentRegionId]
+      key = e.key;
+      console.log(e)
+      n_regions = Object.keys(wavesurfer.regions.list).length
+      if (!isNaN(parseInt(key)) && parseInt(key) > 0 && parseInt(key) <= n_regions && e.ctrlKey == true) {
+        region_list = sortRegionsByOption(wavesurfer.regions.list, "start")
+        region = region_list[parseInt(key) - 1]
+        currentRegionId = region.id
+        wavesurfer.seekTo(region.start / wavesurfer.getDuration())
+      }
+
+      for (var i = 0; i < class_dict.length; i++) {
+        if (class_dict[i][2] == key && e.ctrlKey == false) {
+          region.update({
+            attributes: {
+              'class': class_dict[i][0],
+              'tags': region.attributes['tags'],
+              'event_id': region.attributes['event_id']
+            },
+            color: class_dict[i][1],
+          })
+          updateEvent(region)
+          $("#show_class").val(class_dict[i][0])
+        }
+      }
+      if (key == " ") {
+        wavesurfer.playPause()
+      } else if (key == "ArrowLeft" && e.ctrlKey == true && e.shiftKey == false) {
+        times = preventOverlappingsOnArrow(region, increment = -1. / 100)
+        region.update({
+          start: times[0],
+        })
+        //updateEvent(region)
+      } else if (key == "ArrowRight" && e.ctrlKey == true && e.shiftKey == false) {
+        region.update({
+          start: region.start + 1. / 100,
+        })
+        //updateEvent(region)
+      } else if (key == "ArrowLeft" && e.ctrlKey == true && e.shiftKey == true) {
+        region.update({
+          end: region.end - 1. / 100,
+        })
+        //updateEvent(region)
+      } else if (key == "ArrowRight" && e.ctrlKey == true && e.shiftKey == true) {
+        times = preventOverlappingsOnArrow(region, increment = 1. / 100)
+        region.update({
+          end: times[1],
+        })
+        //updateEvent(region)
+      } else if (key == 'b') {
+        wavesurfer.seekTo(region.start / wavesurfer.getDuration())
+      } else if (key == 's') {
+        wavesurfer.seekTo(0.0)
+      } else if (key == 'f' || key == 'F') {
+        region_list = sortRegionsByOption(wavesurfer.regions.list, "start")
+        for (var i = 0; i < region_list.length; i++) {
+          if (region == region_list[i]) {
+            if (i == 0) {
+              if (e.shiftKey == false) {
+                new_start = 0.0
+              }
+              if (region_list.length == 1) {
+                if (e.ctrlKey == e.shiftKey) {
+                  new_end = getDuration()
+                }
+              } else {
+                if (e.ctrlKey == e.shiftKey) {
+                  new_end = region_list[i + 1].start
+                }
+              }
+            } else if (i == region_list.length - 1) {
+              if (e.shiftKey == false) {
+                new_start = region_list[i - 1].end
+              }
+              if (e.ctrlKey == e.shiftKey) {
+                new_end = getDuration()
+              }
+            } else {
+              if (e.shiftKey == false) {
+                new_start = region_list[i - 1].end
+              }
+              if (e.ctrlKey == e.shiftKey) {
+                new_end = region_list[i + 1].start
+              }
+            }
+            region.update({
+              start: new_start,
+              end: new_end,
+            })
+            updateEvent(region)
+            break;
+          }
+        }
+      }
+    }
+
+    document.onkeyup = function (e) {
+      key = e.key
+      if (key == "ArrowLeft" || key == "ArrowRight") {
+        Object.keys(wavesurfer.regions.list).forEach(function (id) {
+          region = wavesurfer.regions.list[id]
+          updateEvent(region)
+        });
+      }
+    }
+
+    $("#tag_button").click(function () {
+      if (currentRegionId != -1) {
+        region = wavesurfer.regions.list[currentRegionId]
+        tags = document.getElementById("tags").value.split(",")
+        region.update({
+          attributes: {
+            'class': region.attributes['class'],
+            'tags': tags,
+            'event_id': region.attributes['event_id']
+          },
+        })
+        updateEvent(region)
+      }
+    });
+
+    //$("#submit_button").click(function() {
+    //	data = {}
+    //	data['annotation'] = '{{ annotation.name }}'
+    //	$.ajax({
+    //        type: "POST",
+    //        url: '../submit_annotation/',
+    //        dataType: 'json',
+    //        data: { data: JSON.stringify(data),
+    //        		csrfmiddlewaretoken: '{{csrf_token}}'},
+    //        success: function(response) {}
+    //    });
+    //});
+
+  </script>
+
+{% endblock %}

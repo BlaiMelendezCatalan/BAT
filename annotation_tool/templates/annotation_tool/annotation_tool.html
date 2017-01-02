@@ -236,34 +236,36 @@
 		}
 	});
 
-	wavesurfer.on('region-update-end', function (region) {
-		console.log("update-end")
-		setCurrentRegion(region.id)
-		region_data = {}
-		times = preventOverlappingsOnCreation(region)
-		region.update({
-			start: times[0],
-			end: times[1],
-		})
-		region_data['start_time'] = times[0]
-		region_data['end_time'] = times[1]
-		region_data['annotation'] = '{{ annotation }}'
-		region_data['color'] = region.color
-		if ('event_id' in region.attributes) {
-			region_data['event_id'] = region.attributes['event_id']
-		}
-        $.ajax({
-            type: "POST",
-            url: '../update_end_event/',
-            dataType: 'json',
-            data: { region_data: JSON.stringify(region_data),
-            		csrfmiddlewaretoken: '{{csrf_token}}'},
-            success: function(data) {
-            	region = wavesurfer.regions.list[currentRegionId]
-				region.attributes['event_id'] = data.event_id
-            }
-        });
-	});
+  wavesurfer.on('region-update-end', function (region) {
+    console.log("update-end")
+    setCurrentRegion(region.id)
+    region_data = {}
+    times = preventOverlappingsOnCreation(region)
+    region.update({
+      start: times[0],
+      end: times[1],
+    })
+    region_data['start_time'] = times[0]
+    region_data['end_time'] = times[1]
+    region_data['annotation'] = '{{ annotation }}'
+    region_data['color'] = region.color
+    if ('event_id' in region.attributes) {
+      region_data['event_id'] = region.attributes['event_id']
+    }
+    $.ajax({
+      type: "POST",
+      url: '../update_end_event/',
+      dataType: 'json',
+      data: {
+        region_data: JSON.stringify(region_data),
+        csrfmiddlewaretoken: '{{csrf_token}}'
+      },
+      success: function (data) {
+        region = wavesurfer.regions.list[currentRegionId]
+        region.attributes['event_id'] = data.event_id
+      }
+    });
+  });
 
 	wavesurfer.on('region-updated', function (region) {
 		console.log("updated")
