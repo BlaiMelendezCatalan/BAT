@@ -100,9 +100,11 @@ def pick_segment_to_annotate(project_name, user_id):
 
 
 def update_annotation_status(annotation, new_status=Annotation.UNFINISHED):
-    annotation.status = new_status
-    annotation.save()
-    modify_segment_priority(annotation.segment)
+    old_status = annotation.status
+    if old_status != new_status:
+        annotation.status = new_status
+        annotation.save()
+        modify_segment_priority(annotation.segment)
 
 
 # Implemented for non-overlapping events
