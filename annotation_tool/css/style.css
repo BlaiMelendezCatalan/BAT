@@ -23,3 +23,15 @@
 .modal-dialog {
     z-index: 1050;
 }
+
+.control-form {
+    margin-top: 50px;
+}
+
+#solve-overlaps-button {
+    margin-left: 10px;
+}
+
+#controls-container {
+    padding: 10px 30px;
+}
