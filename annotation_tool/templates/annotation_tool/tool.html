@@ -45,19 +45,24 @@
     </div>
     </p>
   </div>
-  &nbsp;
-  <div>Class</div>
-  <input type="text" id="show_class" value="" readonly>
-  <div>Tags</div>
-  <input type="text" id="tags" value="">
-  {% if not request.user.is_superuser %}
-    <button id="tag_button">Save tags</button>
-    <div>
-      <button id="submit_button" style="display:none;">Submit annotation</button>
-    </div>
-  {% endif %}
-  &nbsp;
-  &nbsp;
+
+  <div class="row">
+    <div class="col-md-4">
+      &nbsp; {% if project.overlap %}
+      <button id="solve-overlaps-button" class="btn">Solve overlaps</button>
+    {% endif %}
+      <div>Class</div>
+      <input type="text" class="form-control" id="show_class" value="" readonly>
+      <div>Tags</div>
+      <input type="text" class="form-control" id="tags" value="">
+      {% if not request.user.is_superuser %}
+        <button class="btn" id="tag_button">Save tags</button>
+        <div>
+          <button id="submit_button" class="btn" style="display:none;">Submit annotation</button>
+        </div>
+      {% endif %}
+      &nbsp;</div>
+    &nbsp;</div>
   <h3>Controls:</h3>
   <h5>- Space bar plays and pauses the audio.</h5>
   <h5>- <strong>Click</strong> and <strong>drag</strong> on the waveform to create a <strong>new region</strong>. This
@@ -89,28 +94,50 @@
   <script type="text/javascript">
 
     var select = document.getElementById("show_class");
-    function loadRegions() {
-      // Do it with AJAX and return all info for all regions
-      {% for event in events %}
-        tags = []
-        {% for tag in event.tags.all %}
-          tags.push('{{ tag.name }}')
-        {% endfor %}
-        wavesurfer.addRegion({
-          attributes: {
-            'class': '{{ event.event_class }}',
-            'tags': tags,
-            'event_id': {{ event.id }},
-            'loaded': true
-          },
-          start: {{ event.start_time }},
-          end: {{ event.end_time }},
-          color: '{{ event.color }}',
+    var ALLOW_OVERLAPS = {% if project.overlap %}true{% else %}false{% endif %};
+    console.log('is project allow overlaps', ALLOW_OVERLAPS)
+
+    function addRegion(classes, tags, id, start_time, end_time, color, loaded) {
+      var attrs = {
+        'class': classes,
+        'tags': tags,
+        'event_id': id
+      };
+      if (loaded) {
+        attrs['loaded'] = true;
+      } else {
+        attrs['created_overlap'] = true;
+      }
+      return wavesurfer.addRegion({
+          attributes: attrs,
+          start: start_time,
+          end: end_time,
+          color: color,
           drag: false,
           {% if request.user.is_superuser %}
             resize: false
           {% endif %}
         });
+    }
+
+    function getUniqueItems(items) {
+      var unique = [];
+      items.forEach(function(item) {
+        if(unique.indexOf(item) < 0) {
+          unique.push(item);
+        }
+      });
+      return unique;
+    }
+
+    function loadRegions() {
+      // Do it with AJAX and return all info for all regions
+      {% for event in events %}
+        var tags = [];
+        {% for tag in event.tags.all %}
+          tags.push('{{ tag.name }}')
+        {% endfor %}
+        addRegion('{{ event.event_class }}', tags, {{ event.id }}, {{ event.start_time }}, {{ event.end_time }}, '{{ event.color }}', true);
       {% endfor %}
     }
 
@@ -252,17 +279,23 @@
     });
     {% if not request.user.is_superuser %}
       // WaveSurfer callbacks
-      wavesurfer.on('region-created', function (region) {
+      function onRegionCreated(region) {
         setCurrentRegion(region.id)
         disableDrag(region)
 
         resetHTML()
 
-        if (!('loaded' in region.attributes) && !('created' in region.attributes)) {
+        if (!('loaded' in region.attributes) && !('created' in region.attributes) && !('created_overlap' in region.attributes)) {
           region.attributes['class'] = "None"
           region.attributes['tags'] = []
         } else if ('loaded' in region.attributes) {
           delete region.attributes['loaded']
+        } else if ('created_overlap' in region.attributes) {
+          delete region.attributes['created_overlap'];
+          delete region.attributes['event_id'];
+          console.log('CLASS', region);
+          region.attributes['multi_class'] = region.attributes['class'];
+          onRegionUpdateEnd(region);
         } else if ('created' in region.attributes) {
           delete region.attributes['created']
           var region_data = {
@@ -288,22 +321,34 @@
             }
           });
         }
+      }
+      wavesurfer.on('region-created', function (region) {
+        onRegionCreated(region);
       });
 
-      wavesurfer.on('region-update-end', function (region) {
+      function onRegionUpdateEnd (region, callback) {
+        console.log('TOO LATE');
         setCurrentRegion(region.id)
-        var region_data = {}
-        times = preventOverlappingsOnCreation(region)
-        region.update({
-          start: times[0],
-          end: times[1],
-        })
-        region_data['start_time'] = times[0]
-        region_data['end_time'] = times[1]
-        region_data['annotation'] = '{{ annotation.id }}'
-        region_data['color'] = region.color
+        if (ALLOW_OVERLAPS) {
+          var times = [region.start, region.end]
+        } else {
+          var times = preventOverlappingsOnCreation(region)
+          region.update({
+            start: times[0],
+            end: times[1]
+          })
+        }
+        var region_data = {
+          start_time: times[0],
+          end_time: times[1],
+          annotation: '{{ annotation.id }}',
+          color: region.color
+        };
         if ('event_id' in region.attributes) {
           region_data['event_id'] = region.attributes['event_id']
+        }
+        if ('multi_class' in region.attributes) {
+          region_data['multi_class'] = region.attributes['multi_class']
         }
         $.ajax({
           type: "POST",
@@ -314,14 +359,32 @@
             csrfmiddlewaretoken: '{{csrf_token}}'
           },
           success: function (data) {
-            region = wavesurfer.regions.list[currentRegionId]
-            region.attributes['event_id'] = data.event_id
+            console.log('set event id', currentRegionId, data.event_id)
+            region = wavesurfer.regions.list[currentRegionId];
+            console.log('before', region);
+            region.attributes['event_id'] = data.event_id;
+            console.log('after', region.attributes);
+            if (typeof callback != 'undefined') {
+              callback();
+            }
           }
         });
+      }
+
+      wavesurfer.on('region-update-end', function (region) {
+        setTimeout(function () {
+          var check_region = wavesurfer.regions.list[region.id];
+          console.log('CHECK', check_region);
+          // region was deleted
+          if (typeof check_region != 'undefined') {
+            onRegionUpdateEnd(region);
+          }
+        }, 50);
       });
 
 
       wavesurfer.on('region-removed', function (region) {
+        console.log('on remove', region);
         setCurrentRegion(-1)
         var region_data = {event_id: region.attributes['event_id']}
 
@@ -391,7 +454,11 @@
         if (key == " ") {
           wavesurfer.playPause()
         } else if (key == "ArrowLeft" && e.ctrlKey == true && e.shiftKey == false) {
-          times = preventOverlappingsOnArrow(region, increment = -1. / 100)
+          if (ALLOW_OVERLAPS) {
+            times = [region.start, region.end]
+          } else {
+            times = preventOverlappingsOnArrow(region, increment = -1. / 100)
+          }
           region.update({
             start: times[0],
           })
@@ -483,6 +550,88 @@
           })
           updateEvent(region)
         }
+      });
+
+      $(function () {
+        $('#solve-overlaps-button').on('click', function () {
+          console.log('solved :)', wavesurfer.regions)
+          var DELTA = 0;
+
+          // check classes
+          console.log(wavesurfer.regions.list, typeof wavesurfer.regions.list)
+          var regionsWithoutClass = 0;
+          for (var i in wavesurfer.regions.list) {
+            var el = wavesurfer.regions.list[i];
+            if (el.attributes.class == 'None' || el.attributes.classes == '') {
+              regionsWithoutClass += 1;
+            }
+          }
+
+          if (regionsWithoutClass) {
+            alert('Regions without classes: ' + regionsWithoutClass);
+            return;
+          }
+          // first find the overlap
+          for (var i in wavesurfer.regions.list) {
+            var current_region = wavesurfer.regions.list[i];
+
+            console.log(current_region);
+            console.log('---------------')
+            /*
+             find overlap
+             there is can be 4 types of overlap:
+             1. current_region.end overlap on temp_region.start
+             2. current_region.start overlap on temp_region.end
+             3. current_region inside temp_region
+             4. temp_region inside current_region
+             */
+            Object.keys(wavesurfer.regions.list).forEach(function (id) {
+              var temp_region = wavesurfer.regions.list[id],
+                  new_region_id = current_region.id + temp_region.id,
+                  classes = current_region.attributes.class.split(' ').concat(temp_region.attributes.class.split(' ')),
+                  new_region_end, new_region_start;
+
+              // Type 1
+              if (current_region.start < temp_region.start && current_region.end > temp_region.start) {
+                new_region_end = current_region.end;
+                new_region_start = temp_region.start;
+
+                current_region.update({end: temp_region.start - DELTA});
+                temp_region.update({start: new_region_end + DELTA});
+              }
+              // Type 2
+              else if (current_region.start > temp_region.start && current_region.start < temp_region.end) {
+                new_region_end = temp_region.end;
+                new_region_start = current_region.start;
+
+                current_region.update({start: new_region_end + DELTA});
+                temp_region.update({end: new_region_start - DELTA});
+              }
+              // Type 3
+              else if (temp_region.start < current_region.start && temp_region.end > current_region.end) {
+                //todo: add code
+              }
+              // Type 4
+              else if (current_region.start < temp_region.start && current_region.end > temp_region.end) {
+                //todo: add code
+              } else {
+                return;
+              }
+              var newRegion = addRegion(getUniqueItems(classes).join(' '), [], new_region_id, new_region_start, new_region_end, 'rgba(220, 220, 220, 0.9)', false);
+              console.log('hello new region', newRegion);
+              console.log('inside1', current_region.id);
+              onRegionUpdateEnd(current_region, function () {
+                console.log('inside2', temp_region.id);
+                onRegionUpdateEnd(temp_region, function () {
+                  console.log('inside3');
+                  onRegionUpdateEnd(newRegion);
+                });
+              });
+
+            });
+
+          }
+        });
       });
     {% endif %}
     //$("#submit_button").click(function() {

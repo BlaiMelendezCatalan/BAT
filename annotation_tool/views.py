@@ -1,10 +1,11 @@
 import json
+import re
 
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import JsonResponse
 from django.core.serializers.json import DjangoJSONEncoder
 from django.utils import timezone
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect
 from rest_framework.generics import GenericAPIView, DestroyAPIView
 from rest_framework.parsers import FileUploadParser, MultiPartParser
@@ -204,7 +205,14 @@ class ClassesView(SuperuserRequiredMixin, GenericAPIView):
                          'errors': None})
 
     def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+        # add opacity for color
+        data = request.data.copy()
+        opacity = '0.5'
+        data['color'] = re.sub(r'rgb\((\d{1,3}),(\d{1,3}),(\d{1,3})\)',
+                               r'rgba(\1, \2, \3, %s)' % opacity,
+                               data['color'])
+
+        serializer = self.get_serializer(data=data)
         if serializer.is_valid():
             serializer.save()
             return HttpResponseRedirect('./')
@@ -318,28 +326,23 @@ class NewAnnotationView(LoginRequiredMixin, GenericAPIView):
         # Define filters, extract possibles values and store selections
         context = {'filters': self._filters(), 'error': False}
         for v in context['filters'].values():
-            v['available'] = models.Project.objects.values_list(v['route'], flat=True) \
-                .order_by(v['route']).distinct()
-        selected_values = {}
-        for v in context['filters'].values():
-            v['selected'] = request.GET.get(v['name'])
-            if v['selected']:
-                selected_values[v['route']] = v['selected']
+            v['available'] = models.Project.objects.all().order_by(v['route'])
+        selected_project = request.GET.get('project')
 
-        context['query_data'] = models.Project.objects.filter(**selected_values) \
-            .order_by('-id')
+        context['query_data'] = models.Project.objects.all().order_by('-id')
 
-        if not v['selected']:
+        if not selected_project:
             return Response(context)
         else:
             annotation_id = request.GET.get('annotation')
-            segment = utils.pick_segment_to_annotate(request.GET['project'], request.user.id)
+            project = get_object_or_404(models.Project, id=request.GET.get('project'))
+            segment = utils.pick_segment_to_annotate(project.name, request.user.id)
             if not annotation_id and not segment:
                 # There are no more segments to annotate
                 context['error'] = True
                 return Response(context)
 
-            project = models.Project.objects.get(name=request.GET['project'])
+            #project = models.Project.objects.get(name=request.GET['project'])
             # if resume
             if annotation_id:
                 try:
@@ -356,9 +359,11 @@ class NewAnnotationView(LoginRequiredMixin, GenericAPIView):
             context['class_dict'] = json.dumps(list(context['classes']), cls=DjangoJSONEncoder)
             utils.delete_tmp_files()
             context['tmp_segment_path'] = utils.create_tmp_file(segment)
-            self.template_name = 'annotation_tool/tool.html'
             context['base_template'] = 'annotation_tool/base.html' if request.user.is_superuser else \
                 'annotation_tool/base_normal.html'
+            context['project'] = project
+
+            self.template_name = 'annotation_tool/tool.html'
             return Response(context)
 
 
@@ -460,6 +465,9 @@ def update_end_event(request):
         except models.Annotation.DoesNotExist:
             return JsonResponse({'error': 'Annotation does not exist'})
         event = models.Event(annotation=annotation)
+        if 'multi_class' in region_data.keys():
+            # todo: save multi class for this region
+            pass
         event.color = region_data['color']
 
     utils.update_annotation_status(annotation, models.Annotation.UNFINISHED)

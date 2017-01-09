@@ -37,6 +37,6 @@ $(function () {
   // color picker init
   var color_input = $('#color-picker');
   if (color_input.length) {
-    color_input.colorpicker({'format': 'hex'});
+    color_input.colorpicker({'format': 'rgb'});
   }
 });

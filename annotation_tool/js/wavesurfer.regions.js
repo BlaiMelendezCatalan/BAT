@@ -85,8 +85,9 @@ WaveSurfer.Region = {
 
         this.bindInOut();
         this.render();
-
-        this.wavesurfer.fireEvent('region-created', this);
+        if (typeof params.attributes.created_overlap != 'undefined' && params.attributes.created_overlap) {
+            this.wavesurfer.fireEvent('region-created', this);
+        }
     },
 
     /* Update region params. */
