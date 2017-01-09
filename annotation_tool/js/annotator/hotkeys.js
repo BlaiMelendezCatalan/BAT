@@ -62,7 +62,8 @@ document.onkeydown = function (e) {
           'tags': region.attributes['tags'],
           'event_id': region.attributes['event_id']
         },
-        color: CLASS_DICT[i][1]
+        color: CLASS_DICT[i][1],
+        annotation: CLASS_DICT[i][0]
       })
       updateEvent(region)
       $("#show_class").val(CLASS_DICT[i][0])

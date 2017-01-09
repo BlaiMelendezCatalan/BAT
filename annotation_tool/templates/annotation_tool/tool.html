@@ -142,6 +142,7 @@
         end: end_time,
         color: color,
         drag: false,
+        annotation: classes,
         {% if request.user.is_superuser %}
           resize: false
         {% endif %}
@@ -165,7 +166,7 @@
         {% for tag in event.tags.all %}
           tags.push('{{ tag.name }}')
         {% endfor %}
-        addRegion('{{ event.event_class }}', tags, {{ event.id }}, {{ event.start_time }}, {{ event.end_time }}, '{{ event.color }}', true);
+        addRegion('{{ event.event_class|default_if_none:'' }}', tags, {{ event.id }}, {{ event.start_time }}, {{ event.end_time }}, '{{ event.color }}', true);
       {% endfor %}
     }
 
@@ -256,7 +257,6 @@
         } else if ('created_overlap' in region.attributes) {
           delete region.attributes['created_overlap'];
           delete region.attributes['event_id'];
-          console.log('CLASS', region);
           region.attributes['multi_class'] = region.attributes['class'];
         } else if ('created' in region.attributes) {
           delete region.attributes['created']
@@ -289,7 +289,6 @@
       });
 
       function onRegionUpdateEnd(region, callback) {
-        console.log('UPDATE END', region);
         setCurrentRegion(region.id);
         var times;
         if (ALLOW_OVERLAPS) {
@@ -334,7 +333,6 @@
       wavesurfer.on('region-update-end', function (region) {
         setTimeout(function () {
           var check_region = wavesurfer.regions.list[region.id];
-          console.log('CHECK', check_region);
           // region was deleted
           if (typeof check_region != 'undefined') {
             onRegionUpdateEnd(region);
@@ -344,7 +342,6 @@
 
 
       wavesurfer.on('region-removed', function (region) {
-        console.log('on remove', region);
         setCurrentRegion(-1)
         var region_data = {event_id: region.attributes['event_id']}
 
@@ -402,7 +399,6 @@
             totalOverlapsCount = 0;
 
         // check classes
-        console.log(wavesurfer.regions.list, typeof wavesurfer.regions.list)
         var regionsWithoutClass = 0;
         for (var i in wavesurfer.regions.list) {
           var el = wavesurfer.regions.list[i];
@@ -435,7 +431,6 @@
 
             // Type 1
             if (temp_region.start < current_region.start && temp_region.end > current_region.end) {
-              console.log('type 1-----------')
               new_region_end = temp_region.end;
               new_region_start = current_region.end;
 
@@ -443,7 +438,6 @@
             }
             // Type 2
             else if (current_region.start < temp_region.start && current_region.end > temp_region.end) {
-              console.log('type 2-----------')
               new_region_end = current_region.end;
               new_region_start = temp_region.end;
 
@@ -451,7 +445,6 @@
             }
             // Type 3
             else if (current_region.start < temp_region.start && current_region.end > temp_region.start) {
-              console.log('type 3-----------')
               new_region_end = current_region.end;
               new_region_start = temp_region.start;
 
@@ -460,7 +453,6 @@
             }
             // Type 4
             else if (current_region.start > temp_region.start && current_region.start < temp_region.end) {
-              console.log('type 4-----------')
               new_region_end = temp_region.end;
               new_region_start = current_region.start;
 
@@ -471,12 +463,8 @@
               return;
             }
             var newRegion = addRegion(getUniqueItems(classes).join(' '), [], new_region_id, new_region_start, new_region_end, ORVERLAP_REGION_COLOR, false);
-            console.log('hello new region', newRegion);
-            console.log('inside1', current_region.id);
             onRegionUpdateEnd(current_region, function () {
-              console.log('inside2', temp_region.id);
               onRegionUpdateEnd(temp_region, function () {
-                console.log('inside3');
                 onRegionUpdateEnd(newRegion);
               });
             });
