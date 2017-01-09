@@ -100,6 +100,7 @@
     var ALLOW_OVERLAPS = {% if project.overlap %}true{% else %}false{% endif %};
     var CLASS_DICT = {{ class_dict|safe }};
     var currentRegionId = -1;
+    var ORVERLAP_REGION_COLOR = 'rgba(220, 220, 220, 0.8)';
 
     var wavesurfer = WaveSurfer.create({
       container: '#waveform',
@@ -257,7 +258,6 @@
           delete region.attributes['event_id'];
           console.log('CLASS', region);
           region.attributes['multi_class'] = region.attributes['class'];
-          onRegionUpdateEnd(region);
         } else if ('created' in region.attributes) {
           delete region.attributes['created']
           var region_data = {
@@ -289,6 +289,7 @@
       });
 
       function onRegionUpdateEnd(region, callback) {
+        console.log('UPDATE END', region);
         setCurrentRegion(region.id);
         var times;
         if (ALLOW_OVERLAPS) {
@@ -418,10 +419,10 @@
          /*
            find overlap
            there is can be 4 types of overlap:
-           1. current_region.end overlap on temp_region.start
-           2. current_region.start overlap on temp_region.end
-           3. current_region inside temp_region
-           4. temp_region inside current_region
+           1. current_region inside temp_region
+           2. temp_region inside current_region
+           3. current_region.end overlap on temp_region.start
+           4. current_region.start overlap on temp_region.end
            */
         for (var i in wavesurfer.regions.list) {
           var current_region = wavesurfer.regions.list[i];
@@ -433,32 +434,43 @@
                 new_region_end, new_region_start;
 
             // Type 1
-            if (current_region.start < temp_region.start && current_region.end > temp_region.start) {
+            if (temp_region.start < current_region.start && temp_region.end > current_region.end) {
+              console.log('type 1-----------')
+              new_region_end = temp_region.end;
+              new_region_start = current_region.end;
+
+              temp_region.update({end: current_region.start - DELTA});
+            }
+            // Type 2
+            else if (current_region.start < temp_region.start && current_region.end > temp_region.end) {
+              console.log('type 2-----------')
+              new_region_end = current_region.end;
+              new_region_start = temp_region.end;
+
+              current_region.update({end: temp_region.start - DELTA});
+            }
+            // Type 3
+            else if (current_region.start < temp_region.start && current_region.end > temp_region.start) {
+              console.log('type 3-----------')
               new_region_end = current_region.end;
               new_region_start = temp_region.start;
 
               current_region.update({end: temp_region.start - DELTA});
               temp_region.update({start: new_region_end + DELTA});
             }
-            // Type 2
+            // Type 4
             else if (current_region.start > temp_region.start && current_region.start < temp_region.end) {
+              console.log('type 4-----------')
               new_region_end = temp_region.end;
               new_region_start = current_region.start;
 
               current_region.update({start: new_region_end + DELTA});
               temp_region.update({end: new_region_start - DELTA});
             }
-            // Type 3
-            else if (temp_region.start < current_region.start && temp_region.end > current_region.end) {
-              //todo: add code
-            }
-            // Type 4
-            else if (current_region.start < temp_region.start && current_region.end > temp_region.end) {
-              //todo: add code
-            } else {
+             else {
               return;
             }
-            var newRegion = addRegion(getUniqueItems(classes).join(' '), [], new_region_id, new_region_start, new_region_end, 'rgba(220, 220, 220, 0.9)', false);
+            var newRegion = addRegion(getUniqueItems(classes).join(' '), [], new_region_id, new_region_start, new_region_end, ORVERLAP_REGION_COLOR, false);
             console.log('hello new region', newRegion);
             console.log('inside1', current_region.id);
             onRegionUpdateEnd(current_region, function () {
