@@ -6,6 +6,7 @@ urlpatterns = [
     url(r'^$', views.LoginSignup.as_view(), name='loginsignup'),
     url(r'^projects/$', views.ProjectsView.as_view(), name='projects'),
     url(r'^project/(?P<id>\d+)/$', views.ProjectView.as_view(), name='project'),
+    url(r'^regions/$', views.RegionsView.as_view(), name='regions'),
     url(r'^wavs/$', views.WavsView.as_view(), name='wavs'),
     url(r'^wav/(?P<id>\d+)/$', views.WavView.as_view(), name='wav'),
     url(r'^segments/$', views.SegmentsView.as_view(), name='segments'),

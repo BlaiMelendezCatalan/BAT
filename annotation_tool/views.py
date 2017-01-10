@@ -7,7 +7,7 @@ from django.core.serializers.json import DjangoJSONEncoder
 from django.utils import timezone
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect
-from rest_framework.generics import GenericAPIView, DestroyAPIView
+from rest_framework.generics import GenericAPIView, DestroyAPIView, ListAPIView, CreateAPIView, ListCreateAPIView
 from rest_framework.parsers import FileUploadParser, MultiPartParser
 from rest_framework.renderers import TemplateHTMLRenderer
 from rest_framework.response import Response
@@ -17,7 +17,7 @@ from annotation_tool import models
 from annotation_tool.mixins import SuperuserRequiredMixin
 
 from annotation_tool.serializers import ProjectSerializer, ClassSerializer, UploadDataSerializer, LoginSerializer, \
-    UserRegistrationSerializer
+    UserRegistrationSerializer, RegionSerializer
 import utils
 from django.contrib.auth import authenticate, login
 
@@ -333,38 +333,41 @@ class NewAnnotationView(LoginRequiredMixin, GenericAPIView):
 
         if not selected_project:
             return Response(context)
-        else:
-            annotation_id = request.GET.get('annotation')
-            project = get_object_or_404(models.Project, id=request.GET.get('project'))
-            segment = utils.pick_segment_to_annotate(project.name, request.user.id)
-            if not annotation_id and not segment:
-                # There are no more segments to annotate
-                context['error'] = True
-                return Response(context)
 
-            #project = models.Project.objects.get(name=request.GET['project'])
-            # if resume
-            if annotation_id:
-                try:
-                    context['annotation'] = models.Annotation.objects.get(id=annotation_id, user=request.user)
-                    context['events'] = models.Event.objects.filter(annotation=annotation_id)
-                    segment = context['annotation'].segment
-                except models.Annotation.DoesNotExist:
-                    return HttpResponseRedirect(reverse('new_annotation'))
-            else:
-                context['annotation'] = utils.create_annotation(segment, request.user)
-            context['classes'] = models.Class.objects.filter(project=project).values_list('name',
-                                                                                          'color',
-                                                                                          'shortcut')
-            context['class_dict'] = json.dumps(list(context['classes']), cls=DjangoJSONEncoder)
-            utils.delete_tmp_files()
-            context['tmp_segment_path'] = utils.create_tmp_file(segment)
-            context['base_template'] = 'annotation_tool/base.html' if request.user.is_superuser else \
-                'annotation_tool/base_normal.html'
-            context['project'] = project
-
-            self.template_name = 'annotation_tool/tool.html'
+        annotation_id = request.GET.get('annotation')
+        project = get_object_or_404(models.Project, id=request.GET.get('project'))
+        segment = utils.pick_segment_to_annotate(project.name, request.user.id)
+        if not annotation_id and not segment:
+            # There are no more segments to annotate
+            context['error'] = True
             return Response(context)
+
+        # if resume
+        if annotation_id:
+            try:
+                context['annotation'] = models.Annotation.objects.get(id=annotation_id, user=request.user)
+                context['events'] = models.Event.objects.filter(annotation=annotation_id)
+                context['regions'] = models.Region.objects.filter(annotation=annotation_id)
+                segment = context['annotation'].segment
+            except models.Annotation.DoesNotExist:
+                return HttpResponseRedirect(reverse('new_annotation'))
+        else:
+            context['annotation'] = utils.create_annotation(segment, request.user)
+        context['classes'] = models.Class.objects.filter(project=project).values_list('name',
+                                                                                      'color',
+                                                                                      'shortcut')
+        context['class_dict'] = json.dumps(list(context['classes']), cls=DjangoJSONEncoder)
+        context['project'] = project
+
+        # create tmp file
+        utils.delete_tmp_files()
+        context['tmp_segment_path'] = utils.create_tmp_file(segment)
+
+        context['base_template'] = 'annotation_tool/base.html' if request.user.is_superuser else \
+            'annotation_tool/base_normal.html'
+        self.template_name = 'annotation_tool/tool.html'
+
+        return Response(context)
 
 
 class MyAnnotations(LoginRequiredMixin, GenericAPIView):
@@ -400,6 +403,11 @@ class MyAnnotations(LoginRequiredMixin, GenericAPIView):
             .order_by('-id')
 
         return Response(context)
+
+
+class RegionsView(LoginRequiredMixin, ListCreateAPIView):
+    queryset = models.Region.objects.all()
+    serializer_class = RegionSerializer
 
 
 def submit_annotation(request):

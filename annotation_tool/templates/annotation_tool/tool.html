@@ -131,6 +131,7 @@
         'tags': tags,
         'event_id': id
       };
+      // todo: add "is region" there or on loadRegions
       if (loaded) {
         attrs['loaded'] = true;
       } else {
@@ -161,13 +162,23 @@
 
     function loadRegions() {
       // Do it with AJAX and return all info for all regions
-      {% for event in events %}
-        var tags = [];
-        {% for tag in event.tags.all %}
-          tags.push('{{ tag.name }}')
+      {% if not regions %}
+        {% for region in regions %}
+          var tags = [];
+          {{% for tag in region.tags.all %}
+            tags.push('{{ tag.name }}')
+          {% endfor %}
+          addRegion('{{ region.classes.all|join:" " }}', tags, {{ region.id }}, {{ region.start_time }}, {{ region.end_time }}, '{{ region.color }}', true);
         {% endfor %}
-        addRegion('{{ event.event_class|default_if_none:'' }}', tags, {{ event.id }}, {{ event.start_time }}, {{ event.end_time }}, '{{ event.color }}', true);
-      {% endfor %}
+      {% else %}
+        {% for event in events %}
+          var tags = [];
+          {{% for tag in event.tags.all %}
+            tags.push('{{ tag.name }}')
+          {% endfor %}
+          addRegion('{{ event.event_class|default_if_none:'' }}', tags, {{ event.id }}, {{ event.start_time }}, {{ event.end_time }}, '{{ event.color }}', true);
+        {% endfor %}
+      {% endif %}
     }
 
     function getDuration() {
@@ -220,6 +231,31 @@
     function resetHTML() {
       document.getElementById("tags").value = ""
       select.selectedIndex = 0
+    }
+
+    function createNewRegion(fromRegion, callback) {
+      var regionData = {
+        color: fromRegion.color,
+        start_time: fromRegion.start,
+        end_time: fromRegion.end,
+        tags: fromRegion.attributes.tags,
+        classes: fromRegion.attributes.class,
+        annotation: '{{ annotation.id }}'
+      };
+      $.ajax({
+        type: "POST",
+        url: '{% url 'regions' %}',
+        dataType: 'json',
+        beforeSend: function(xhr) {
+          xhr.setRequestHeader("X-CSRFToken", '{{ csrf_token }}');
+        },
+        data: regionData,
+        success: function (response) {
+          if (typeof callback != 'undefined') {
+            callback();
+          }
+        }
+      });
     }
 
     function setCurrentRegion(id) {
@@ -427,6 +463,7 @@
             var temp_region = wavesurfer.regions.list[id],
                 new_region_id = current_region.id + temp_region.id,
                 classes = current_region.attributes.class.split(' ').concat(temp_region.attributes.class.split(' ')),
+                tags = current_region.attributes.tags.concat(temp_region.attributes.tags),
                 new_region_end, new_region_start;
 
             // Type 1
@@ -462,10 +499,19 @@
              else {
               return;
             }
-            var newRegion = addRegion(getUniqueItems(classes).join(' '), [], new_region_id, new_region_start, new_region_end, ORVERLAP_REGION_COLOR, false);
-            onRegionUpdateEnd(current_region, function () {
-              onRegionUpdateEnd(temp_region, function () {
-                onRegionUpdateEnd(newRegion);
+            // create regions
+            var newRegion = addRegion(
+                getUniqueItems(classes).join(' '),
+                getUniqueItems(tags),
+                new_region_id,
+                new_region_start,
+                new_region_end,
+                ORVERLAP_REGION_COLOR,
+                false //is loaded
+            );
+            createNewRegion(current_region, function () {
+              createNewRegion(temp_region, function () {
+                createNewRegion(newRegion);
               });
             });
             totalOverlapsCount += 1;
@@ -473,7 +519,11 @@
           });
         }
         if (totalOverlapsCount == 0) {
+          // todo: disable button "Solve overlaps"
           alert('Ovelaps not found');
+        } else {
+          // todo: load regions
+          //wavesurfer.regions.list = [];
         }
       });
     {% endif %}
