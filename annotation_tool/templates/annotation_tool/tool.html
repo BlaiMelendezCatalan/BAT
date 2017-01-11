@@ -56,6 +56,7 @@
         <button class="btn" id="tag_button">Save tags</button>
         {% if project.overlap %}
           <button id="solve-overlaps-button" class="btn btn-warning">Solve overlaps</button>
+          <button id="back-annotations-button" class="btn btn-warning">Back annotations</button>
         {% endif %}
         <div>
           <button id="submit_button" class="btn" style="display:none;">Submit annotation</button>
@@ -65,10 +66,10 @@
     &nbsp;</div>
   <div class="jumbotron" id="controls-container">
   <h3>Controls:</h3>
-  <h5>- Space bar plays and pauses the audio.</h5>
+  <h5 class="common-control">- Space bar plays and pauses the audio.</h5>
   <h5>- <strong>Click</strong> and <strong>drag</strong> on the waveform to create a <strong>new region</strong>. This
     is now the <strong>selected region</strong>.</h5>
-  <h5>- <strong>Click</strong> on another <strong>region</strong> to <strong>select it</strong>.</h5>
+  <h5 class="common-control">- <strong>Click</strong> on another <strong>region</strong> to <strong>select it</strong>.</h5>
   <h5>- <strong>Ctrl-Click</strong> on any <strong>region</strong> to <strong>delete it</strong>.</h5>
   <h5>- <strong>Click</strong> a <strong>number</strong> to <strong>set</strong> the <strong>class</strong> of the
     selected region.</h5>
@@ -78,9 +79,9 @@
     first to the second</strong>. Use this to <strong>easily concatenate regions.</strong></h5>
   <h5>- Press <strong>"f"</strong> to <strong>glue</strong> the selected region limits to the closer borders. Do it with
     <strong>Ctrl (+ Shift)</strong> to glue only the <strong>left (right) limit</strong>.</h5>
-  <h5>- Press <strong>"s"</strong> to set the <strong>player</strong> at the <strong>beginning</strong> of the <strong>audio</strong>.
+  <h5 class="common-control">- Press <strong>"s"</strong> to set the <strong>player</strong> at the <strong>beginning</strong> of the <strong>audio</strong>.
   </h5>
-  <h5>- Press <strong>"b"</strong> to set the <strong>player</strong> at the <strong>beginning</strong> of the <strong>selected
+  <h5 class="common-control">- Press <strong>"b"</strong> to set the <strong>player</strong> at the <strong>beginning</strong> of the <strong>selected
     region</strong>.</h5>
   <h5>- <strong>Ctrl (+ Shift) + Left/Right Arrows</strong> precisely <strong>adjusts</strong> left (right) region
     <strong>limits</strong>.</h5>
@@ -101,6 +102,7 @@
     var CLASS_DICT = {{ class_dict|safe }};
     var currentRegionId = -1;
     var ORVERLAP_REGION_COLOR = 'rgba(220, 220, 220, 0.8)';
+    var REGIONS_STATE = false;
 
     var wavesurfer = WaveSurfer.create({
       container: '#waveform',
@@ -131,7 +133,7 @@
         'tags': tags,
         'event_id': id
       };
-      // todo: add "is region" there or on loadRegions
+
       if (loaded) {
         attrs['loaded'] = true;
       } else {
@@ -149,6 +151,36 @@
         {% endif %}
       });
     }
+    
+    function checkOverlaps() {
+      var overlapWasFound = false;
+      for (var i in wavesurfer.regions.list) {
+        if (overlapWasFound) {
+          break;
+        }
+        var current_region = wavesurfer.regions.list[i];
+        Object.keys(wavesurfer.regions.list).forEach(function (id) {
+          var temp_region = wavesurfer.regions.list[id],
+              overlapType1 = temp_region.start < current_region.start && temp_region.end > current_region.end,
+              overlapType2 = current_region.start < temp_region.start && current_region.end > temp_region.end,
+              overlapType3 = current_region.start < temp_region.start && current_region.end > temp_region.start,
+              overlapType4 = current_region.start > temp_region.start && current_region.start < temp_region.end;
+          if (overlapType1 || overlapType2 || overlapType3 || overlapType4) {
+            overlapWasFound = true;
+            return;
+          }
+        });
+      }
+      $('#solve-overlaps-button').attr('disabled', !overlapWasFound);
+    }
+
+    function switchToRegionMode() {
+      REGIONS_STATE = true;
+      $('#solve-overlaps-button, region .fa-times-circle, #tag_button, region handle').hide();
+      $('#controls-container h5').not('.common-control').hide();
+      $('#back-annotations-button').show();
+      wavesurfer.disableDragSelection({});
+    }
 
     function getUniqueItems(items) {
       var unique = [];
@@ -162,18 +194,19 @@
 
     function loadRegions() {
       // Do it with AJAX and return all info for all regions
-      {% if not regions %}
+      {% if regions %}
         {% for region in regions %}
           var tags = [];
-          {{% for tag in region.tags.all %}
+          {% for tag in region.tags.all %}
             tags.push('{{ tag.name }}')
           {% endfor %}
           addRegion('{{ region.classes.all|join:" " }}', tags, {{ region.id }}, {{ region.start_time }}, {{ region.end_time }}, '{{ region.color }}', true);
         {% endfor %}
+        switchToRegionMode();
       {% else %}
         {% for event in events %}
           var tags = [];
-          {{% for tag in event.tags.all %}
+          {% for tag in event.tags.all %}
             tags.push('{{ tag.name }}')
           {% endfor %}
           addRegion('{{ event.event_class|default_if_none:'' }}', tags, {{ event.id }}, {{ event.start_time }}, {{ event.end_time }}, '{{ event.color }}', true);
@@ -274,8 +307,8 @@
         wavesurfer.enableDragSelection({})
       {% endif %}
 
-      loadRegions()
-      wavesurfer.play()
+      loadRegions();
+      wavesurfer.play();
     });
     {% if not request.user.is_superuser %}
       // WaveSurfer callbacks
@@ -324,11 +357,12 @@
         onRegionCreated(region);
       });
 
-      function onRegionUpdateEnd(region, callback) {
+      function onRegionUpdateEnd(region) {
         setCurrentRegion(region.id);
         var times;
         if (ALLOW_OVERLAPS) {
-          times = [region.start, region.end]
+          times = [region.start, region.end];
+          checkOverlaps();
         } else {
           times = preventOverlappingsOnCreation(region)
           region.update({
@@ -359,9 +393,6 @@
           success: function (data) {
             region = wavesurfer.regions.list[currentRegionId];
             region.attributes['event_id'] = data.event_id;
-            if (typeof callback != 'undefined') {
-              callback();
-            }
           }
         });
       }
@@ -379,17 +410,18 @@
 
       wavesurfer.on('region-removed', function (region) {
         setCurrentRegion(-1)
-        var region_data = {event_id: region.attributes['event_id']}
+        var region_data = {event_id: region.attributes['event_id']};
 
         $.ajax({
           type: "POST",
-          url: '../remove_event/',
+          url: '{% url 'remove_event' %}',
           dataType: 'json',
           data: {
             region_data: JSON.stringify(region_data),
             csrfmiddlewaretoken: '{{csrf_token}}'
           },
           success: function (response) {
+            checkOverlaps();
           }
         });
       });
@@ -410,7 +442,9 @@
             select.selectedIndex = 0
           }
         } else if (event.button == 0 && event.ctrlKey == true) {
-          region.remove()
+          if (!REGIONS_STATE) {
+            region.remove()
+          }
         }
       });
 
@@ -444,18 +478,17 @@
         }
 
         if (regionsWithoutClass) {
-          alert('Regions without classes: ' + regionsWithoutClass);
+          alert('Regions without class: ' + regionsWithoutClass);
           return;
         }
-
-         /*
-           find overlap
-           there is can be 4 types of overlap:
-           1. current_region inside temp_region
-           2. temp_region inside current_region
-           3. current_region.end overlap on temp_region.start
-           4. current_region.start overlap on temp_region.end
-           */
+        /*
+         find overlap
+         there is can be 4 types of overlap:
+         1. current_region inside temp_region
+         2. temp_region inside current_region
+         3. current_region.end overlap on temp_region.start
+         4. current_region.start overlap on temp_region.end
+        */
         for (var i in wavesurfer.regions.list) {
           var current_region = wavesurfer.regions.list[i];
 
@@ -517,13 +550,9 @@
             totalOverlapsCount += 1;
 
           });
-        }
-        if (totalOverlapsCount == 0) {
-          // todo: disable button "Solve overlaps"
-          alert('Ovelaps not found');
-        } else {
-          // todo: load regions
-          //wavesurfer.regions.list = [];
+        } // end for
+        if (totalOverlapsCount > 0) {
+          switchToRegionMode();
         }
       });
     {% endif %}

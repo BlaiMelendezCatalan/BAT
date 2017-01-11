@@ -140,7 +140,7 @@ class ClassProminence(models.Model):
     prominence = models.PositiveSmallIntegerField(choices=PROMINENCE_CHOICES, blank=True, null=True)
 
     def __str__(self):
-        return str(self.id)
+        return self.class_obj.name
 
 
 class Tag(models.Model):

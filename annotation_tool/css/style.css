@@ -41,3 +41,7 @@
     padding-right: 0;
     width: inherit;
 }
+
+#back-annotations-button {
+    display: none;
+}

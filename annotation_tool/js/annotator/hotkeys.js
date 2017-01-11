@@ -46,6 +46,9 @@ document.onkeydown = function (e) {
   var region = wavesurfer.regions.list[currentRegionId]
   var key = e.key;
   console.log(e)
+  if ((REGIONS_STATE && 'bs'.indexOf(key) == -1) || currentRegionId == -1) {
+    return;
+  }
   var n_regions = Object.keys(wavesurfer.regions.list).length
   if (!isNaN(parseInt(key)) && parseInt(key) > 0 && parseInt(key) <= n_regions && e.ctrlKey == true) {
     var region_list = sortRegionsByOption(wavesurfer.regions.list, "start")

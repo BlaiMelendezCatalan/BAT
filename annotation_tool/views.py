@@ -7,7 +7,8 @@ from django.core.serializers.json import DjangoJSONEncoder
 from django.utils import timezone
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect
-from rest_framework.generics import GenericAPIView, DestroyAPIView, ListAPIView, CreateAPIView, ListCreateAPIView
+from rest_framework import status
+from rest_framework.generics import GenericAPIView, DestroyAPIView, ListCreateAPIView
 from rest_framework.parsers import FileUploadParser, MultiPartParser
 from rest_framework.renderers import TemplateHTMLRenderer
 from rest_framework.response import Response
