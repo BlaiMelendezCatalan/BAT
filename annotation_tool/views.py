@@ -8,6 +8,7 @@ from django.utils import timezone
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect
 from rest_framework import status
+from rest_framework.exceptions import ValidationError
 from rest_framework.generics import GenericAPIView, DestroyAPIView, ListCreateAPIView
 from rest_framework.parsers import FileUploadParser, MultiPartParser
 from rest_framework.renderers import TemplateHTMLRenderer
@@ -18,7 +19,7 @@ from annotation_tool import models
 from annotation_tool.mixins import SuperuserRequiredMixin
 
 from annotation_tool.serializers import ProjectSerializer, ClassSerializer, UploadDataSerializer, LoginSerializer, \
-    UserRegistrationSerializer, RegionSerializer
+    UserRegistrationSerializer, RegionSerializer, ClassProminenceSerializer
 import utils
 from django.contrib.auth import authenticate, login
 
@@ -356,6 +357,7 @@ class NewAnnotationView(LoginRequiredMixin, GenericAPIView):
         context['classes'] = models.Class.objects.filter(project=project).values_list('name',
                                                                                       'color',
                                                                                       'shortcut')
+        context['prominence_choices'] = models.ClassProminence.PROMINENCE_CHOICES
         context['class_dict'] = json.dumps(list(context['classes']), cls=DjangoJSONEncoder)
         context['project'] = project
 
@@ -416,8 +418,27 @@ class RegionsView(LoginRequiredMixin, ListCreateAPIView):
             annotation = models.Annotation.objects.get(id=annotation_id)
         except KeyError, models.Annotation.DoesNotExist:
             return Response(status=status.HTTP_400_BAD_REQUEST)
-        queryset.filter(annotation=annotation).delete()
+        regions = queryset.filter(annotation=annotation)
+        models.ClassProminence.objects.filter(region__in=regions).delete()
+        regions.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ClassProminenceView(LoginRequiredMixin, GenericAPIView):
+    queryset = models.ClassProminence.objects.all()
+    serializer_class = ClassProminenceSerializer
+
+    def post(self, request, *args, **kwargs):
+        try:
+            region = models.Region.objects.get(id=request.data['region_id'])
+            class_obj = models.Class.objects.get(name=request.data['class_name'])
+            prominence = request.data['prominence']
+        except (models.Region.DoesNotExist, models.ClassProminence.DoesNotExist):
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        models.ClassProminence.objects.update_or_create(region=region,
+                                                        class_obj=class_obj,
+                                                        defaults={'prominence': prominence})
+        return Response(status=status.HTTP_201_CREATED)
 
 
 def submit_annotation(request):

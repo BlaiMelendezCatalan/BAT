@@ -13,80 +13,100 @@
   <script type="text/javascript" src="{% static 'js/annotator/src/wavesurfer.labels.js' %}"></script>
   <link rel="stylesheet" href="{% static 'css/annotator/font-awesome.min.css' %}">
   <div class="container">
-  <h3>Annotation Tips:</h3>
-  <h5>- Read and get used to the commands below. Annotation will be much easier.</h5>
-  <h5>- Do not worry about small silences, we will annotate them for you.</h5>
-  <h3>Classes:</h3>
-  <h5>- <strong>1: Music</strong> | <strong>2: Speech</strong> | <strong>3: Bgmusic</strong> | <strong>4: Quiet
-    bgmusic</strong> | <strong>5: Loud bgmusic</strong></h5>
-  &nbsp;
-  <div id="labels"></div>
-  <div id="waveform"></div>
+    <h3>Annotation Tips:</h3>
+    <h5>- Read and get used to the commands below. Annotation will be much easier.</h5>
+    <h5>- Do not worry about small silences, we will annotate them for you.</h5>
+    <h3>Classes:</h3>
+    <h5>- <strong>1: Music</strong> | <strong>2: Speech</strong> | <strong>3: Bgmusic</strong> | <strong>4: Quiet
+      bgmusic</strong> | <strong>5: Loud bgmusic</strong></h5>
+    &nbsp;
+    <div id="labels"></div>
+    <div id="waveform"></div>
 
-  <div style="text-align: center">
-    <button class="btn btn-primary" onclick="wavesurfer.playPause()">
-      <i class="glyphicon glyphicon-play"></i>
-      Play /
-      <i class="glyphicon glyphicon-pause"></i>
-      Pause
-    </button>
+    <div style="text-align: center">
+      <button class="btn btn-primary" onclick="wavesurfer.playPause()">
+        <i class="glyphicon glyphicon-play"></i>
+        Play /
+        <i class="glyphicon glyphicon-pause"></i>
+        Pause
+      </button>
 
-    <p class="row">
-    <div class="col-xs-1">
-      <i class="glyphicon glyphicon-zoom-in"></i>
+      <p class="row">
+      <div class="col-xs-1">
+        <i class="glyphicon glyphicon-zoom-in"></i>
+      </div>
+
+      <div class="col-xs-10">
+        <input id="slider" type="range" min="1" max="200" value="1" style="width: 100%"/>
+      </div>
+
+      <div class="col-xs-1">
+        <i class="glyphicon glyphicon-zoom-out"></i>
+      </div>
+      </p>
     </div>
 
-    <div class="col-xs-10">
-      <input id="slider" type="range" min="1" max="200" value="1" style="width: 100%"/>
-    </div>
-
-    <div class="col-xs-1">
-      <i class="glyphicon glyphicon-zoom-out"></i>
-    </div>
-    </p>
-  </div>
-
-  <div class="row control-form">
-    <div class="col-md-4">
-      <div>Class</div>
-      <input type="text" class="form-control" id="show_class" value="" readonly>
-      <div>Tags</div>
-      <input type="text" class="form-control" id="tags" value="">
-      {% if not request.user.is_superuser %}
-        <button class="btn" id="tag_button">Save tags</button>
-        {% if project.overlap %}
-          <button id="solve-overlaps-button" class="btn btn-warning">Solve overlaps</button>
-          <button id="back-annotations-button" class="btn btn-warning">Back annotations</button>
-        {% endif %}
-        <div>
-          <button id="submit_button" class="btn" style="display:none;">Submit annotation</button>
+    <div id="class-prominence-container">
+      <div class="class-prominence-item fake-item">
+        <div class="prominence-label-container">
+          <div class="prominence-label"></div>
         </div>
-      {% endif %}
+        <div class="prominence-circles">
+          {% for id, name in prominence_choices %}
+            <div class="circle" data-toggle="tooltip" data-placement="bottom" data-id="{{ id }}"
+                 title="{{ name }}"></div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="row control-form">
+      <div class="col-md-4">
+        <div>Class</div>
+        <input type="text" class="form-control" id="show_class" value="" readonly>
+        <div>Tags</div>
+        <input type="text" class="form-control" id="tags" value="">
+        {% if not request.user.is_superuser %}
+          <button class="btn" id="tag_button">Save tags</button>
+          {% if project.overlap %}
+            <button id="solve-overlaps-button" class="btn btn-warning">Solve overlaps</button>
+            <button id="back-annotations-button" class="btn btn-warning">Back annotations</button>
+          {% endif %}
+          <div>
+            <button id="submit_button" class="btn" style="display:none;">Submit annotation</button>
+          </div>
+        {% endif %}
+        &nbsp;</div>
       &nbsp;</div>
-    &nbsp;</div>
-  <div class="jumbotron" id="controls-container">
-  <h3>Controls:</h3>
-  <h5 class="common-control">- Space bar plays and pauses the audio.</h5>
-  <h5>- <strong>Click</strong> and <strong>drag</strong> on the waveform to create a <strong>new region</strong>. This
-    is now the <strong>selected region</strong>.</h5>
-  <h5 class="common-control">- <strong>Click</strong> on another <strong>region</strong> to <strong>select it</strong>.</h5>
-  <h5>- <strong>Ctrl-Click</strong> on any <strong>region</strong> to <strong>delete it</strong>.</h5>
-  <h5>- <strong>Click</strong> a <strong>number</strong> to <strong>set</strong> the <strong>class</strong> of the
-    selected region.</h5>
-  <h5>- To <strong>tag a region</strong>: <strong>select it</strong>, write the <strong>tags separated by comas</strong>
-    and click <strong>save tags</strong>.</h5>
-  <h5>- <strong>Regions does not overlap</strong>. <strong>Placing a region limit inside another region adjusts the
-    first to the second</strong>. Use this to <strong>easily concatenate regions.</strong></h5>
-  <h5>- Press <strong>"f"</strong> to <strong>glue</strong> the selected region limits to the closer borders. Do it with
-    <strong>Ctrl (+ Shift)</strong> to glue only the <strong>left (right) limit</strong>.</h5>
-  <h5 class="common-control">- Press <strong>"s"</strong> to set the <strong>player</strong> at the <strong>beginning</strong> of the <strong>audio</strong>.
-  </h5>
-  <h5 class="common-control">- Press <strong>"b"</strong> to set the <strong>player</strong> at the <strong>beginning</strong> of the <strong>selected
-    region</strong>.</h5>
-  <h5>- <strong>Ctrl (+ Shift) + Left/Right Arrows</strong> precisely <strong>adjusts</strong> left (right) region
-    <strong>limits</strong>.</h5>
+    <div class="jumbotron" id="controls-container">
+      <h3>Controls:</h3>
+      <h5 class="common-control">- Space bar plays and pauses the audio.</h5>
+      <h5>- <strong>Click</strong> and <strong>drag</strong> on the waveform to create a <strong>new region</strong>.
+        This
+        is now the <strong>selected region</strong>.</h5>
+      <h5 class="common-control">- <strong>Click</strong> on another <strong>region</strong> to <strong>select
+        it</strong>.</h5>
+      <h5>- <strong>Ctrl-Click</strong> on any <strong>region</strong> to <strong>delete it</strong>.</h5>
+      <h5>- <strong>Click</strong> a <strong>number</strong> to <strong>set</strong> the <strong>class</strong> of the
+        selected region.</h5>
+      <h5>- To <strong>tag a region</strong>: <strong>select it</strong>, write the <strong>tags separated by
+        comas</strong>
+        and click <strong>save tags</strong>.</h5>
+      <h5>- <strong>Regions does not overlap</strong>. <strong>Placing a region limit inside another region adjusts the
+        first to the second</strong>. Use this to <strong>easily concatenate regions.</strong></h5>
+      <h5>- Press <strong>"f"</strong> to <strong>glue</strong> the selected region limits to the closer borders. Do it
+        with
+        <strong>Ctrl (+ Shift)</strong> to glue only the <strong>left (right) limit</strong>.</h5>
+      <h5 class="common-control">- Press <strong>"s"</strong> to set the <strong>player</strong> at the <strong>beginning</strong>
+        of the <strong>audio</strong>.
+      </h5>
+      <h5 class="common-control">- Press <strong>"b"</strong> to set the <strong>player</strong> at the <strong>beginning</strong>
+        of the <strong>selected
+          region</strong>.</h5>
+      <h5>- <strong>Ctrl (+ Shift) + Left/Right Arrows</strong> precisely <strong>adjusts</strong> left (right) region
+        <strong>limits</strong>.</h5>
+    </div>
   </div>
-</div>
   {% if request.user.is_superuser %}
     <style>
       .wavesurfer-region .fa-times-circle {
@@ -102,6 +122,7 @@
     var CLASS_DICT = {{ class_dict|safe }};
     var currentRegionId = -1;
     var ORVERLAP_REGION_COLOR = 'rgba(220, 220, 220, 0.8)';
+    var WAVESURFER_HEIGHT = 128;
     var REGIONS_STATE = false;
 
     var wavesurfer = WaveSurfer.create({
@@ -110,6 +131,7 @@
       progressColor: 'purple',
       normalize: true,
       fillParent: true,
+      height: WAVESURFER_HEIGHT,
       hideScrollbar: true
     });
 
@@ -131,6 +153,7 @@
       var attrs = {
         'class': classes,
         'tags': tags,
+        'region_id': id,
         'event_id': id
       };
 
@@ -151,7 +174,7 @@
         {% endif %}
       });
     }
-    
+
     function checkOverlaps() {
       var overlapWasFound = false;
       for (var i in wavesurfer.regions.list) {
@@ -237,6 +260,70 @@
 
       return [new_start, new_end]
     }
+    
+    
+    function updateClassProminence(region_id, className, prominence) {
+      $.ajax({
+        type: "POST",
+        url: '{% url 'class_prominence' %}',
+        dataType: 'json',
+        beforeSend: function (xhr) {
+          xhr.setRequestHeader("X-CSRFToken", '{{ csrf_token }}');
+        },
+        data: {
+          'region_id': region_id,
+          'class_name': className,
+          'prominence': prominence
+        },
+        success: function () {
+          location.reload();
+        }
+      });
+    }
+
+    function toggleProminencePopup(classes, region, offset) {
+      var popup = $('#class-prominence-container'),
+          offsetLeft = offset.left;
+
+      // close popup if click on same region
+      if (popup.hasClass('active') && popup.offset().left == offsetLeft) {
+        popup.removeClass('active');
+        return;
+      }
+
+      // open popup
+      popup.css({
+        'top': (offset.top + WAVESURFER_HEIGHT) + 'px',
+        'left': offset.left + 'px'
+      });
+      popup.addClass('active');
+
+      // remove old classes
+      popup.find('.class-prominence-item').not('.fake-item').remove();
+
+      // add current classes
+      var fakeItem = popup.find('.fake-item');
+      for (var i in classes) {
+        var newItem = fakeItem.clone();
+        newItem.removeClass('fake-item');
+        newItem.find('.prominence-label').text(classes[i]);
+        //todo: set current state
+        popup.append(newItem);
+
+        // click on circle for set prominence
+        $(newItem).find('.circle').on('click', function () {
+          var className = $(this).closest('.class-prominence-item').find('.prominence-label').text();
+          updateClassProminence(region.attributes.region_id, className, $(this).data('id'));
+
+          // mark circle as active
+          $(this).closest('.prominence-circles').find('.circle').removeClass('active');
+          $(this).addClass('active');
+        });
+      }
+
+      // activate tooltips
+      $('[data-toggle="tooltip"]').tooltip();
+    }
 
     function updateEvent(region) {
       var region_data = {
@@ -279,7 +366,7 @@
         type: "POST",
         url: '{% url 'regions' %}',
         dataType: 'json',
-        beforeSend: function(xhr) {
+        beforeSend: function (xhr) {
           xhr.setRequestHeader("X-CSRFToken", '{{ csrf_token }}');
         },
         data: regionData,
@@ -437,6 +524,12 @@
           } else {
             select.selectedIndex = 0
           }
+
+          // open prominence window if Region have multi class
+          var classes = region.attributes.class.split(' ');
+          if (REGIONS_STATE && classes.length > 1) {
+            toggleProminencePopup(classes, region, $(event.target).offset());
+          }
         } else if (event.button == 0 && event.ctrlKey == true) {
           if (!REGIONS_STATE) {
             region.remove()
@@ -563,7 +656,7 @@
           });
         } // end for
         if (totalOverlapsCount > 0) {
-          switchToRegionMode();
+          location.reload();
         }
       });
     {% endif %}

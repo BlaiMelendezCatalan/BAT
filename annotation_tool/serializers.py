@@ -104,7 +104,9 @@ class UserRegistrationSerializer(serializers.Serializer):
 class ClassProminenceSerializer(serializers.Serializer):
     region = serializers.PrimaryKeyRelatedField(queryset=models.Region.objects.all())
     class_obj = serializers.PrimaryKeyRelatedField(queryset=models.Class.objects.all())
-    prominence = serializers.IntegerField(required=False)
+    prominence = serializers.IntegerField(required=False,
+                                          min_value=models.ClassProminence.VERY_LOW,
+                                          max_value=models.ClassProminence.VERY_LOUD)
 
     def create(self, validated_data):
         obj = models.ClassProminence(**validated_data)
