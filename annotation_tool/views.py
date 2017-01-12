@@ -409,6 +409,16 @@ class RegionsView(LoginRequiredMixin, ListCreateAPIView):
     queryset = models.Region.objects.all()
     serializer_class = RegionSerializer
 
+    def delete(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        try:
+            annotation_id = request.data['annotation_id']
+            annotation = models.Annotation.objects.get(id=annotation_id)
+        except KeyError, models.Annotation.DoesNotExist:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        queryset.filter(annotation=annotation).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 def submit_annotation(request):
     context = {}

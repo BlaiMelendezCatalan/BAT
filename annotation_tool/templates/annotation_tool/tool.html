@@ -461,7 +461,18 @@
       });
 
       $('#back-annotations-button').on('click', function () {
-        console.log('back!');
+        $.ajax({
+          type: "DELETE",
+          url: '{% url 'regions' %}',
+          dataType: 'json',
+          beforeSend: function(xhr) {
+            xhr.setRequestHeader("X-CSRFToken", '{{ csrf_token }}');
+          },
+          data: {'annotation_id': {{ annotation.id }} },
+          success: function () {
+            location.reload();
+          }
+        });
       });
 
       $('#solve-overlaps-button').on('click', function () {
