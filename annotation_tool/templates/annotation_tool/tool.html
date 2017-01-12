@@ -223,7 +223,13 @@
           {% for tag in region.tags.all %}
             tags.push('{{ tag.name }}')
           {% endfor %}
-          addRegion('{{ region.classes.all|join:" " }}', tags, {{ region.id }}, {{ region.start_time }}, {{ region.end_time }}, '{{ region.color }}', true);
+          var region = addRegion('{{ region.classes.all|join:" " }}', tags, {{ region.id }}, {{ region.start_time }}, {{ region.end_time }}, '{{ region.color }}', true);
+          {% if region.classes.count > 1 %}
+            region.attributes.classProminences = {};
+            {% for class_prominence in region.classes.all %}
+              region.attributes.classProminences['{{ class_prominence.class_obj.name }}'] = {{ class_prominence.prominence|default_if_none:'0' }};
+            {% endfor %}
+          {% endif %}
         {% endfor %}
         switchToRegionMode();
       {% else %}
@@ -304,10 +310,12 @@
       // add current classes
       var fakeItem = popup.find('.fake-item');
       for (var i in classes) {
-        var newItem = fakeItem.clone();
+        var newItem = fakeItem.clone(),
+            className = classes[i];
         newItem.removeClass('fake-item');
-        newItem.find('.prominence-label').text(classes[i]);
-        //todo: set current state
+        newItem.find('.prominence-label').text(className);
+        var initProminence = region.attributes.classProminences[className];
+        newItem.find('.circle[data-id=' + initProminence + ']').addClass('active');
         popup.append(newItem);
 
         // click on circle for set prominence
