@@ -11,9 +11,9 @@ class ProjectSerializer(serializers.Serializer):
     overlap = serializers.BooleanField(label='Allow class overlap in this project', default=False)
 
     def create(self, validated_data):
-        project = Project(name=validated_data['project_name'],
-                          overlap=validated_data['overlap'],
-                          creation_date=timezone.now())
+        project = models.Project(name=validated_data['project_name'],
+                                 overlap=validated_data['overlap'],
+                                 creation_date=timezone.now())
         project.save()
         return project
 
@@ -99,3 +99,44 @@ class UserRegistrationSerializer(serializers.Serializer):
         user.set_password(self.validated_data['password'])
         user.save()
         return user
+
+
+class ClassProminenceSerializer(serializers.Serializer):
+    region = serializers.PrimaryKeyRelatedField(queryset=models.Region.objects.all())
+    class_obj = serializers.PrimaryKeyRelatedField(queryset=models.Class.objects.all())
+    prominence = serializers.IntegerField(required=False)
+
+    def create(self, validated_data):
+        obj = models.ClassProminence(**validated_data)
+        obj.save()
+        return obj
+
+
+class RegionSerializer(serializers.Serializer):
+    annotation = serializers.PrimaryKeyRelatedField(queryset=models.Annotation.objects.all())
+    start_time = serializers.FloatField()
+    end_time = serializers.FloatField()
+    tags = TagSerializer(many=True)
+    color = serializers.CharField(max_length=50, allow_blank=True)
+    classes = serializers.CharField()
+
+    def create(self, validated_data):
+        classes = validated_data.pop('classes')
+        tags = validated_data.pop('tags')
+
+        region = models.Region(**validated_data)
+        region.save()
+
+        # add tags
+        tags = map(lambda name: models.Tag.objects.get_or_create(name=name), tags)
+        region.tags.add(*tags)
+
+        # add classes
+        classes = map(lambda name: models.Class.objects.get(name=name), classes.split())
+        for class_obj in classes:
+            data = {'region': region.id, 'class_obj': class_obj.id}
+            class_prominence = ClassProminenceSerializer(data=data)
+            class_prominence.is_valid(raise_exception=True)
+            class_prominence.save()
+
+        return region
