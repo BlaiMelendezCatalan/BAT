@@ -326,7 +326,6 @@
         } else if ('created_overlap' in region.attributes) {
           delete region.attributes['created_overlap'];
           delete region.attributes['event_id'];
-          region.attributes['multi_class'] = region.attributes['class'];
         } else if ('created' in region.attributes) {
           delete region.attributes['created']
           var region_data = {
@@ -378,9 +377,6 @@
         };
         if ('event_id' in region.attributes) {
           region_data['event_id'] = region.attributes['event_id']
-        }
-        if ('multi_class' in region.attributes) {
-          region_data['multi_class'] = region.attributes['multi_class']
         }
         $.ajax({
           type: "POST",
@@ -462,6 +458,10 @@
           })
           updateEvent(region)
         }
+      });
+
+      $('#back-annotations-button').on('click', function () {
+        console.log('back!');
       });
 
       $('#solve-overlaps-button').on('click', function () {
