@@ -19,7 +19,7 @@
     {% endfor %}
     </form>
     {% if error %}
-      <p class="alert alert-danger fade in alert-dismissable">There are no more segments to annotate.</p>
+      <p class="alert alert-danger fade in alert-dismissable">{{ error }}</p>
     {% endif %}
 
 
