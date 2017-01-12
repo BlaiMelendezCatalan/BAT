@@ -317,7 +317,7 @@ class NewAnnotationView(LoginRequiredMixin, GenericAPIView):
 
     def get(self, request, *args, **kwargs):
         # Define filters, extract possibles values and store selections
-        context = {'filters': self._filters(), 'error': False}
+        context = {'filters': self._filters(), 'error': ''}
         for v in context['filters'].values():
             v['available'] = models.Project.objects.values_list(v['route'], flat=True) \
                 .order_by(v['route']).distinct()
@@ -345,8 +345,7 @@ class NewAnnotationView(LoginRequiredMixin, GenericAPIView):
                 context['tmp_segment_path'] = utils.create_tmp_file(segment)
                 self.template_name = 'annotation_tool/tool.html'
             else:
-                # There are no more segments to annotate
-                context['error'] = True
+                context['error'] = 'There are no more segments to annotate.'
             return Response(context)
 
 
