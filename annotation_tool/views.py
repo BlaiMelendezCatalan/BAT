@@ -19,7 +19,6 @@ from annotation_tool.serializers import ProjectSerializer, ClassSerializer, Uplo
     UserRegistrationSerializer
 import utils
 from django.contrib.auth import authenticate, login
-from django.contrib.auth.decorators import user_passes_test
 
 
 class ProjectsView(SuperuserRequiredMixin, GenericAPIView):
@@ -402,14 +401,16 @@ def submit_annotation(request):
     context = {}
     # Set annotation to finished
     data = json.loads(request.POST.get('data'))
-    annotation = models.Annotation.objects.get(name=data['annotation'])
-    annotation.status = "finished"
-    annotation.save()
-    project = models.Project.objects.get(name=annotation.segment.wav.project.name)
-    submitted_segment = models.Segment.objects.get(name=annotation.segment.name)
-    # Compute new priority values
-    utils.modify_segment_priority(submitted_segment)
+    try:
+        annotation = models.Annotation.objects.get(id=data['annotation'])
+    except models.Annotation.DoesNotExist:
+        return render(request, 'annotation_tool/tool.html', context)
+
+    utils.update_annotation_status(annotation,
+                                   new_status=models.Annotation.FINISHED)
+
     # Create next annotation
+    # project = models.Project.objects.get(name=annotation.segment.wav.project.name)
     #next_segment = utils.pick_segment_to_annotate(project.name, request.user.id)
     #context['annotation'] = utils.create_annotation(next_segment, request.user)
     #context['classes'] = Class.objects.values_list('name', 'color', 'shortcut')
@@ -417,13 +418,16 @@ def submit_annotation(request):
     #utils.delete_tmp_files()
     #context['tmp_segment_path'] = utils.create_tmp_file(next_segment)
     #print "REACH"
-    return render(request, 'annotation_tool/annotation_tool.html', context)
+    return render(request, 'annotation_tool/tool.html', context)
 
 
 def create_event(request):
     print("create_event")
     region_data = json.loads(request.POST.get('region_data'))
-    annotation = models.Annotation.objects.get(name=region_data['annotation'])
+    try:
+        annotation = models.Annotation.objects.get(name=region_data['annotation'])
+    except models.Annotation.DoesNotExist:
+        return JsonResponse({'error': 'Annotation does not exist'})
     event = models.Event(annotation=annotation)
     event.color = region_data['color']
     event.start_time = region_data['start_time']
@@ -436,6 +440,9 @@ def create_event(request):
         event.tags.add(tag[0])
     event.save()
 
+    utils.update_annotation_status(annotation,
+                                   new_status=models.Annotation.UNFINISHED)
+
     return JsonResponse({'event_id': event.id})
 
 
@@ -444,11 +451,21 @@ def update_end_event(request):
     region_data = json.loads(request.POST.get('region_data'))
 
     if 'event_id' in region_data.keys():
-        event = models.Event.objects.get(id=region_data['event_id'])
+        try:
+            event = models.Event.objects.get(id=region_data['event_id'])
+        except models.Event.DoesNotExist:
+            return JsonResponse({'error': 'Event does not exist'})
+        annotation = event.annotation
     else:
-        annotation = models.Annotation.objects.get(id=region_data['annotation'])
+        try:
+            annotation = models.Annotation.objects.get(id=region_data['annotation'])
+        except models.Annotation.DoesNotExist:
+            return JsonResponse({'error': 'Annotation does not exist'})
         event = models.Event(annotation=annotation)
         event.color = region_data['color']
+
+    utils.update_annotation_status(annotation,
+                                   new_status=models.Annotation.UNFINISHED)
         
     event.start_time = region_data['start_time']
     event.end_time = region_data['end_time']
@@ -460,7 +477,10 @@ def update_end_event(request):
 def update_event(request):
     print("update_event")
     region_data = json.loads(request.POST.get('region_data'))
-    event = models.Event.objects.get(id=region_data['event_id'])
+    try:
+        event = models.Event.objects.get(id=region_data['event_id'])
+    except models.Event.DoesNotExist:
+        return JsonResponse({'error': 'Event does not exist'})
 
     for t in region_data['tags']:
         tag = models.Tag.objects.get_or_create(name=t)
@@ -477,6 +497,9 @@ def update_event(request):
     print event.start_time
     print event.end_time
 
+    utils.update_annotation_status(event.annotation,
+                                   new_status=models.Annotation.UNFINISHED)
+
     return JsonResponse({})
 
 
@@ -484,8 +507,14 @@ def remove_event(request):
     print("remove_event")
     region_data = json.loads(request.POST.get('region_data'))
 
-    event = models.Event.objects.get(id=region_data['event_id'])
+    try:
+        event = models.Event.objects.get(id=region_data['event_id'])
+    except models.Event.DoesNotExist:
+        return JsonResponse({'error': 'Event does not exist'})
     print region_data['event_id']
     event.delete()
+
+    utils.update_annotation_status(event.annotation,
+                                   new_status=models.Annotation.UNFINISHED)
 
     return JsonResponse({})
