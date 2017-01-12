@@ -191,4 +191,4 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 # Your common stuff: Below this line define 3rd party library settings
 # ------------------------------------------------------------------------------
-LOGIN_URL = '/annotation_tool/loginsignup/'
+LOGIN_URL = '/annotation_tool/'

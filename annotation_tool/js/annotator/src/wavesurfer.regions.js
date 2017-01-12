@@ -398,7 +398,6 @@ WaveSurfer.Region = {
   /* Bind DOM events. */
   bindEvents: function () {
     var my = this;
-    console.log('events', this.resize)
     this.element.addEventListener('mouseenter', function (e) {
       my.fireEvent('mouseenter', e);
       my.wavesurfer.fireEvent('region-mouseenter', my, e);
@@ -414,9 +413,7 @@ WaveSurfer.Region = {
       my.fireEvent('click', e);
       my.wavesurfer.fireEvent('region-click', my, e);
     });
-    console.log('del region', this.deleteRegion)
     this.deleteRegion.addEventListener('click', function (e) {
-      console.log('click was done')
       e.stopPropagation();
       my.remove();
     });
