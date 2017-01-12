@@ -228,8 +228,8 @@ class ClassView(SuperuserRequiredMixin, DestroyAPIView):
     lookup_field = 'id'
 
 
-#@login_required(login_url='../loginsignup')
-#@user_passes_test(superuser_check)
+# @login_required(login_url='../loginsignup')
+# @user_passes_test(superuser_check)
 def successful_upload(request):
     context = {}
 
@@ -325,7 +325,7 @@ class NewAnnotationView(LoginRequiredMixin, GenericAPIView):
 
     def get(self, request, *args, **kwargs):
         # Define filters, extract possibles values and store selections
-        context = {'filters': self._filters(), 'error': False}
+        context = {'filters': self._filters(), 'error': ''}
         for v in context['filters'].values():
             v['available'] = models.Project.objects.all().order_by(v['route'])
         selected_project = request.GET.get('project')
@@ -339,8 +339,7 @@ class NewAnnotationView(LoginRequiredMixin, GenericAPIView):
         project = get_object_or_404(models.Project, id=request.GET.get('project'))
         segment = utils.pick_segment_to_annotate(project.name, request.user.id)
         if not annotation_id and not segment:
-            # There are no more segments to annotate
-            context['error'] = True
+            context['error'] = 'There are no more segments to annotate.'
             return Response(context)
 
         # if resume
@@ -420,17 +419,18 @@ def submit_annotation(request):
     except models.Annotation.DoesNotExist:
         return render(request, 'annotation_tool/tool.html', context)
 
-    utils.update_annotation_status(annotation, models.Annotation.FINISHED)
+    utils.update_annotation_status(annotation,
+                                   new_status=models.Annotation.FINISHED)
 
     # Create next annotation
     # project = models.Project.objects.get(name=annotation.segment.wav.project.name)
-    #next_segment = utils.pick_segment_to_annotate(project.name, request.user.id)
-    #context['annotation'] = utils.create_annotation(next_segment, request.user)
-    #context['classes'] = Class.objects.values_list('name', 'color', 'shortcut')
-    #context['class_dict'] = json.dumps(list(context['classes']), cls=DjangoJSONEncoder)
-    #utils.delete_tmp_files()
-    #context['tmp_segment_path'] = utils.create_tmp_file(next_segment)
-    #print "REACH"
+    # next_segment = utils.pick_segment_to_annotate(project.name, request.user.id)
+    # context['annotation'] = utils.create_annotation(next_segment, request.user)
+    # context['classes'] = Class.objects.values_list('name', 'color', 'shortcut')
+    # context['class_dict'] = json.dumps(list(context['classes']), cls=DjangoJSONEncoder)
+    # utils.delete_tmp_files()
+    # context['tmp_segment_path'] = utils.create_tmp_file(next_segment)
+    # print "REACH"
     return render(request, 'annotation_tool/tool.html', context)
 
 
@@ -453,7 +453,8 @@ def create_event(request):
         event.tags.add(tag[0])
     event.save()
 
-    utils.update_annotation_status(annotation, models.Annotation.UNFINISHED)
+    utils.update_annotation_status(annotation,
+                                   new_status=models.Annotation.UNFINISHED)
 
     return JsonResponse({'event_id': event.id})
 
@@ -474,13 +475,11 @@ def update_end_event(request):
         except models.Annotation.DoesNotExist:
             return JsonResponse({'error': 'Annotation does not exist'})
         event = models.Event(annotation=annotation)
-        if 'multi_class' in region_data.keys():
-            # todo: save multi class for this region
-            pass
         event.color = region_data['color']
 
-    utils.update_annotation_status(annotation, models.Annotation.UNFINISHED)
-        
+    utils.update_annotation_status(annotation,
+                                   new_status=models.Annotation.UNFINISHED)
+
     event.start_time = region_data['start_time']
     event.end_time = region_data['end_time']
     event.save()
@@ -511,7 +510,8 @@ def update_event(request):
     print event.start_time
     print event.end_time
 
-    utils.update_annotation_status(event.annotation, models.Annotation.UNFINISHED)
+    utils.update_annotation_status(event.annotation,
+                                   new_status=models.Annotation.UNFINISHED)
 
     return JsonResponse({})
 
@@ -527,6 +527,7 @@ def remove_event(request):
     print region_data['event_id']
     event.delete()
 
-    utils.update_annotation_status(event.annotation, models.Annotation.UNFINISHED)
+    utils.update_annotation_status(event.annotation,
+                                   new_status=models.Annotation.UNFINISHED)
 
     return JsonResponse({})
