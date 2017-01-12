@@ -406,7 +406,8 @@ def submit_annotation(request):
     except models.Annotation.DoesNotExist:
         return render(request, 'annotation_tool/tool.html', context)
 
-    utils.update_annotation_status(annotation, models.Annotation.FINISHED)
+    utils.update_annotation_status(annotation,
+                                   new_status=models.Annotation.FINISHED)
 
     # Create next annotation
     # project = models.Project.objects.get(name=annotation.segment.wav.project.name)
@@ -439,7 +440,8 @@ def create_event(request):
         event.tags.add(tag[0])
     event.save()
 
-    utils.update_annotation_status(annotation, models.Annotation.UNFINISHED)
+    utils.update_annotation_status(annotation,
+                                   new_status=models.Annotation.UNFINISHED)
 
     return JsonResponse({'event_id': event.id})
 
@@ -462,7 +464,8 @@ def update_end_event(request):
         event = models.Event(annotation=annotation)
         event.color = region_data['color']
 
-    utils.update_annotation_status(annotation, models.Annotation.UNFINISHED)
+    utils.update_annotation_status(annotation,
+                                   new_status=models.Annotation.UNFINISHED)
         
     event.start_time = region_data['start_time']
     event.end_time = region_data['end_time']
@@ -494,7 +497,8 @@ def update_event(request):
     print event.start_time
     print event.end_time
 
-    utils.update_annotation_status(event.annotation, models.Annotation.UNFINISHED)
+    utils.update_annotation_status(event.annotation,
+                                   new_status=models.Annotation.UNFINISHED)
 
     return JsonResponse({})
 
@@ -510,6 +514,7 @@ def remove_event(request):
     print region_data['event_id']
     event.delete()
 
-    utils.update_annotation_status(event.annotation, models.Annotation.UNFINISHED)
+    utils.update_annotation_status(event.annotation,
+                                   new_status=models.Annotation.UNFINISHED)
 
     return JsonResponse({})
