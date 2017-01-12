@@ -36,6 +36,7 @@
 	<th>Project name</th>
 	<th>Annotation date</th>
 	<th>Status</th>
+  <th>Annotation tool</th>
   <th></th>
 	</tr>
 	{% for annotation in query_data %}
@@ -50,6 +51,7 @@
 		<td>{{ annotation.segment.wav.project.name }}</td>
 		<td>{{ annotation.annotation_date }}</td>
 		<td>{{ annotation.status }}</td>
+    <td><a href="{% url 'new_annotation' %}?project={{ annotation.segment.wav.project.name }}&annotation={{ annotation.id }}">View</a></td>
     <td><button data-delete-url="{% url 'annotation' annotation.id %}" class="btn btn-danger delete-item"
                     data-toggle="modal" data-target="#delete-modal">Delete
             </button></td>

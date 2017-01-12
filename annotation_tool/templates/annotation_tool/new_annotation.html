@@ -23,6 +23,10 @@
         </select>
     {% endfor %}
     </form>
+    {% if error %}
+      <p class="alert alert-danger fade in alert-dismissable">{{ error }}</p>
+    {% endif %}
+
 
 {% endif %}
 {% endblock %}

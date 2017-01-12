@@ -1,4 +1,4 @@
-{% extends 'annotation_tool/base_normal.html' %}
+{% extends base_template %}
 {% load staticfiles %}
 
 {% block title %}Annotation tool{% endblock %}
@@ -50,10 +50,12 @@
   <input type="text" id="show_class" value="" readonly>
   <div>Tags</div>
   <input type="text" id="tags" value="">
-  <button id="tag_button">Save tags</button>
-  <div>
-    <button id="submit_button" style="display:none;">Submit annotation</button>
-  </div>
+  {% if not request.user.is_superuser %}
+    <button id="tag_button">Save tags</button>
+    <div>
+      <button id="submit_button" style="display:none;">Submit annotation</button>
+    </div>
+  {% endif %}
   &nbsp;
   &nbsp;
   <h3>Controls:</h3>
@@ -77,6 +79,13 @@
   <h5>- <strong>Ctrl (+ Shift) + Left/Right Arrows</strong> precisely <strong>adjusts</strong> left (right) region
     <strong>limits</strong>.</h5>
 
+  {% if request.user.is_superuser %}
+    <style>
+      .wavesurfer-region .fa-times-circle {
+        display: none;
+      }
+    </style>
+  {% endif %}
   <script type="text/javascript">
 
     var select = document.getElementById("show_class");
@@ -98,6 +107,9 @@
           end: {{ event.end_time }},
           color: '{{ event.color }}',
           drag: false,
+          {% if request.user.is_superuser %}
+            resize: false
+          {% endif %}
         });
       {% endfor %}
     }
@@ -208,7 +220,7 @@
       progressColor: 'purple',
       normalize: true,
       fillParent: true,
-      hideScrollbar: true,
+      hideScrollbar: true
     });
 
     wavesurfer.load("{% url 'media' tmp_segment_path %}");
@@ -228,37 +240,74 @@
     var currentRegionId = -1;
 
     wavesurfer.on('ready', function () {
-      wavesurfer.enableDragSelection({})
+      {% if request.user.is_superuser %}
+        wavesurfer.initRegions()
+        wavesurfer.disableDragSelection({})
+      {% else %}
+        wavesurfer.enableDragSelection({})
+      {% endif %}
+
       loadRegions()
       wavesurfer.play()
     });
+    {% if not request.user.is_superuser %}
+      // WaveSurfer callbacks
+      wavesurfer.on('region-created', function (region) {
+        setCurrentRegion(region.id)
+        disableDrag(region)
 
-    // WaveSurfer callbacks
-    wavesurfer.on('region-created', function (region) {
-      setCurrentRegion(region.id)
-      disableDrag(region)
+        resetHTML()
 
-      resetHTML()
+        if (!('loaded' in region.attributes) && !('created' in region.attributes)) {
+          region.attributes['class'] = "None"
+          region.attributes['tags'] = []
+        } else if ('loaded' in region.attributes) {
+          delete region.attributes['loaded']
+        } else if ('created' in region.attributes) {
+          delete region.attributes['created']
+          var region_data = {
+            annotation: '{{ annotation }}',
+            event_class: region.attributes['class'],
+            tags: region.attributes['tags'],
+            start_time: region.start,
+            end_time: region.end,
+            color: region.color
+          }
 
-      if (!('loaded' in region.attributes) && !('created' in region.attributes)) {
-        region.attributes['class'] = "None"
-        region.attributes['tags'] = []
-      } else if ('loaded' in region.attributes) {
-        delete region.attributes['loaded']
-      } else if ('created' in region.attributes) {
-        delete region.attributes['created']
-        var region_data = {
-          annotation: '{{ annotation }}',
-          event_class: region.attributes['class'],
-          tags: region.attributes['tags'],
-          start_time: region.start,
-          end_time: region.end,
-          color: region.color
+          $.ajax({
+            type: "POST",
+            url: '../create_event/',
+            dataType: 'json',
+            data: {
+              region_data: JSON.stringify(region_data),
+              csrfmiddlewaretoken: '{{csrf_token}}'
+            },
+            success: function (data) {
+              region = wavesurfer.regions.list[currentRegionId]
+              region.attributes['event_id'] = data.event_id
+            }
+          });
         }
+      });
 
+      wavesurfer.on('region-update-end', function (region) {
+        setCurrentRegion(region.id)
+        var region_data = {}
+        times = preventOverlappingsOnCreation(region)
+        region.update({
+          start: times[0],
+          end: times[1],
+        })
+        region_data['start_time'] = times[0]
+        region_data['end_time'] = times[1]
+        region_data['annotation'] = '{{ annotation.id }}'
+        region_data['color'] = region.color
+        if ('event_id' in region.attributes) {
+          region_data['event_id'] = region.attributes['event_id']
+        }
         $.ajax({
           type: "POST",
-          url: '../create_event/',
+          url: '../update_end_event/',
           dataType: 'json',
           data: {
             region_data: JSON.stringify(region_data),
@@ -269,205 +318,176 @@
             region.attributes['event_id'] = data.event_id
           }
         });
-      }
-    });
+      });
 
-    wavesurfer.on('region-update-end', function (region) {
-      setCurrentRegion(region.id)
-      var region_data = {}
-      times = preventOverlappingsOnCreation(region)
-      region.update({
-        start: times[0],
-        end: times[1],
-      })
-      region_data['start_time'] = times[0]
-      region_data['end_time'] = times[1]
-      region_data['annotation'] = '{{ annotation }}'
-      region_data['color'] = region.color
-      if ('event_id' in region.attributes) {
-        region_data['event_id'] = region.attributes['event_id']
-      }
-      $.ajax({
-        type: "POST",
-        url: '../update_end_event/',
-        dataType: 'json',
-        data: {
-          region_data: JSON.stringify(region_data),
-          csrfmiddlewaretoken: '{{csrf_token}}'
-        },
-        success: function (data) {
-          region = wavesurfer.regions.list[currentRegionId]
-          region.attributes['event_id'] = data.event_id
+
+      wavesurfer.on('region-removed', function (region) {
+        setCurrentRegion(-1)
+        var region_data = {event_id: region.attributes['event_id']}
+
+        $.ajax({
+          type: "POST",
+          url: '../remove_event/',
+          dataType: 'json',
+          data: {
+            region_data: JSON.stringify(region_data),
+            csrfmiddlewaretoken: '{{csrf_token}}'
+          },
+          success: function (response) {
+          }
+        });
+      });
+
+      wavesurfer.on('region-click', function (region, event) {
+        console.log("clicked")
+        setCurrentRegion(region.id)
+
+        if (event.button == 0 && event.ctrlKey == false) {
+          if ("tags" in region.attributes) {
+            document.getElementById("tags").value = region.attributes['tags']
+          } else {
+            document.getElementById("tags").value = ""
+          }
+          if ("class" in region.attributes) {
+            $(select).val(region.attributes['class'])
+          } else {
+            select.selectedIndex = 0
+          }
+        } else if (event.button == 0 && event.ctrlKey == true) {
+          region.remove()
         }
       });
-    });
 
 
-    wavesurfer.on('region-removed', function (region) {
-      setCurrentRegion(-1)
-      var region_data = {event_id: region.attributes['event_id']}
-
-      $.ajax({
-        type: "POST",
-        url: '../remove_event/',
-        dataType: 'json',
-        data: {
-          region_data: JSON.stringify(region_data),
-          csrfmiddlewaretoken: '{{csrf_token}}'
-        },
-        success: function (response) {
+      // HTML elements callbacks
+      document.onkeydown = function (e) {
+        e.stopPropagation()
+        e.preventDefault()
+        region = wavesurfer.regions.list[currentRegionId]
+        key = e.key;
+        console.log(e)
+        n_regions = Object.keys(wavesurfer.regions.list).length
+        if (!isNaN(parseInt(key)) && parseInt(key) > 0 && parseInt(key) <= n_regions && e.ctrlKey == true) {
+          region_list = sortRegionsByOption(wavesurfer.regions.list, "start")
+          region = region_list[parseInt(key) - 1]
+          currentRegionId = region.id
+          wavesurfer.seekTo(region.start / wavesurfer.getDuration())
         }
-      });
-    });
 
-    wavesurfer.on('region-click', function (region, event) {
-      console.log("clicked")
-      setCurrentRegion(region.id)
-
-      if (event.button == 0 && event.ctrlKey == false) {
-        if ("tags" in region.attributes) {
-          document.getElementById("tags").value = region.attributes['tags']
-        } else {
-          document.getElementById("tags").value = ""
+        for (var i = 0; i < class_dict.length; i++) {
+          if (class_dict[i][2] == key && e.ctrlKey == false) {
+            region.update({
+              attributes: {
+                'class': class_dict[i][0],
+                'tags': region.attributes['tags'],
+                'event_id': region.attributes['event_id']
+              },
+              color: class_dict[i][1]
+            })
+            updateEvent(region)
+            $("#show_class").val(class_dict[i][0])
+          }
         }
-        if ("class" in region.attributes) {
-          $(select).val(region.attributes['class'])
-        } else {
-          select.selectedIndex = 0
-        }
-      } else if (event.button == 0 && event.ctrlKey == true) {
-        region.remove()
-      }
-    });
-
-    // HTML elements callbacks
-    document.onkeydown = function (e) {
-      e.stopPropagation()
-      e.preventDefault()
-      region = wavesurfer.regions.list[currentRegionId]
-      key = e.key;
-      console.log(e)
-      n_regions = Object.keys(wavesurfer.regions.list).length
-      if (!isNaN(parseInt(key)) && parseInt(key) > 0 && parseInt(key) <= n_regions && e.ctrlKey == true) {
-        region_list = sortRegionsByOption(wavesurfer.regions.list, "start")
-        region = region_list[parseInt(key) - 1]
-        currentRegionId = region.id
-        wavesurfer.seekTo(region.start / wavesurfer.getDuration())
-      }
-
-      for (var i = 0; i < class_dict.length; i++) {
-        if (class_dict[i][2] == key && e.ctrlKey == false) {
+        if (key == " ") {
+          wavesurfer.playPause()
+        } else if (key == "ArrowLeft" && e.ctrlKey == true && e.shiftKey == false) {
+          times = preventOverlappingsOnArrow(region, increment = -1. / 100)
           region.update({
-            attributes: {
-              'class': class_dict[i][0],
-              'tags': region.attributes['tags'],
-              'event_id': region.attributes['event_id']
-            },
-            color: class_dict[i][1],
+            start: times[0],
           })
-          updateEvent(region)
-          $("#show_class").val(class_dict[i][0])
-        }
-      }
-      if (key == " ") {
-        wavesurfer.playPause()
-      } else if (key == "ArrowLeft" && e.ctrlKey == true && e.shiftKey == false) {
-        times = preventOverlappingsOnArrow(region, increment = -1. / 100)
-        region.update({
-          start: times[0],
-        })
-        //updateEvent(region)
-      } else if (key == "ArrowRight" && e.ctrlKey == true && e.shiftKey == false) {
-        region.update({
-          start: region.start + 1. / 100,
-        })
-        //updateEvent(region)
-      } else if (key == "ArrowLeft" && e.ctrlKey == true && e.shiftKey == true) {
-        region.update({
-          end: region.end - 1. / 100,
-        })
-        //updateEvent(region)
-      } else if (key == "ArrowRight" && e.ctrlKey == true && e.shiftKey == true) {
-        times = preventOverlappingsOnArrow(region, increment = 1. / 100)
-        region.update({
-          end: times[1],
-        })
-        //updateEvent(region)
-      } else if (key == 'b') {
-        wavesurfer.seekTo(region.start / wavesurfer.getDuration())
-      } else if (key == 's') {
-        wavesurfer.seekTo(0.0)
-      } else if (key == 'f' || key == 'F') {
-        region_list = sortRegionsByOption(wavesurfer.regions.list, "start")
-        for (var i = 0; i < region_list.length; i++) {
-          if (region == region_list[i]) {
-            if (i == 0) {
-              if (e.shiftKey == false) {
-                new_start = 0.0
-              }
-              if (region_list.length == 1) {
+          //updateEvent(region)
+        } else if (key == "ArrowRight" && e.ctrlKey == true && e.shiftKey == false) {
+          region.update({
+            start: region.start + 1. / 100,
+          })
+          //updateEvent(region)
+        } else if (key == "ArrowLeft" && e.ctrlKey == true && e.shiftKey == true) {
+          region.update({
+            end: region.end - 1. / 100,
+          })
+          //updateEvent(region)
+        } else if (key == "ArrowRight" && e.ctrlKey == true && e.shiftKey == true) {
+          times = preventOverlappingsOnArrow(region, increment = 1. / 100)
+          region.update({
+            end: times[1],
+          })
+          //updateEvent(region)
+        } else if (key == 'b') {
+          wavesurfer.seekTo(region.start / wavesurfer.getDuration())
+        } else if (key == 's') {
+          wavesurfer.seekTo(0.0)
+        } else if (key == 'f' || key == 'F') {
+          region_list = sortRegionsByOption(wavesurfer.regions.list, "start")
+          for (var i = 0; i < region_list.length; i++) {
+            if (region == region_list[i]) {
+              if (i == 0) {
+                if (e.shiftKey == false) {
+                  new_start = 0.0
+                }
+                if (region_list.length == 1) {
+                  if (e.ctrlKey == e.shiftKey) {
+                    new_end = getDuration()
+                  }
+                } else {
+                  if (e.ctrlKey == e.shiftKey) {
+                    new_end = region_list[i + 1].start
+                  }
+                }
+              } else if (i == region_list.length - 1) {
+                if (e.shiftKey == false) {
+                  new_start = region_list[i - 1].end
+                }
                 if (e.ctrlKey == e.shiftKey) {
                   new_end = getDuration()
                 }
               } else {
+                if (e.shiftKey == false) {
+                  new_start = region_list[i - 1].end
+                }
                 if (e.ctrlKey == e.shiftKey) {
                   new_end = region_list[i + 1].start
                 }
               }
-            } else if (i == region_list.length - 1) {
-              if (e.shiftKey == false) {
-                new_start = region_list[i - 1].end
-              }
-              if (e.ctrlKey == e.shiftKey) {
-                new_end = getDuration()
-              }
-            } else {
-              if (e.shiftKey == false) {
-                new_start = region_list[i - 1].end
-              }
-              if (e.ctrlKey == e.shiftKey) {
-                new_end = region_list[i + 1].start
-              }
+              region.update({
+                start: new_start,
+                end: new_end,
+              })
+              updateEvent(region)
+              break;
             }
-            region.update({
-              start: new_start,
-              end: new_end,
-            })
-            updateEvent(region)
-            break;
           }
         }
       }
-    }
 
-    document.onkeyup = function (e) {
-      key = e.key
-      if (key == "ArrowLeft" || key == "ArrowRight") {
-        Object.keys(wavesurfer.regions.list).forEach(function (id) {
-          region = wavesurfer.regions.list[id]
+
+      document.onkeyup = function (e) {
+        key = e.key
+        if (key == "ArrowLeft" || key == "ArrowRight") {
+          Object.keys(wavesurfer.regions.list).forEach(function (id) {
+            region = wavesurfer.regions.list[id]
+            updateEvent(region)
+          });
+        }
+      }
+
+      $("#tag_button").click(function () {
+        if (currentRegionId != -1) {
+          region = wavesurfer.regions.list[currentRegionId]
+          tags = document.getElementById("tags").value.split(",")
+          region.update({
+            attributes: {
+              'class': region.attributes['class'],
+              'tags': tags,
+              'event_id': region.attributes['event_id']
+            },
+          })
           updateEvent(region)
-        });
-      }
-    }
-
-    $("#tag_button").click(function () {
-      if (currentRegionId != -1) {
-        region = wavesurfer.regions.list[currentRegionId]
-        tags = document.getElementById("tags").value.split(",")
-        region.update({
-          attributes: {
-            'class': region.attributes['class'],
-            'tags': tags,
-            'event_id': region.attributes['event_id']
-          },
-        })
-        updateEvent(region)
-      }
-    });
-
+        }
+      });
+    {% endif %}
     //$("#submit_button").click(function() {
     //	data = {}
-    //	data['annotation'] = '{{ annotation.name }}'
+    //	data['annotation'] = '{{ annotation.id }}'
     //	$.ajax({
     //        type: "POST",
     //        url: '../submit_annotation/',
