@@ -68,16 +68,41 @@
         <input type="text" class="form-control" id="tags" value="">
         {% if not request.user.is_superuser %}
           <button class="btn" id="tag_button">Save tags</button>
+        {% endif %}
+      </div>
+      <div class="col-md-4 col-md-offset-1">
+        {% if not request.is_superuser %}
           {% if project.overlap %}
             <button id="solve-overlaps-button" class="btn btn-warning">Solve overlaps</button>
             <button id="back-annotations-button" class="btn btn-warning">Back annotations</button>
           {% endif %}
-          <div>
-            <button id="submit_button" class="btn" style="display:none;">Submit annotation</button>
-          </div>
+          <br>
+          <button data-load-next="0" class="btn btn-primary finish-annotation-button">Finish annotation</button>
+          <button data-load-next="1" class="btn btn-primary finish-annotation-button">Finish annotation and load next</button>
         {% endif %}
-        &nbsp;</div>
-      &nbsp;</div>
+      </div>
+    </div>
+
+    <div id="modal-window" class="modal fade" role="dialog">
+      <div class="modal-dialog">
+
+        <!-- Modal content-->
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal">&times;</button>
+            <h4 class="modal-title"></h4>
+          </div>
+          <div class="modal-body">
+
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
     <div class="jumbotron" id="controls-container">
       <h3>Controls:</h3>
       <h5 class="common-control">- Space bar plays and pauses the audio.</h5>
@@ -121,7 +146,7 @@
     var ALLOW_OVERLAPS = {% if project.overlap %}true{% else %}false{% endif %};
     var CLASS_DICT = {{ class_dict|safe }};
     var currentRegionId = -1;
-    var ORVERLAP_REGION_COLOR = 'rgba(220, 220, 220, 0.8)';
+    var OVERLAP_REGION_COLOR = 'rgba(220, 220, 220, 0.8)';
     var WAVESURFER_HEIGHT = 128;
     var REGIONS_STATE = false;
 
@@ -195,6 +220,7 @@
         });
       }
       $('#solve-overlaps-button').attr('disabled', !overlapWasFound);
+      return overlapWasFound;
     }
 
     function switchToRegionMode() {
@@ -318,8 +344,10 @@
 
         // click on circle for set prominence
         $(newItem).find('.circle').on('click', function () {
-          var className = $(this).closest('.class-prominence-item').find('.prominence-label').text();
-          updateClassProminence(region.attributes.region_id, className, $(this).data('id'));
+          var className = $(this).closest('.class-prominence-item').find('.prominence-label').text(),
+              prominence = $(this).data('id');
+          updateClassProminence(region.attributes.region_id, className, prominence);
+          region.attributes.classProminences[className] = prominence;
 
           // mark circle as active
           $(this).closest('.prominence-circles').find('.circle').removeClass('active');
@@ -450,6 +478,9 @@
       });
 
       function onRegionUpdateEnd(region) {
+        if (REGIONS_STATE) {
+          return;
+        }
         setCurrentRegion(region.id);
         var times;
         if (ALLOW_OVERLAPS) {
@@ -648,7 +679,7 @@
                 new_region_id,
                 new_region_start,
                 new_region_end,
-                ORVERLAP_REGION_COLOR,
+                OVERLAP_REGION_COLOR,
                 false //is loaded
             );
             createNewRegion(current_region, function () {
@@ -661,22 +692,80 @@
           });
         } // end for
         if (totalOverlapsCount > 0) {
-          location.reload();
+          setTimeout(function() {
+            location.reload();
+          }, 200);
         }
       });
+      
+      
+      function checkClassProminenceIsFilled() {
+        if (!REGIONS_STATE) {
+          return true;
+        }
+        for (var i in wavesurfer.regions.list) {
+          var region = wavesurfer.regions.list[i],
+              region_classes = region.attributes.class.split(' ');
+          // only regions with multi classes
+          if (region_classes.length < 2) {
+            continue;
+          }
+          for (var j in region_classes) {
+            var className = region_classes[j];
+            if (region.attributes.classProminences[className] == '0') {
+              return false;
+            }
+          }
+        }
+        return true;
+      }
+
+
+      $(".finish-annotation-button").click(function() {
+        var modalWindow = $('#modal-window');
+        if (ALLOW_OVERLAPS && checkOverlaps()) {
+          modalWindow.find('.modal-title').text('Error');
+          modalWindow.find('.modal-body').text('First solve overlaps');
+          modalWindow.modal('show');
+          return;
+        }
+        if (!checkClassProminenceIsFilled()) {
+          modalWindow.find('.modal-title').text('Error');
+          modalWindow.find('.modal-body').text('First you should to set the prominence to all regions with more than one class');
+          modalWindow.modal('show');
+          return;
+        }
+
+        var loadNextAnnotation = $(this).data('load-next');
+
+
+        $.ajax({
+          type: "PATCH",
+          url: '{% url 'annotation' id=annotation.id %}',
+          dataType: 'json',
+          beforeSend: function (xhr) {
+            xhr.setRequestHeader("X-CSRFToken", '{{ csrf_token }}');
+          },
+          data: {}
+        }).always(function (response) {
+          var modalWindow = $('#modal-window'),
+              text = 'Annotation is finished.';
+
+          if (typeof response.next_annotation_url != 'undefined') {
+            if (loadNextAnnotation == '1') {
+              // if have next annotation url - redirect
+              if (response.next_annotation_url != '') {
+                location.href = response.next_annotation_url;
+              }
+              text += '<p><b>There are no more segments to annotate.</b></p>';
+            }
+            modalWindow.find('.modal-title').text('Success');
+            modalWindow.find('.modal-body').html(text);
+            modalWindow.modal('show');
+          }
+        });
+      });
     {% endif %}
-    //$("#submit_button").click(function() {
-    //	data = {}
-    //	data['annotation'] = '{{ annotation.id }}'
-    //	$.ajax({
-    //        type: "POST",
-    //        url: '../submit_annotation/',
-    //        dataType: 'json',
-    //        data: { data: JSON.stringify(data),
-    //        		csrfmiddlewaretoken: '{{csrf_token}}'},
-    //        success: function(response) {}
-    //    });
-    //});
 
   </script>
   <script src="{% static 'js/annotator/hotkeys.js' %}"></script>

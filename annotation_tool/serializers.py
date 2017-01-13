@@ -134,7 +134,7 @@ class RegionSerializer(serializers.Serializer):
         region.tags.add(*tags)
 
         # add classes
-        classes = map(lambda name: models.Class.objects.get(name=name), classes.split())
+        classes = map(lambda name: models.Class.objects.get(name=name, project=region.get_project()), classes.split())
         for class_obj in classes:
             data = {'region': region.id, 'class_obj': class_obj.id}
             class_prominence = ClassProminenceSerializer(data=data)

@@ -9,7 +9,7 @@ from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
-from rest_framework.generics import GenericAPIView, DestroyAPIView, ListCreateAPIView
+from rest_framework.generics import GenericAPIView, DestroyAPIView, ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.parsers import FileUploadParser, MultiPartParser
 from rest_framework.renderers import TemplateHTMLRenderer
 from rest_framework.response import Response
@@ -149,9 +149,37 @@ class AnnotationsView(SuperuserRequiredMixin, GenericAPIView):
         return Response(context)
 
 
-class AnnotationView(SuperuserRequiredMixin, DestroyAPIView):
+class AnnotationView(LoginRequiredMixin, DestroyAPIView):
     queryset = models.Annotation.objects.all()
     lookup_field = 'id'
+
+    def delete(self, request, *args, **kwargs):
+        if request.user.is_superuser:
+            return self.destroy(request, *args, **kwargs)
+        return Response(status=status.HTTP_403_FORBIDDEN)
+
+    def patch(self, request, *args, **kwargs):
+        annotation = self.get_object()
+        utils.update_annotation_status(annotation,
+                                       new_status=models.Annotation.FINISHED)
+        # find next annotation
+        next_annotation_url = ''
+        project = annotation.get_project()
+        segment = utils.pick_segment_to_annotate(project.name, request.user.id)
+
+        if segment:
+            # if have unannotated segment
+            next_annotation = utils.create_annotation(segment, request.user)
+        else:
+            # find unfinished annotation
+            next_annotation = models.Annotation.objects.filter(user__id=request.user.id,
+                                                               status=models.Annotation.UNFINISHED).first()
+
+        if next_annotation:
+            next_annotation_url = '{}?project={}&annotation={}'.format(reverse('new_annotation'),
+                                                                       project.id,
+                                                                       next_annotation.id)
+        return Response(data={'next_annotation_url': next_annotation_url}, status=status.HTTP_200_OK)
 
 
 class EventsView(SuperuserRequiredMixin, GenericAPIView):
@@ -421,6 +449,9 @@ class RegionsView(LoginRequiredMixin, ListCreateAPIView):
         regions = queryset.filter(annotation=annotation)
         models.ClassProminence.objects.filter(region__in=regions).delete()
         regions.delete()
+
+        utils.update_annotation_status(annotation,
+                                       new_status=models.Annotation.UNFINISHED)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
