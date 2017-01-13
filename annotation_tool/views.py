@@ -504,7 +504,8 @@ def update_event(request):
         event.tags.add(tag[0])
 
     if region_data['event_class'] != "None":
-        event_class = models.Class.objects.get(name=region_data['event_class'])
+        event_class = models.Class.objects.get(name=region_data['event_class'],
+                                               project=event.annotation.segment.wav.project)
         event.event_class = event_class
         event.color = region_data['color']
 

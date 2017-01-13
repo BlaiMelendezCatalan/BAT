@@ -227,10 +227,8 @@
       Object.keys(wavesurfer.regions.list).forEach(function (id) {
         var region = wavesurfer.regions.list[id]
         if (current_region.start < region.start && current_region.end > region.start) {
-          console.log('WRONG END')
           new_end = region.start
         } else if (current_region.end > region.end && current_region.start < region.end) {
-          console.log('WRONG START')
           new_start = region.end
         }
       });
@@ -427,7 +425,6 @@
       });
 
       wavesurfer.on('region-click', function (region, event) {
-        console.log("clicked")
         setCurrentRegion(region.id)
 
         if (event.button == 0 && event.ctrlKey == false) {
