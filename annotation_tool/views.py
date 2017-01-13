@@ -431,7 +431,8 @@ class ClassProminenceView(LoginRequiredMixin, GenericAPIView):
     def post(self, request, *args, **kwargs):
         try:
             region = models.Region.objects.get(id=request.data['region_id'])
-            class_obj = models.Class.objects.get(name=request.data['class_name'])
+            class_obj = models.Class.objects.get(name=request.data['class_name'],
+                                                 project=region.get_project())
             prominence = request.data['prominence']
         except (models.Region.DoesNotExist, models.ClassProminence.DoesNotExist):
             return Response(status=status.HTTP_400_BAD_REQUEST)
@@ -477,7 +478,8 @@ def create_event(request):
     event.start_time = region_data['start_time']
     event.end_time = region_data['end_time']
     if region_data['event_class'] != "None":
-        event_class = models.Class.objects.get(name=region_data['event_class'])
+        event_class = models.Class.objects.get(name=region_data['event_class'],
+                                               project=annotation.get_project())
         event.event_class = event_class
     for t in region_data['tags']:
         tag = models.Tag.objects.get_or_create(name=t)
@@ -532,7 +534,7 @@ def update_event(request):
 
     if region_data['event_class'] != "None":
         event_class = models.Class.objects.get(name=region_data['event_class'],
-                                               project=event.annotation.segment.wav.project)
+                                               project=event.get_project())
         event.event_class = event_class
         event.color = region_data['color']
 
