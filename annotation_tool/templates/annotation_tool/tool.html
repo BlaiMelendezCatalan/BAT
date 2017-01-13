@@ -756,8 +756,9 @@
               // if have next annotation url - redirect
               if (response.next_annotation_url != '') {
                 location.href = response.next_annotation_url;
+              } else {
+                text += '<p><b>There are no more segments to annotate for this project.</b></p>';
               }
-              text += '<p><b>There are no more segments to annotate.</b></p>';
             }
             modalWindow.find('.modal-title').text('Success');
             modalWindow.find('.modal-body').html(text);
