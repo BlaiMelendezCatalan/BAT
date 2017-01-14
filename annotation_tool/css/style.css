@@ -28,12 +28,9 @@
     margin-top: 50px;
 }
 
-#solve-overlaps-button {
-    margin-left: 10px;
-}
-
 #controls-container {
     padding: 10px 30px;
+    margin-top: 10px;
 }
 
 .container {
@@ -95,4 +92,9 @@
 
 #class-prominence-container .fake-item {
     display: none;
+}
+
+.finish-annotation-button {
+    margin-right: 10px;
+    margin-top: 10px;
 }
