@@ -13,6 +13,7 @@ urlpatterns = [
     url(r'^segment/(?P<id>\d+)/$', views.SegmentView.as_view(), name='segment'),
     url(r'^annotations/$', views.AnnotationsView.as_view(), name='annotations'),
     url(r'^annotation/(?P<id>\d+)/$', views.AnnotationView.as_view(), name='annotation'),
+    url(r'^annotation/(?P<id>\d+)/finish/$', views.AnnotationFinishView.as_view(), name='finish_annotation'),
     url(r'^events/$', views.EventsView.as_view(), name='events'),
     url(r'^event/(?P<id>\d+)/$', views.EventView.as_view(), name='event'),
     url(r'^classes/$', views.ClassesView.as_view(), name='classes'),

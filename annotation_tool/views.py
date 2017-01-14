@@ -149,21 +149,20 @@ class AnnotationsView(SuperuserRequiredMixin, GenericAPIView):
         return Response(context)
 
 
-class AnnotationView(LoginRequiredMixin, DestroyAPIView):
+class AnnotationView(SuperuserRequiredMixin, DestroyAPIView):
     queryset = models.Annotation.objects.all()
     lookup_field = 'id'
 
-    def delete(self, request, *args, **kwargs):
-        if request.user.is_superuser:
-            return self.destroy(request, *args, **kwargs)
-        return Response(status=status.HTTP_403_FORBIDDEN)
 
-    def patch(self, request, *args, **kwargs):
+class AnnotationFinishView(LoginRequiredMixin, GenericAPIView):
+    queryset = models.Annotation.objects.all()
+    lookup_field = 'id'
+
+    def post(self, request, *args, **kwargs):
         annotation = self.get_object()
         utils.update_annotation_status(annotation,
                                        new_status=models.Annotation.FINISHED)
         # find next annotation
-        next_annotation_url = ''
         project = annotation.get_project()
         segment = utils.pick_segment_to_annotate(project.name, request.user.id)
 
@@ -177,6 +176,7 @@ class AnnotationView(LoginRequiredMixin, DestroyAPIView):
                                                                segment__in=segments,
                                                                status=models.Annotation.UNFINISHED).first()
 
+        next_annotation_url = ''
         if next_annotation:
             next_annotation_url = '{}?project={}&annotation={}'.format(reverse('new_annotation'),
                                                                        project.id,

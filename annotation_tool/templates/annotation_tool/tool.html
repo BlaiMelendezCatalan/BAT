@@ -740,18 +740,16 @@
 
 
         $.ajax({
-          type: "PATCH",
-          url: '{% url 'annotation' id=annotation.id %}',
+          type: "POST",
+          url: '{% url 'finish_annotation' id=annotation.id %}',
           dataType: 'json',
           beforeSend: function (xhr) {
             xhr.setRequestHeader("X-CSRFToken", '{{ csrf_token }}');
           },
-          data: {}
-        }).always(function (response) {
-          var modalWindow = $('#modal-window'),
-              text = 'Annotation is finished.';
-
-          if (typeof response.next_annotation_url != 'undefined') {
+          data: {},
+          success: function (response) {
+            var modalWindow = $('#modal-window'),
+                text = 'Annotation is finished.';
             if (loadNextAnnotation == '1') {
               // if have next annotation url - redirect
               if (response.next_annotation_url != '') {
