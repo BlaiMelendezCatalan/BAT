@@ -83,6 +83,9 @@ class Annotation(models.Model):
     annotation_date = models.DateTimeField('annotation date')
     status = models.CharField(max_length=10, default=UNFINISHED, choices=STATUS_CHOICES)
 
+    def get_project(self):
+        return self.segment.wav.project
+
     class Meta:
         unique_together = ("segment", "user")
 
@@ -100,6 +103,9 @@ class Event(models.Model):
     color = models.CharField(max_length=50, blank=True)
     tags = models.ManyToManyField('Tag', blank=True)
 
+    def get_project(self):
+        return self.annotation.get_project()
+
     class Meta:
         unique_together = ("annotation", "event_class", "start_time",
                            "end_time")  # This should be unique_together = ("annotation", "start_time", "end_time") to allow overlappings
@@ -114,6 +120,9 @@ class Region(models.Model):
     end_time = models.FloatField()
     color = models.CharField(max_length=50, blank=True)
     tags = models.ManyToManyField('Tag', blank=True)
+
+    def get_project(self):
+        return self.annotation.get_project()
 
     class Meta:
         unique_together = ("annotation", "start_time", "end_time")
@@ -141,6 +150,10 @@ class ClassProminence(models.Model):
 
     def __str__(self):
         return self.class_obj.name
+
+    class Meta:
+        ordering = ('class_obj__name',)
+
 
 
 class Tag(models.Model):
