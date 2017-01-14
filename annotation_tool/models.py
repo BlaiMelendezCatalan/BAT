@@ -33,14 +33,14 @@ class Class(models.Model):
 
 # class Subclass(models.Model): # for overlapping zones
 
+def get_wav_file_path(self, filename):
+    return os.path.join('uploaded_wavs', '%s' % slugify(self.project.name), filename)
+
 
 class Wav(models.Model):
-    def get_file_path(self, filename):
-        return os.path.join('uploaded_wavs', '%s' % slugify(self.project.name), filename)
-
     project = models.ForeignKey('Project', on_delete=models.CASCADE)
     file = models.FileField(
-        upload_to=get_file_path,
+        upload_to=get_wav_file_path,
         max_length=500)
     name = models.CharField(max_length=100)
     upload_date = models.DateTimeField('upload date')
@@ -83,6 +83,9 @@ class Annotation(models.Model):
     annotation_date = models.DateTimeField('annotation date')
     status = models.CharField(max_length=10, default=UNFINISHED, choices=STATUS_CHOICES)
 
+    def get_project(self):
+        return self.segment.wav.project
+
     class Meta:
         unique_together = ("segment", "user")
 
@@ -100,6 +103,9 @@ class Event(models.Model):
     color = models.CharField(max_length=50, blank=True)
     tags = models.ManyToManyField('Tag', blank=True)
 
+    def get_project(self):
+        return self.annotation.get_project()
+
     class Meta:
         unique_together = ("annotation", "event_class", "start_time",
                            "end_time")  # This should be unique_together = ("annotation", "start_time", "end_time") to allow overlappings
@@ -109,17 +115,45 @@ class Event(models.Model):
 
 
 class Region(models.Model):
-    segment = models.ForeignKey('Segment', on_delete=models.CASCADE)
-    # class_name is the name of a Class object if no overlappings are allowed. Otherwise, it is a secondary (mixture) class name
-    class_name = models.FloatField(null=True, blank=True)
+    annotation = models.ForeignKey('Annotation', on_delete=models.CASCADE)
     start_time = models.FloatField()
     end_time = models.FloatField()
+    color = models.CharField(max_length=50, blank=True)
+    tags = models.ManyToManyField('Tag', blank=True)
+
+    def get_project(self):
+        return self.annotation.get_project()
 
     class Meta:
-        unique_together = ("segment", "start_time", "end_time")
+        unique_together = ("annotation", "start_time", "end_time")
 
     def __str__(self):
-        return str(self.class_name)
+        return str(self.id)
+
+
+class ClassProminence(models.Model):
+    VERY_LOW = 1
+    LOW = 2
+    MID = 3
+    LOUD = 4
+    VERY_LOUD = 5
+    PROMINENCE_CHOICES = (
+        (VERY_LOW, 'Very low'),
+        (LOW, 'Low'),
+        (MID, 'Mid'),
+        (LOUD, 'Loud'),
+        (VERY_LOUD, 'Very loud')
+    )
+    region = models.ForeignKey(Region, related_name='classes')
+    class_obj = models.ForeignKey(Class)
+    prominence = models.PositiveSmallIntegerField(choices=PROMINENCE_CHOICES, blank=True, null=True)
+
+    def __str__(self):
+        return self.class_obj.name
+
+    class Meta:
+        ordering = ('class_obj__name',)
+
 
 
 class Tag(models.Model):

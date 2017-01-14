@@ -13,12 +13,7 @@
         <select class="form-control" name="{{ values.name }}"  onchange="this.form.submit()" style="width: auto;">
             <option value=""></option>
         {% for choice in values.available %}
-            {% if choice == values.selected %}
-            	<option value="{{ choice }}" selected>{{ choice }}</option>
-	    	{% elif choice == None %}
-            {% else %}
-            	<option value="{{ choice }}">{{ choice }}</option>
-            {% endif %}
+          <option value="{{ choice.id }}">{{ choice.name }}</option>
         {% endfor %}
         </select>
     {% endfor %}

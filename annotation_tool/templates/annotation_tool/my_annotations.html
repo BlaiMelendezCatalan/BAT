@@ -50,7 +50,7 @@
         <td>{{ annotation.segment.wav.project.name }}</td>
         <td>{{ annotation.annotation_date }}</td>
         <td>{{ annotation.status }}</td>
-        <td><a href="{% url 'new_annotation' %}?project={{ annotation.segment.wav.project.name }}&annotation={{ annotation.id }}">Go to annotation tool</a></td>
+        <td><a href="{% url 'new_annotation' %}?project={{ annotation.segment.wav.project.id }}&annotation={{ annotation.id }}">Go to annotation tool</a></td>
         </tr>
     {% endfor %}
     </table>

@@ -1,12 +1,15 @@
 import json
+import re
 
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import JsonResponse
 from django.core.serializers.json import DjangoJSONEncoder
 from django.utils import timezone
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect
-from rest_framework.generics import GenericAPIView, DestroyAPIView
+from rest_framework import status
+from rest_framework.exceptions import ValidationError
+from rest_framework.generics import GenericAPIView, DestroyAPIView, ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.parsers import FileUploadParser, MultiPartParser
 from rest_framework.renderers import TemplateHTMLRenderer
 from rest_framework.response import Response
@@ -16,7 +19,7 @@ from annotation_tool import models
 from annotation_tool.mixins import SuperuserRequiredMixin
 
 from annotation_tool.serializers import ProjectSerializer, ClassSerializer, UploadDataSerializer, LoginSerializer, \
-    UserRegistrationSerializer
+    UserRegistrationSerializer, RegionSerializer, ClassProminenceSerializer
 import utils
 from django.contrib.auth import authenticate, login
 
@@ -151,6 +154,36 @@ class AnnotationView(SuperuserRequiredMixin, DestroyAPIView):
     lookup_field = 'id'
 
 
+class AnnotationFinishView(LoginRequiredMixin, GenericAPIView):
+    queryset = models.Annotation.objects.all()
+    lookup_field = 'id'
+
+    def post(self, request, *args, **kwargs):
+        annotation = self.get_object()
+        utils.update_annotation_status(annotation,
+                                       new_status=models.Annotation.FINISHED)
+        # find next annotation
+        project = annotation.get_project()
+        segment = utils.pick_segment_to_annotate(project.name, request.user.id)
+
+        if segment:
+            # if have unannotated segment
+            next_annotation = utils.create_annotation(segment, request.user)
+        else:
+            # find unfinished annotation for current project
+            segments = models.Segment.objects.filter(wav__project=project)
+            next_annotation = models.Annotation.objects.filter(user__id=request.user.id,
+                                                               segment__in=segments,
+                                                               status=models.Annotation.UNFINISHED).first()
+
+        next_annotation_url = ''
+        if next_annotation:
+            next_annotation_url = '{}?project={}&annotation={}'.format(reverse('new_annotation'),
+                                                                       project.id,
+                                                                       next_annotation.id)
+        return Response(data={'next_annotation_url': next_annotation_url}, status=status.HTTP_200_OK)
+
+
 class EventsView(SuperuserRequiredMixin, GenericAPIView):
     renderer_classes = [TemplateHTMLRenderer]
     template_name = 'annotation_tool/events.html'
@@ -204,7 +237,14 @@ class ClassesView(SuperuserRequiredMixin, GenericAPIView):
                          'errors': None})
 
     def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+        # add opacity for color
+        data = request.data.copy()
+        opacity = '0.5'
+        data['color'] = re.sub(r'rgb\((\d{1,3}),(\d{1,3}),(\d{1,3})\)',
+                               r'rgba(\1, \2, \3, %s)' % opacity,
+                               data['color'])
+
+        serializer = self.get_serializer(data=data)
         if serializer.is_valid():
             serializer.save()
             return HttpResponseRedirect('./')
@@ -219,8 +259,8 @@ class ClassView(SuperuserRequiredMixin, DestroyAPIView):
     lookup_field = 'id'
 
 
-#@login_required(login_url='../loginsignup')
-#@user_passes_test(superuser_check)
+# @login_required(login_url='../loginsignup')
+# @user_passes_test(superuser_check)
 def successful_upload(request):
     context = {}
 
@@ -318,48 +358,48 @@ class NewAnnotationView(LoginRequiredMixin, GenericAPIView):
         # Define filters, extract possibles values and store selections
         context = {'filters': self._filters(), 'error': ''}
         for v in context['filters'].values():
-            v['available'] = models.Project.objects.values_list(v['route'], flat=True) \
-                .order_by(v['route']).distinct()
-        selected_values = {}
-        for v in context['filters'].values():
-            v['selected'] = request.GET.get(v['name'])
-            if v['selected']:
-                selected_values[v['route']] = v['selected']
+            v['available'] = models.Project.objects.all().order_by(v['route'])
+        selected_project = request.GET.get('project')
 
-        context['query_data'] = models.Project.objects.filter(**selected_values) \
-            .order_by('-id')
+        context['query_data'] = models.Project.objects.all().order_by('-id')
 
-        if not v['selected']:
+        if not selected_project:
             return Response(context)
+
+        annotation_id = request.GET.get('annotation')
+        project = get_object_or_404(models.Project, id=request.GET.get('project'))
+        segment = utils.pick_segment_to_annotate(project.name, request.user.id)
+        if not annotation_id and not segment:
+            context['error'] = 'There are no more segments to annotate.'
+            return Response(context)
+
+        # if resume
+        if annotation_id:
+            try:
+                context['annotation'] = models.Annotation.objects.get(id=annotation_id, user=request.user)
+                context['events'] = models.Event.objects.filter(annotation=annotation_id)
+                context['regions'] = models.Region.objects.filter(annotation=annotation_id)
+                segment = context['annotation'].segment
+            except models.Annotation.DoesNotExist:
+                return HttpResponseRedirect(reverse('new_annotation'))
         else:
-            annotation_id = request.GET.get('annotation')
-            segment = utils.pick_segment_to_annotate(request.GET['project'], request.user.id)
-            if not annotation_id and not segment:
-                # There are no more segments to annotate
-                context['error'] = 'There are no more segments to annotate.'
-                return Response(context)
+            context['annotation'] = utils.create_annotation(segment, request.user)
+        context['classes'] = models.Class.objects.filter(project=project).values_list('name',
+                                                                                      'color',
+                                                                                      'shortcut')
+        context['prominence_choices'] = models.ClassProminence.PROMINENCE_CHOICES
+        context['class_dict'] = json.dumps(list(context['classes']), cls=DjangoJSONEncoder)
+        context['project'] = project
 
-            project = models.Project.objects.get(name=request.GET['project'])
-            # if resume
-            if annotation_id:
-                try:
-                    context['annotation'] = models.Annotation.objects.get(id=annotation_id, user=request.user)
-                    context['events'] = models.Event.objects.filter(annotation=annotation_id)
-                    segment = context['annotation'].segment
-                except models.Annotation.DoesNotExist:
-                    return HttpResponseRedirect(reverse('new_annotation'))
-            else:
-                context['annotation'] = utils.create_annotation(segment, request.user)
-            context['classes'] = models.Class.objects.filter(project=project).values_list('name',
-                                                                                          'color',
-                                                                                          'shortcut')
-            context['class_dict'] = json.dumps(list(context['classes']), cls=DjangoJSONEncoder)
-            utils.delete_tmp_files()
-            context['tmp_segment_path'] = utils.create_tmp_file(segment)
-            self.template_name = 'annotation_tool/tool.html'
-            context['base_template'] = 'annotation_tool/base.html' if request.user.is_superuser else \
-                'annotation_tool/base_normal.html'
-            return Response(context)
+        # create tmp file
+        utils.delete_tmp_files()
+        context['tmp_segment_path'] = utils.create_tmp_file(segment)
+
+        context['base_template'] = 'annotation_tool/base.html' if request.user.is_superuser else \
+            'annotation_tool/base_normal.html'
+        self.template_name = 'annotation_tool/tool.html'
+
+        return Response(context)
 
 
 class MyAnnotations(LoginRequiredMixin, GenericAPIView):
@@ -397,28 +437,42 @@ class MyAnnotations(LoginRequiredMixin, GenericAPIView):
         return Response(context)
 
 
-def submit_annotation(request):
-    context = {}
-    # Set annotation to finished
-    data = json.loads(request.POST.get('data'))
-    try:
-        annotation = models.Annotation.objects.get(id=data['annotation'])
-    except models.Annotation.DoesNotExist:
-        return render(request, 'annotation_tool/tool.html', context)
+class RegionsView(LoginRequiredMixin, ListCreateAPIView):
+    queryset = models.Region.objects.all()
+    serializer_class = RegionSerializer
 
-    utils.update_annotation_status(annotation,
-                                   new_status=models.Annotation.FINISHED)
+    def delete(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        try:
+            annotation_id = request.data['annotation_id']
+            annotation = models.Annotation.objects.get(id=annotation_id)
+        except KeyError, models.Annotation.DoesNotExist:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        regions = queryset.filter(annotation=annotation)
+        models.ClassProminence.objects.filter(region__in=regions).delete()
+        regions.delete()
 
-    # Create next annotation
-    # project = models.Project.objects.get(name=annotation.segment.wav.project.name)
-    #next_segment = utils.pick_segment_to_annotate(project.name, request.user.id)
-    #context['annotation'] = utils.create_annotation(next_segment, request.user)
-    #context['classes'] = Class.objects.values_list('name', 'color', 'shortcut')
-    #context['class_dict'] = json.dumps(list(context['classes']), cls=DjangoJSONEncoder)
-    #utils.delete_tmp_files()
-    #context['tmp_segment_path'] = utils.create_tmp_file(next_segment)
-    #print "REACH"
-    return render(request, 'annotation_tool/tool.html', context)
+        utils.update_annotation_status(annotation,
+                                       new_status=models.Annotation.UNFINISHED)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ClassProminenceView(LoginRequiredMixin, GenericAPIView):
+    queryset = models.ClassProminence.objects.all()
+    serializer_class = ClassProminenceSerializer
+
+    def post(self, request, *args, **kwargs):
+        try:
+            region = models.Region.objects.get(id=request.data['region_id'])
+            class_obj = models.Class.objects.get(name=request.data['class_name'],
+                                                 project=region.get_project())
+            prominence = request.data['prominence']
+        except (models.Region.DoesNotExist, models.ClassProminence.DoesNotExist):
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        models.ClassProminence.objects.update_or_create(region=region,
+                                                        class_obj=class_obj,
+                                                        defaults={'prominence': prominence})
+        return Response(status=status.HTTP_201_CREATED)
 
 
 def create_event(request):
@@ -433,7 +487,8 @@ def create_event(request):
     event.start_time = region_data['start_time']
     event.end_time = region_data['end_time']
     if region_data['event_class'] != "None":
-        event_class = models.Class.objects.get(name=region_data['event_class'])
+        event_class = models.Class.objects.get(name=region_data['event_class'],
+                                               project=annotation.get_project())
         event.event_class = event_class
     for t in region_data['tags']:
         tag = models.Tag.objects.get_or_create(name=t)
@@ -466,7 +521,7 @@ def update_end_event(request):
 
     utils.update_annotation_status(annotation,
                                    new_status=models.Annotation.UNFINISHED)
-        
+
     event.start_time = region_data['start_time']
     event.end_time = region_data['end_time']
     event.save()
@@ -487,7 +542,8 @@ def update_event(request):
         event.tags.add(tag[0])
 
     if region_data['event_class'] != "None":
-        event_class = models.Class.objects.get(name=region_data['event_class'])
+        event_class = models.Class.objects.get(name=region_data['event_class'],
+                                               project=event.get_project())
         event.event_class = event_class
         event.color = region_data['color']
 
