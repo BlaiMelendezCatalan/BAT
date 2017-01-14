@@ -399,7 +399,14 @@ class NewAnnotationView(LoginRequiredMixin, GenericAPIView):
             'annotation_tool/base_normal.html'
         self.template_name = 'annotation_tool/tool.html'
 
+        context['visualization'] = self._get_visualization(request)
+
         return Response(context)
+
+    def _get_visualization(self, request):
+        if request.GET.get('visualization') == '1':
+            return 'spectrogram'
+        return 'waveform'
 
 
 class MyAnnotations(LoginRequiredMixin, GenericAPIView):
