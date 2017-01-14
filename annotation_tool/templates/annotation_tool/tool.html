@@ -9,6 +9,9 @@
 
   <script src="{% static 'js/annotator/lib/wavesurfer.min.js' %}"></script>
   <script src="{% static 'js/annotator/src/wavesurfer.regions.js' %}"></script>
+  <script src="{% static 'js/annotator/colormap/colormap.min.js' %}"></script>
+  <script src="{% static 'js/annotator/lib/wavesurfer.spectrogram.min.js' %}"></script>
+  <script src="{% static 'js/annotator/src/wavesurfer.drawer.extended.js' %}"></script>
   <script type="text/javascript" src="{% static 'js/annotator/src/components.js' %}"></script>
   <script type="text/javascript" src="{% static 'js/annotator/src/wavesurfer.labels.js' %}"></script>
   <link rel="stylesheet" href="{% static 'css/annotator/font-awesome.min.css' %}">
@@ -71,6 +74,7 @@
         {% endif %}
       </div>
       <div class="col-md-4 col-md-offset-1">
+        <button id="switch-view" class="btn btn-success">Switch view</button>
         {% if not request.is_superuser %}
           {% if project.overlap %}
             <button id="solve-overlaps-button" class="btn btn-warning">Solve overlaps</button>
@@ -150,6 +154,14 @@
     var WAVESURFER_HEIGHT = 128;
     var REGIONS_STATE = false;
 
+    // Create color map for spectrogram
+    var spectrogramColorMap = colormap({
+        colormap: magma,
+        nshades: 256,
+        format: 'rgb',
+        alpha: 1
+    });
+
     var wavesurfer = WaveSurfer.create({
       container: '#waveform',
       waveColor: 'violet',
@@ -157,8 +169,11 @@
       normalize: true,
       fillParent: true,
       height: WAVESURFER_HEIGHT,
-      hideScrollbar: true
+      colorMap: spectrogramColorMap,
+      fftSamples: WAVESURFER_HEIGHT * 2
     });
+
+    wavesurfer.params.visualization = '{{ visualization }}';
 
     wavesurfer.load("{% url 'media' tmp_segment_path %}");
 
@@ -765,6 +780,15 @@
             modalWindow.modal('show');
           }
         });
+      });
+
+
+      $('#switch-view').on('click', function () {
+        var href = window.location.href.replace(/&visualization=\d+/i, '');
+        if (wavesurfer.params.visualization == 'waveform') {
+          href += '&visualization=1';
+        }
+        window.location = href;
       });
     {% endif %}
 
