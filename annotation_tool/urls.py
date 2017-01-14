@@ -13,6 +13,7 @@ urlpatterns = [
     url(r'^segment/(?P<id>\d+)/$', views.SegmentView.as_view(), name='segment'),
     url(r'^annotations/$', views.AnnotationsView.as_view(), name='annotations'),
     url(r'^annotation/(?P<id>\d+)/$', views.AnnotationView.as_view(), name='annotation'),
+    url(r'^annotation/(?P<id>\d+)/finish/$', views.AnnotationFinishView.as_view(), name='finish_annotation'),
     url(r'^events/$', views.EventsView.as_view(), name='events'),
     url(r'^event/(?P<id>\d+)/$', views.EventView.as_view(), name='event'),
     url(r'^classes/$', views.ClassesView.as_view(), name='classes'),
@@ -21,10 +22,9 @@ urlpatterns = [
     url(r'^successful_upload/$', views.successful_upload, name='successful_upload'),
     url(r'^new_annotation/$', views.NewAnnotationView.as_view(), name='new_annotation'),
     url(r'^my_annotations/$', views.MyAnnotations.as_view(), name='my_annotations'),
+    url(r'^class_prominence/$', views.ClassProminenceView.as_view(), name='class_prominence'),
     url(r'^create_event/$', views.create_event, name='create_event'),
     url(r'^update_event/$', views.update_event, name='update_event'),
     url(r'^update_end_event/$', views.update_end_event, name='update_end_event'),
     url(r'^remove_event/$', views.remove_event, name='remove_event'),
-    url(r'^submit_annotation/$', views.submit_annotation, name='submit_annotation'),
-    
 ]

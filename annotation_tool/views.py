@@ -8,7 +8,8 @@ from django.utils import timezone
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect
 from rest_framework import status
-from rest_framework.generics import GenericAPIView, DestroyAPIView, ListCreateAPIView
+from rest_framework.exceptions import ValidationError
+from rest_framework.generics import GenericAPIView, DestroyAPIView, ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.parsers import FileUploadParser, MultiPartParser
 from rest_framework.renderers import TemplateHTMLRenderer
 from rest_framework.response import Response
@@ -18,7 +19,7 @@ from annotation_tool import models
 from annotation_tool.mixins import SuperuserRequiredMixin
 
 from annotation_tool.serializers import ProjectSerializer, ClassSerializer, UploadDataSerializer, LoginSerializer, \
-    UserRegistrationSerializer, RegionSerializer
+    UserRegistrationSerializer, RegionSerializer, ClassProminenceSerializer
 import utils
 from django.contrib.auth import authenticate, login
 
@@ -151,6 +152,36 @@ class AnnotationsView(SuperuserRequiredMixin, GenericAPIView):
 class AnnotationView(SuperuserRequiredMixin, DestroyAPIView):
     queryset = models.Annotation.objects.all()
     lookup_field = 'id'
+
+
+class AnnotationFinishView(LoginRequiredMixin, GenericAPIView):
+    queryset = models.Annotation.objects.all()
+    lookup_field = 'id'
+
+    def post(self, request, *args, **kwargs):
+        annotation = self.get_object()
+        utils.update_annotation_status(annotation,
+                                       new_status=models.Annotation.FINISHED)
+        # find next annotation
+        project = annotation.get_project()
+        segment = utils.pick_segment_to_annotate(project.name, request.user.id)
+
+        if segment:
+            # if have unannotated segment
+            next_annotation = utils.create_annotation(segment, request.user)
+        else:
+            # find unfinished annotation for current project
+            segments = models.Segment.objects.filter(wav__project=project)
+            next_annotation = models.Annotation.objects.filter(user__id=request.user.id,
+                                                               segment__in=segments,
+                                                               status=models.Annotation.UNFINISHED).first()
+
+        next_annotation_url = ''
+        if next_annotation:
+            next_annotation_url = '{}?project={}&annotation={}'.format(reverse('new_annotation'),
+                                                                       project.id,
+                                                                       next_annotation.id)
+        return Response(data={'next_annotation_url': next_annotation_url}, status=status.HTTP_200_OK)
 
 
 class EventsView(SuperuserRequiredMixin, GenericAPIView):
@@ -356,6 +387,7 @@ class NewAnnotationView(LoginRequiredMixin, GenericAPIView):
         context['classes'] = models.Class.objects.filter(project=project).values_list('name',
                                                                                       'color',
                                                                                       'shortcut')
+        context['prominence_choices'] = models.ClassProminence.PROMINENCE_CHOICES
         context['class_dict'] = json.dumps(list(context['classes']), cls=DjangoJSONEncoder)
         context['project'] = project
 
@@ -416,32 +448,31 @@ class RegionsView(LoginRequiredMixin, ListCreateAPIView):
             annotation = models.Annotation.objects.get(id=annotation_id)
         except KeyError, models.Annotation.DoesNotExist:
             return Response(status=status.HTTP_400_BAD_REQUEST)
-        queryset.filter(annotation=annotation).delete()
+        regions = queryset.filter(annotation=annotation)
+        models.ClassProminence.objects.filter(region__in=regions).delete()
+        regions.delete()
+
+        utils.update_annotation_status(annotation,
+                                       new_status=models.Annotation.UNFINISHED)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-def submit_annotation(request):
-    context = {}
-    # Set annotation to finished
-    data = json.loads(request.POST.get('data'))
-    try:
-        annotation = models.Annotation.objects.get(id=data['annotation'])
-    except models.Annotation.DoesNotExist:
-        return render(request, 'annotation_tool/tool.html', context)
+class ClassProminenceView(LoginRequiredMixin, GenericAPIView):
+    queryset = models.ClassProminence.objects.all()
+    serializer_class = ClassProminenceSerializer
 
-    utils.update_annotation_status(annotation,
-                                   new_status=models.Annotation.FINISHED)
-
-    # Create next annotation
-    # project = models.Project.objects.get(name=annotation.segment.wav.project.name)
-    # next_segment = utils.pick_segment_to_annotate(project.name, request.user.id)
-    # context['annotation'] = utils.create_annotation(next_segment, request.user)
-    # context['classes'] = Class.objects.values_list('name', 'color', 'shortcut')
-    # context['class_dict'] = json.dumps(list(context['classes']), cls=DjangoJSONEncoder)
-    # utils.delete_tmp_files()
-    # context['tmp_segment_path'] = utils.create_tmp_file(next_segment)
-    # print "REACH"
-    return render(request, 'annotation_tool/tool.html', context)
+    def post(self, request, *args, **kwargs):
+        try:
+            region = models.Region.objects.get(id=request.data['region_id'])
+            class_obj = models.Class.objects.get(name=request.data['class_name'],
+                                                 project=region.get_project())
+            prominence = request.data['prominence']
+        except (models.Region.DoesNotExist, models.ClassProminence.DoesNotExist):
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        models.ClassProminence.objects.update_or_create(region=region,
+                                                        class_obj=class_obj,
+                                                        defaults={'prominence': prominence})
+        return Response(status=status.HTTP_201_CREATED)
 
 
 def create_event(request):
@@ -456,7 +487,8 @@ def create_event(request):
     event.start_time = region_data['start_time']
     event.end_time = region_data['end_time']
     if region_data['event_class'] != "None":
-        event_class = models.Class.objects.get(name=region_data['event_class'])
+        event_class = models.Class.objects.get(name=region_data['event_class'],
+                                               project=annotation.get_project())
         event.event_class = event_class
     for t in region_data['tags']:
         tag = models.Tag.objects.get_or_create(name=t)
@@ -511,7 +543,7 @@ def update_event(request):
 
     if region_data['event_class'] != "None":
         event_class = models.Class.objects.get(name=region_data['event_class'],
-                                               project=event.annotation.segment.wav.project)
+                                               project=event.get_project())
         event.event_class = event_class
         event.color = region_data['color']
 

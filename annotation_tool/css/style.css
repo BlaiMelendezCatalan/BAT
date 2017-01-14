@@ -28,12 +28,9 @@
     margin-top: 50px;
 }
 
-#solve-overlaps-button {
-    margin-left: 10px;
-}
-
 #controls-container {
     padding: 10px 30px;
+    margin-top: 10px;
 }
 
 .container {
@@ -44,4 +41,60 @@
 
 #back-annotations-button {
     display: none;
+}
+
+#class-prominence-container {
+    display: none;
+    width: 300px;
+    background-color: rgba(249, 174, 130, 1);
+    position: absolute;
+    z-index: 100;
+}
+
+#class-prominence-container.active {
+    display: block;
+}
+
+#class-prominence-container .circle {
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    background: #1D84B9;
+    display: inline-block;
+    margin-left: 10px;
+    cursor: pointer;
+}
+
+#class-prominence-container .circle.active {
+    background: #0b344a;
+}
+
+#class-prominence-container .prominence-circles {
+    display: inline-block;
+}
+
+#class-prominence-container .prominence-label-container {
+    display: inline-block;
+    width: 90px;
+    padding-left: 10px;
+}
+
+#class-prominence-container .class-prominence-item {
+    padding-bottom: 16px;
+    padding-top: 16px;
+}
+
+#class-prominence-container .prominence-label {
+    display: table-cell;
+    padding-bottom: 5px;
+    font-weight: 700;
+}
+
+#class-prominence-container .fake-item {
+    display: none;
+}
+
+.finish-annotation-button {
+    margin-right: 10px;
+    margin-top: 10px;
 }
