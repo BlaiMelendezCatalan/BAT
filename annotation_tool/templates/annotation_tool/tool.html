@@ -12,6 +12,7 @@
   <script src="{% static 'js/annotator/colormap/colormap.min.js' %}"></script>
   <script src="{% static 'js/annotator/lib/wavesurfer.spectrogram.min.js' %}"></script>
   <script src="{% static 'js/annotator/src/wavesurfer.drawer.extended.js' %}"></script>
+  <script src="{% static 'js/annotator/src/wavesurfer.drawer.canvas.js' %}"></script>
   <script type="text/javascript" src="{% static 'js/annotator/src/components.js' %}"></script>
   <script type="text/javascript" src="{% static 'js/annotator/src/wavesurfer.labels.js' %}"></script>
   <link rel="stylesheet" href="{% static 'css/annotator/font-awesome.min.css' %}">
@@ -106,7 +107,7 @@
 
       </div>
     </div>
-
+    <button id="test-play">Play</button>
     <div class="jumbotron" id="controls-container">
       <h3>Controls:</h3>
       <h5 class="common-control">- Space bar plays and pauses the audio.</h5>
@@ -144,6 +145,102 @@
     </style>
   {% endif %}
   <script type="text/javascript">
+  
+  
+    wavesurferHandler = {
+      // contain all wavesurfers
+      container: [],
+
+      getMainWavesurfer: function() {
+        return this.container[0];
+      },
+
+      // Create color map for spectrogram
+      getSpectrogramColorMap: function() {
+        return colormap({
+          colormap: magma,
+          nshades: 256,
+          format: 'rgb',
+          alpha: 1
+        });
+      },
+
+      addContainerForWavesurfer: function () {
+        var mainContainer = $('#waveform'),
+            lastContainer = mainContainer.find('.container:last'),
+            lastId = lastContainer.length ? parseInt(lastContainer.data('container-id')) : 0,
+            classForNewContainer = 'container-' + (lastId + 1);
+
+        // labels
+        var labelsContainer = $('<div></div>')
+            .addClass('labels');
+
+        // container
+        var newContainer = $('<div></div>')
+          .append(labelsContainer)
+          .attr('container-id', lastId + 1)
+          .addClass('container ' + classForNewContainer);
+
+        mainContainer.append(newContainer);
+
+        return '.' + classForNewContainer;
+      },
+      
+      addWavesurfer: function () {
+        var container = this.addContainerForWavesurfer(),
+            colorMap = this.getSpectrogramColorMap(),
+            wavesurfer = WaveSurfer.create({
+              container: container,
+              waveColor: 'violet',
+              progressColor: 'purple',
+              normalize: true,
+              fillParent: true,
+              height: WAVESURFER_HEIGHT,
+              colorMap: colorMap,
+              fftSamples: WAVESURFER_HEIGHT * 2
+        });
+
+        wavesurfer.setVolume(0);
+
+        wavesurfer.params.visualization = '{{ visualization }}';
+
+        wavesurfer.load("{% url 'media' tmp_segment_path %}");
+
+        // Create labels (labels that appear above each region)
+        var labels = Object.create(WaveSurfer.Labels);
+        labels.init({
+          wavesurfer: wavesurfer,
+          container: container + ' .labels'
+        });
+
+        // Create the play button and time that appear below the wavesurfer
+        var playBar = new PlayBar(wavesurfer);
+        playBar.create();
+
+        this.container.push(wavesurfer);
+
+        return wavesurfer;
+      },
+
+      playPause: function () {
+        for (var i in this.container) {
+          this.container[i].playPause();
+        }
+      },
+
+      init: function () {
+        var mainWavesurfer = this.addWavesurfer();
+        mainWavesurfer.setVolume(1);
+      }
+    };
+
+    wavesurferHandler.create = function (params) {
+      var handler = Object.create(wavesurferHandler);
+      handler.init(params);
+      return handler;
+    };
+
+
 
     // init
     var select = document.getElementById("show_class");
@@ -154,39 +251,17 @@
     var WAVESURFER_HEIGHT = 128;
     var REGIONS_STATE = false;
 
-    // Create color map for spectrogram
-    var spectrogramColorMap = colormap({
-        colormap: magma,
-        nshades: 256,
-        format: 'rgb',
-        alpha: 1
+
+
+    var handler = new wavesurferHandler.create();
+    var wavesurfer = handler.getMainWavesurfer();
+    handler.addWavesurfer();
+    handler.addWavesurfer();
+
+    $('#test-play').on('click', function () {
+      handler.playPause();
     });
 
-    var wavesurfer = WaveSurfer.create({
-      container: '#waveform',
-      waveColor: 'violet',
-      progressColor: 'purple',
-      normalize: true,
-      fillParent: true,
-      height: WAVESURFER_HEIGHT,
-      colorMap: spectrogramColorMap,
-      fftSamples: WAVESURFER_HEIGHT * 2
-    });
-
-    wavesurfer.params.visualization = '{{ visualization }}';
-
-    wavesurfer.load("{% url 'media' tmp_segment_path %}");
-
-    // Create labels (labels that appear above each region)
-    var labels = Object.create(WaveSurfer.Labels);
-    labels.init({
-      wavesurfer: wavesurfer,
-      container: '#labels'
-    });
-
-    // Create the play button and time that appear below the wavesurfer
-    var playBar = new PlayBar(wavesurfer);
-    playBar.create();
 
 
     function addRegion(classes, tags, id, start_time, end_time, color, loaded) {
