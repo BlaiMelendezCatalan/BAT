@@ -78,6 +78,7 @@
         {% if not request.is_superuser %}
           {% if project.overlap %}
             <button id="solve-overlaps-button" class="btn btn-warning">Solve overlaps</button>
+            <button id="add-wavesurfer-button" class="btn btn-success">Add wavesurfer</button>
             <button id="back-annotations-button" class="btn btn-warning">Back annotations</button>
           {% endif %}
           <br>
@@ -284,7 +285,8 @@
           setCurrentRegion(region.id)
 
           if (event.button == 0 && event.ctrlKey == false) {
-            if ("tags" in region.attributes) {
+
+            if ("tags" in region.attributes && typeof region.attributes.tags != 'undefined') {
               document.getElementById("tags").value = region.attributes['tags']
             } else {
               document.getElementById("tags").value = ""
@@ -322,6 +324,15 @@
         });
       },
 
+      updateAllRegions: function () {
+        this.container.forEach(function (wavesurfer) {
+          Object.keys(wavesurfer.regions.list).forEach(function (id) {
+            var region = wavesurfer.regions.list[id];
+            updateEvent(region);
+          });
+        });
+      },
+
       playPause: function () {
         this.container.forEach(function (wavesurfer) {
           wavesurfer.playPause();
@@ -355,23 +366,29 @@
       },
 
       checkOverlaps: function () {
-        var overlapWasFound = false;
+        var overlapWasFound = false,
+            that = this;
         this.container.forEach(function (wavesurfer) {
           for (var i in wavesurfer.regions.list) {
             if (overlapWasFound) {
               break;
             }
             var current_region = wavesurfer.regions.list[i];
-            Object.keys(wavesurfer.regions.list).forEach(function (id) {
-              var temp_region = wavesurfer.regions.list[id],
-                  overlapType1 = temp_region.start < current_region.start && temp_region.end > current_region.end,
-                  overlapType2 = current_region.start < temp_region.start && current_region.end > temp_region.end,
-                  overlapType3 = current_region.start < temp_region.start && current_region.end > temp_region.start,
-                  overlapType4 = current_region.start > temp_region.start && current_region.start < temp_region.end;
-              if (overlapType1 || overlapType2 || overlapType3 || overlapType4) {
-                overlapWasFound = true;
+            that.container.forEach(function (temp_wavesurfer) {
+              if (temp_wavesurfer == wavesurfer) {
                 return;
               }
+              Object.keys(temp_wavesurfer.regions.list).forEach(function (id) {
+                var temp_region = temp_wavesurfer.regions.list[id],
+                    overlapType1 = temp_region.start < current_region.start && temp_region.end > current_region.end,
+                    overlapType2 = current_region.start < temp_region.start && current_region.end > temp_region.end,
+                    overlapType3 = current_region.start < temp_region.start && current_region.end > temp_region.start,
+                    overlapType4 = current_region.start > temp_region.start && current_region.start < temp_region.end;
+                if (overlapType1 || overlapType2 || overlapType3 || overlapType4) {
+                  overlapWasFound = true;
+                  return;
+                }
+              });
             });
           }
         });
@@ -406,8 +423,10 @@
 
     var handler = new wavesurferHandler.create();
     var wavesurfer = handler.getMainWavesurfer();
-    handler.addWavesurfer();
-    handler.addWavesurfer();
+
+    $('#add-wavesurfer-button').on('click', function () {
+      handler.addWavesurfer();
+    });
 
     $('#play-pause-main-button').on('click', function () {
       handler.playPause();
@@ -415,7 +434,7 @@
 
     function switchToRegionMode() {
       REGIONS_STATE = true;
-      $('#solve-overlaps-button, region .fa-times-circle, #tag_button, region handle').hide();
+      $('#solve-overlaps-button, region .fa-times-circle, #tag_button, region handle, #add-wavesurfer-button').hide();
       $('#controls-container h5').not('.common-control').hide();
       $('#back-annotations-button').show();
       wavesurfer.disableDragSelection({});

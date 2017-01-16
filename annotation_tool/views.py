@@ -544,11 +544,12 @@ def update_event(request):
     except models.Event.DoesNotExist:
         return JsonResponse({'error': 'Event does not exist'})
 
-    for t in region_data['tags']:
-        tag = models.Tag.objects.get_or_create(name=t)
-        event.tags.add(tag[0])
+    if 'tags' in region_data:
+        for t in region_data['tags']:
+            tag = models.Tag.objects.get_or_create(name=t)
+            event.tags.add(tag[0])
 
-    if region_data['event_class'] != "None":
+    if 'event_class' in region_data and region_data['event_class'] != "None":
         event_class = models.Class.objects.get(name=region_data['event_class'],
                                                project=event.get_project())
         event.event_class = event_class

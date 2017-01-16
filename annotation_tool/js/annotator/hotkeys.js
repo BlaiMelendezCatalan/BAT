@@ -167,12 +167,8 @@ document.onkeydown = function (e) {
 
 
 document.onkeyup = function (e) {
-  console.log('TODO: check it', e.key);
-  var key = e.key
+  var key = e.key;
   if (key == "ArrowLeft" || key == "ArrowRight") {
-    Object.keys(wavesurfer.regions.list).forEach(function (id) {
-      var region = wavesurfer.regions.list[id];
-      updateEvent(region)
-    });
+    handler.updateAllRegions();
   }
 }
