@@ -11,10 +11,25 @@
   background-color: #dff0d8 !important;
 }
 
+
+#logout-button {
+    background: none;
+    border: none;
+    border-radius: 4px;
+    padding: 10px 15px;
+    color: #428bca;
+}
+
+#logout-button:hover {
+    background-color: #eee;
+    color: #2a6496;
+}
+
 .container.paddings {
     padding-left: 15px;
     padding-right: 15px;
 }
+
 
 
 #login-signup-container {
