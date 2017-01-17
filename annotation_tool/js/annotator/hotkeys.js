@@ -118,7 +118,7 @@ document.onkeydown = function (e) {
 
   var region = handler.findRegionById(currentRegionId),
     key = e.key,
-    n_regions = Object.keys(wavesurfer.regions.list).length,
+    n_regions = Object.keys(handler.getWavesurferByRegion(region).regions.list).length,
     pressCtrl = e.ctrlKey == true,
     pressShift = e.shiftKey == true,
     times;
