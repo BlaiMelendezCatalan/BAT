@@ -844,7 +844,6 @@ function onRegionCreated(region) {
           $('body').removeClass('loaded');
 
           var checker = setInterval(function() {
-            console.log(totalOverlapsCount);
             if (totalOverlapsCount <= 0) {
               clearInterval(checker);
               location.reload();
