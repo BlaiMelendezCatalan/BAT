@@ -14,6 +14,7 @@
   <script src="{% static 'js/annotator/src/wavesurfer.drawer.extended.js' %}"></script>
   <script type="text/javascript" src="{% static 'js/annotator/src/components.js' %}"></script>
   <script type="text/javascript" src="{% static 'js/annotator/src/wavesurfer.labels.js' %}"></script>
+  <script type="text/javascript" src="{% static 'js/url.js' %}"></script>
   <link rel="stylesheet" href="{% static 'css/annotator/font-awesome.min.css' %}">
   <div class="container">
     <h3>Annotation Tips:</h3>
@@ -784,11 +785,16 @@
 
 
       $('#switch-view').on('click', function () {
-        var href = window.location.href.replace(/&visualization=\d+/i, '');
-        if (wavesurfer.params.visualization == 'waveform') {
-          href += '&visualization=1';
+        var parsedUrl = url.parse(location.href),
+            params = parsedUrl.get,
+            port = parsedUrl.port == undefined ? '': (':' + parsedUrl.port);
+        if ('visualization' in params) {
+          delete params['visualization'];
+        } else {
+          params['visualization'] = 1;
         }
-        window.location = href;
+        var newUrl = parsedUrl.scheme + '://' + parsedUrl.host + port + parsedUrl.path + '?' + $.param(params)
+        window.location = newUrl;
       });
     {% endif %}
 
