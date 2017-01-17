@@ -283,10 +283,9 @@
         var isMainWavesurfer = this.isMainWavesurfer(wavesurfer),
             that = this;
 
-        // todo: really need it?
-        {% comment %}wavesurfer.on('region-created', function (region) {
+        wavesurfer.on('region-created', function (region) {
           onRegionCreated(region);
-        });{% endcomment %}
+        });
 
         wavesurfer.on('region-update-end', function (region) {
           setTimeout(function () {
@@ -394,7 +393,7 @@
             resize: false
           {% endif %}
         });
-        wavesurfer.disableDragSelection({});
+
         return region;
       },
 
@@ -658,7 +657,7 @@
 
     {% if not request.user.is_superuser %}
       // WaveSurfer callbacks
-{% comment %}      function onRegionCreated(region) {
+function onRegionCreated(region) {
         setCurrentRegion(region.id)
         disableDrag(region)
 
@@ -669,35 +668,8 @@
           region.attributes['tags'] = []
         } else if ('loaded' in region.attributes) {
           delete region.attributes['loaded']
-        } else if ('created_overlap' in region.attributes) {
-          delete region.attributes['created_overlap'];
-          delete region.attributes['event_id'];
-        } else if ('created' in region.attributes) {
-          delete region.attributes['created']
-          var region_data = {
-            annotation: '{{ annotation }}',
-            event_class: region.attributes['class'],
-            tags: region.attributes['tags'],
-            start_time: region.start,
-            end_time: region.end,
-            color: region.color
-          }
-
-          $.ajax({
-            type: "POST",
-            url: '../create_event/',
-            dataType: 'json',
-            data: {
-              region_data: JSON.stringify(region_data),
-              csrfmiddlewaretoken: '{{csrf_token}}'
-            },
-            success: function (data) {
-              region = wavesurfer.regions.list[currentRegionId]
-              region.attributes['event_id'] = data.event_id
-            }
-          });
         }
-      }{% endcomment %}
+      }
 
       function onRegionUpdateEnd(wavesurfer, region) {
         if (REGIONS_STATE) {
