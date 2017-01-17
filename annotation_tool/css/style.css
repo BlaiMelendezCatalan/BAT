@@ -11,6 +11,11 @@
   background-color: #dff0d8 !important;
 }
 
+.container.paddings {
+    padding-left: 15px;
+    padding-right: 15px;
+}
+
 
 #login-signup-container {
     margin-top: 90px;
