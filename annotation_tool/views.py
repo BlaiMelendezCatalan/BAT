@@ -2,6 +2,7 @@ import json
 import re
 
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import Q
 from django.http import JsonResponse
 from django.core.serializers.json import DjangoJSONEncoder
 from django.utils import timezone
@@ -447,6 +448,23 @@ class MyAnnotations(LoginRequiredMixin, GenericAPIView):
 class RegionsView(LoginRequiredMixin, ListCreateAPIView):
     queryset = models.Region.objects.all()
     serializer_class = RegionSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        # check exists regions with same time
+        try:
+            data = serializer.validated_data
+            old_region = models.Region.objects.filter(
+                annotation=data['annotation']).get(Q(start_time=data['start_time'])
+                                                   | Q(end_time=data['end_time']))
+            old_region.delete()
+        except models.Region.DoesNotExist:
+            pass
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
 
     def delete(self, request, *args, **kwargs):
         queryset = self.get_queryset()
