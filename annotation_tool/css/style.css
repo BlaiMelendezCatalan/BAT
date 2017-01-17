@@ -11,6 +11,7 @@
   background-color: #dff0d8 !important;
 }
 
+
 #logout-button {
     background: none;
     border: none;
@@ -23,6 +24,13 @@
     background-color: #eee;
     color: #2a6496;
 }
+
+.container.paddings {
+    padding-left: 15px;
+    padding-right: 15px;
+}
+
+
 
 #login-signup-container {
     margin-top: 90px;
