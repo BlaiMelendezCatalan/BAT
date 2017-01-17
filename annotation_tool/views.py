@@ -15,6 +15,7 @@ from rest_framework.parsers import FileUploadParser, MultiPartParser
 from rest_framework.renderers import TemplateHTMLRenderer
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
+from rest_framework.views import APIView
 
 from annotation_tool import models
 from annotation_tool.mixins import SuperuserRequiredMixin
@@ -22,7 +23,7 @@ from annotation_tool.mixins import SuperuserRequiredMixin
 from annotation_tool.serializers import ProjectSerializer, ClassSerializer, UploadDataSerializer, LoginSerializer, \
     UserRegistrationSerializer, RegionSerializer, ClassProminenceSerializer
 import utils
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 
 
 class ProjectsView(SuperuserRequiredMixin, GenericAPIView):
@@ -410,7 +411,7 @@ class NewAnnotationView(LoginRequiredMixin, GenericAPIView):
         return 'waveform'
 
 
-class MyAnnotations(LoginRequiredMixin, GenericAPIView):
+class MyAnnotationsView(LoginRequiredMixin, GenericAPIView):
     renderer_classes = [TemplateHTMLRenderer]
     template_name = 'annotation_tool/my_annotations.html'
 
@@ -498,6 +499,12 @@ class ClassProminenceView(LoginRequiredMixin, GenericAPIView):
                                                         class_obj=class_obj,
                                                         defaults={'prominence': prominence})
         return Response(status=status.HTTP_201_CREATED)
+
+
+class LogoutView(LoginRequiredMixin, APIView):
+    def post(self, request):
+        logout(request)
+        return HttpResponseRedirect(reverse('loginsignup'))
 
 
 def create_event(request):
