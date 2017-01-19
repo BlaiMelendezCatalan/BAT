@@ -12,7 +12,7 @@
 {% block extra_js %}{% endblock %}
 <script src="{% static 'js/project.js' %}"></script>
 </head>
-<body>
+<body class="{% block body_class %}{% endblock %}">
     
 <div class="container-fluid">
     <div class="page-header">
@@ -24,6 +24,12 @@
 	    <li><a href="{% url 'events' %}">Events</a></li>
         <li><a href="{% url 'classes' %}">Classes</a></li>
         <li><a href="{% url 'upload_data' %}">Upload data</a></li>
+          <li>
+          <form action="{% url 'logout' %}" method="post">
+            {% csrf_token %}
+            <input type="submit" id="logout-button" value="Logout">
+          </form>
+        </li>
         </ul>
         <div class="text-left">
             <h1>{% block header %}{% endblock %}</h1>

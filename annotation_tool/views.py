@@ -2,6 +2,7 @@ import json
 import re
 
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import Q
 from django.http import JsonResponse
 from django.core.serializers.json import DjangoJSONEncoder
 from django.utils import timezone
@@ -14,6 +15,7 @@ from rest_framework.parsers import FileUploadParser, MultiPartParser
 from rest_framework.renderers import TemplateHTMLRenderer
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
+from rest_framework.views import APIView
 
 from annotation_tool import models
 from annotation_tool.mixins import SuperuserRequiredMixin
@@ -21,7 +23,7 @@ from annotation_tool.mixins import SuperuserRequiredMixin
 from annotation_tool.serializers import ProjectSerializer, ClassSerializer, UploadDataSerializer, LoginSerializer, \
     UserRegistrationSerializer, RegionSerializer, ClassProminenceSerializer
 import utils
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 
 
 class ProjectsView(SuperuserRequiredMixin, GenericAPIView):
@@ -399,10 +401,17 @@ class NewAnnotationView(LoginRequiredMixin, GenericAPIView):
             'annotation_tool/base_normal.html'
         self.template_name = 'annotation_tool/tool.html'
 
+        context['visualization'] = self._get_visualization(request)
+
         return Response(context)
 
+    def _get_visualization(self, request):
+        if request.GET.get('visualization') == '1':
+            return 'spectrogram'
+        return 'waveform'
 
-class MyAnnotations(LoginRequiredMixin, GenericAPIView):
+
+class MyAnnotationsView(LoginRequiredMixin, GenericAPIView):
     renderer_classes = [TemplateHTMLRenderer]
     template_name = 'annotation_tool/my_annotations.html'
 
@@ -441,6 +450,23 @@ class RegionsView(LoginRequiredMixin, ListCreateAPIView):
     queryset = models.Region.objects.all()
     serializer_class = RegionSerializer
 
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        # check exists regions with same time
+        try:
+            data = serializer.validated_data
+            old_region = models.Region.objects.filter(
+                annotation=data['annotation']).get(Q(start_time=data['start_time'])
+                                                   | Q(end_time=data['end_time']))
+            old_region.delete()
+        except models.Region.DoesNotExist:
+            pass
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+
     def delete(self, request, *args, **kwargs):
         queryset = self.get_queryset()
         try:
@@ -473,6 +499,12 @@ class ClassProminenceView(LoginRequiredMixin, GenericAPIView):
                                                         class_obj=class_obj,
                                                         defaults={'prominence': prominence})
         return Response(status=status.HTTP_201_CREATED)
+
+
+class LogoutView(LoginRequiredMixin, APIView):
+    def post(self, request):
+        logout(request)
+        return HttpResponseRedirect(reverse('loginsignup'))
 
 
 def create_event(request):
@@ -537,11 +569,12 @@ def update_event(request):
     except models.Event.DoesNotExist:
         return JsonResponse({'error': 'Event does not exist'})
 
-    for t in region_data['tags']:
-        tag = models.Tag.objects.get_or_create(name=t)
-        event.tags.add(tag[0])
+    if 'tags' in region_data:
+        for t in region_data['tags']:
+            tag = models.Tag.objects.get_or_create(name=t)
+            event.tags.add(tag[0])
 
-    if region_data['event_class'] != "None":
+    if 'event_class' in region_data and region_data['event_class'] and region_data['event_class'] != 'None':
         event_class = models.Class.objects.get(name=region_data['event_class'],
                                                project=event.get_project())
         event.event_class = event_class

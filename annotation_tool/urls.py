@@ -21,10 +21,11 @@ urlpatterns = [
     url(r'^upload_data/$', views.UploadFileView.as_view(), name='upload_data'),
     url(r'^successful_upload/$', views.successful_upload, name='successful_upload'),
     url(r'^new_annotation/$', views.NewAnnotationView.as_view(), name='new_annotation'),
-    url(r'^my_annotations/$', views.MyAnnotations.as_view(), name='my_annotations'),
+    url(r'^my_annotations/$', views.MyAnnotationsView.as_view(), name='my_annotations'),
     url(r'^class_prominence/$', views.ClassProminenceView.as_view(), name='class_prominence'),
     url(r'^create_event/$', views.create_event, name='create_event'),
     url(r'^update_event/$', views.update_event, name='update_event'),
     url(r'^update_end_event/$', views.update_end_event, name='update_end_event'),
     url(r'^remove_event/$', views.remove_event, name='remove_event'),
+    url(r'^logout/$', views.LogoutView.as_view(), name='logout'),
 ]

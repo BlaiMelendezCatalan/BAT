@@ -116,9 +116,9 @@ document.onkeydown = function (e) {
   e.stopPropagation()
   e.preventDefault()
 
-  var region = wavesurfer.regions.list[currentRegionId],
+  var region = handler.findRegionById(currentRegionId),
     key = e.key,
-    n_regions = Object.keys(wavesurfer.regions.list).length,
+    n_regions = Object.keys(handler.getWavesurferByRegion(region).regions.list).length,
     pressCtrl = e.ctrlKey == true,
     pressShift = e.shiftKey == true,
     times;
@@ -138,7 +138,7 @@ document.onkeydown = function (e) {
   }
 
   if (key == " ") {
-    wavesurfer.playPause();
+    handler.playPause();
   } else if (key == "ArrowLeft" && pressCtrl && !pressShift) {
     times = preventOverlappingsOnArrow(region, increment = -1. / 100)
     region.update({start: times[0]});
@@ -154,24 +154,21 @@ document.onkeydown = function (e) {
     region.update({end: times[1]});
     //updateEvent(region)
   } else if (key == 'b') {
-    wavesurfer.seekTo(region.start / wavesurfer.getDuration());
+    handler.seekTo(region.start / wavesurfer.getDuration());
   } else if (key == 's') {
-    wavesurfer.seekTo(0.0);
+    handler.seekTo(0.0);
   } else if (key == 'f' || key == 'F') {
     glueSelectedRegionLimits(region, pressCtrl, pressShift);
   }
   if (ALLOW_OVERLAPS) {
-    checkOverlaps();
+    handler.checkOverlaps();
   }
 }
 
 
 document.onkeyup = function (e) {
-  var key = e.key
+  var key = e.key;
   if (key == "ArrowLeft" || key == "ArrowRight") {
-    Object.keys(wavesurfer.regions.list).forEach(function (id) {
-      var region = wavesurfer.regions.list[id];
-      updateEvent(region)
-    });
+    handler.updateAllRegions();
   }
 }

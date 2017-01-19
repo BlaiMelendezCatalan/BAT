@@ -9,13 +9,19 @@
 <script src="{% static 'js/jquery-3.1.1.min.js' %}"></script>
 <script src="{% static 'js/bootstrap.min.js' %}"></script>
 </head>
-<body>
+<body class="{% block body_class %}{% endblock %}">
     
 <div class="container-fluid">
     <div class="page-header">
         <ul class="nav nav-pills pull-right">
         <li><a href="{% url 'new_annotation' %}">New annotation</a></li>
         <li><a href="{% url 'my_annotations' %}">My annotations</a></li>
+        <li>
+          <form action="{% url 'logout' %}" method="post">
+            {% csrf_token %}
+            <input type="submit" id="logout-button" value="Logout">
+          </form>
+        </li>
         </ul>
         <div class="text-left">
             <h1>{% block header %}{% endblock %}</h1>
