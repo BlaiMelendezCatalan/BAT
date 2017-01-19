@@ -155,7 +155,7 @@ def create_tmp_file(segment):
     wav_file = read(input_file, 'r')
     sample_rate = wav_file[0]
     start = int(ceil(sample_rate * (segment.start_time)))
-    end = int(floor(sample_rate * (segment.end_time + 0.1)))
+    end = int(floor(sample_rate * (segment.end_time)))
     write(
         output_file,
         sample_rate,
