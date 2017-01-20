@@ -100,7 +100,7 @@ function setClassForRegion(region, class_name, color) {
     annotation: class_name
   });
   updateEvent(region);
-  $("#show_class").val(class_name);
+  redrawClassForRegion(region);
 }
 
 // set wavesurfer cursor to start of some region

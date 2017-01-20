@@ -31,9 +31,6 @@
     <h3>Annotation Tips:</h3>
     <h5>- Read and get used to the commands below. Annotation will be much easier.</h5>
     <h5>- Do not worry about small silences, we will annotate them for you.</h5>
-    <h3>Classes:</h3>
-    <h5>- <strong>1: Music</strong> | <strong>2: Speech</strong> | <strong>3: Bgmusic</strong> | <strong>4: Quiet
-      bgmusic</strong> | <strong>5: Loud bgmusic</strong></h5>
     &nbsp;
     <div id="waveform"></div>
 
@@ -74,10 +71,16 @@
       </div>
     </div>
 
+    <div class="row classes-container">
+      <div class="col-md-1" id="class-panel-header">Class</div>
+      <div class="col-md-11">
+        {% for name, color, shortcut in classes %}
+          <div class="class-btn" data-class-color="{{ color }}" data-class-name="{{ name }}">{{ name }} <span class="shortcut">({{ shortcut }})</span></div>
+        {% endfor %}
+      </div>
+    </div>
     <div class="row control-form">
       <div class="col-md-4">
-        <div>Class</div>
-        <input type="text" class="form-control" id="show_class" value="" readonly>
         <div>Tags</div>
         <input type="text" class="form-control" id="tags" value="">
         {% if not request.user.is_superuser %}
@@ -271,10 +274,12 @@
       },
 
       getWavesurferByRegion: function (region) {
-        for (var i in this.container) {
-          var wavesurfer = this.container[i];
+        if (region != null) {
+          for (var i in this.container) {
+            var wavesurfer = this.container[i];
             if (wavesurfer.regions.list[region.id] == region) {
-            return wavesurfer;
+              return wavesurfer;
+            }
           }
         }
         return null;
@@ -301,6 +306,7 @@
 
         wavesurfer.on('region-removed', function (region) {
           setCurrentRegion(-1);
+          redrawClassForRegion();
           var region_data = {event_id: region.attributes['event_id']};
 
           $.ajax({
@@ -327,11 +333,9 @@
             } else {
               document.getElementById("tags").value = ""
             }
-            if ("class" in region.attributes) {
-              $(select).val(region.attributes['class'])
-            } else {
-              select.selectedIndex = 0
-            }
+            // set classes
+            redrawClassForRegion(region);
+
 
             // open prominence window if Region have multi class
             var classes = typeof region.attributes.class != 'undefined' ? region.attributes.class.split(' ') : [];
@@ -440,7 +444,6 @@
 
 
     // init
-    var select = document.getElementById("show_class");
     var ALLOW_OVERLAPS = {% if project.overlap %}true{% else %}false{% endif %};
     var CLASS_DICT = {{ class_dict|safe }};
     var currentRegionId = -1;
@@ -474,6 +477,25 @@
       });
       return unique;
     }
+
+    function redrawClassForRegion(region) {
+      $('.class-btn').removeClass('active');
+      if (typeof region != 'undefined' && 'class' in region.attributes) {
+        region.attributes['class'].split(' ').forEach(function (name) {
+            $('div[data-class-name=' + name + ']').addClass('active');
+        });
+      }
+    }
+
+    $('.class-btn').on('click', function () {
+      var region = handler.findRegionById(currentRegionId),
+          data = $(this).data();
+      if (region == null) {
+        return null;
+      }
+      setClassForRegion(region, data.className, data.classColor);
+
+    });
 
     function loadRegions(wavesurfer) {
       // Do it with AJAX and return all info for all regions
@@ -619,7 +641,7 @@
 
     function resetHTML() {
       document.getElementById("tags").value = ""
-      select.selectedIndex = 0
+      redrawClassForRegion();
     }
 
     function createNewRegion(fromRegion, callback) {

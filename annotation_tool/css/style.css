@@ -30,6 +30,33 @@
     padding-right: 15px;
 }
 
+#class-panel-header {
+    padding-top: 5px;
+    text-align: right;
+}
+.classes-container {
+    margin-top: 60px;
+}
+.class-btn {
+    display: inline-block;
+    margin-left: 25px;
+    box-shadow: 0 0 6px grey;
+    padding: 2px 15px;
+    cursor: pointer;
+    border-radius: 2px;
+    color: #23c5c1;
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+.class-btn span.shortcut {
+    font-weight: 400;
+}
+
+.class-btn.active {
+    background-color: #609AB6;
+    color: #fff;
+}
 
 
 #login-signup-container {
