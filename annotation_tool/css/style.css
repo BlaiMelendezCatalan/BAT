@@ -53,9 +53,27 @@
     font-weight: 400;
 }
 
+.tag-element {
+    display: inline-block;
+    margin-left: 25px;
+    box-shadow: 0 0 6px grey;
+    padding: 2px 15px;
+    cursor: pointer;
+    border-radius: 2px;
+    color: rgba(35, 197, 193, 0.6);
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
 .class-btn.active {
     background-color: #609AB6;
     color: #fff;
+}
+
+#tags-panel-header {
+    padding-top: 6px;
+    text-align: right;
 }
 
 

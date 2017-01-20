@@ -71,7 +71,7 @@
       </div>
     </div>
 
-    <div class="row classes-container">
+    <div class="row control-form">
       <div class="col-md-1" id="class-panel-header">Class</div>
       <div class="col-md-11">
         {% for name, color, shortcut in classes %}
@@ -80,13 +80,21 @@
       </div>
     </div>
     <div class="row control-form">
-      <div class="col-md-4">
-        <div>Tags</div>
-        <input type="text" class="form-control" id="tags" value="">
+      <div class="col-md-1" id="tags-panel-header">Tags</div>
+      <div class="col-md-6">
         {% if not request.user.is_superuser %}
-          <button class="btn" id="tag_button">Save tags</button>
+          <div class="col-md-8">
+            <input type="text" class="form-control" id="tags-input" value="">
+          </div>
+          <div class="col-md-3"><button class="btn" id="tag_button">Save tags</button></div>
         {% endif %}
       </div>
+    </div>
+    <div class="row control-form">
+      <div class="col-md-3"></div>
+      <div class="col-md-6" id="tags-container"></div>
+    </div>
+    <div class="row control-form">
       <div class="col-md-4 col-md-offset-1">
         <button id="switch-view" class="btn btn-success">Switch view</button>
         {% if not request.is_superuser %}
@@ -327,15 +335,8 @@
           setCurrentRegion(region.id)
 
           if (event.button == 0 && event.ctrlKey == false) {
-
-            if ("tags" in region.attributes && typeof region.attributes.tags != 'undefined') {
-              document.getElementById("tags").value = region.attributes['tags']
-            } else {
-              document.getElementById("tags").value = ""
-            }
-            // set classes
+            redrawTagsForRegion(region);
             redrawClassForRegion(region);
-
 
             // open prominence window if Region have multi class
             var classes = typeof region.attributes.class != 'undefined' ? region.attributes.class.split(' ') : [];
@@ -640,8 +641,22 @@
     }
 
     function resetHTML() {
-      document.getElementById("tags").value = ""
+      redrawTagsForRegion();
       redrawClassForRegion();
+    }
+    
+    
+    function redrawTagsForRegion(region) {
+      var container = $('#tags-container');
+      container.empty();
+      $('#tags-input').val('');
+
+      if (typeof region != 'undefined' && 'tags' in region.attributes && typeof region.attributes.tags != 'undefined') {
+        region.attributes['tags'].forEach(function (name) {
+            var tag = $('<div></div>').addClass('tag-element').text(name);
+            container.append(tag);
+        });
+      }
     }
 
     function createNewRegion(fromRegion, callback) {
@@ -739,16 +754,17 @@ function onRegionCreated(region) {
 
 
       $("#tag_button").click(function () {
-        if (currentRegionId != -1) {
-          var region = handler.findRegionById(currentRegionId);
-          var tags = document.getElementById("tags").value.split(",");
-          region.update({
+        var region = handler.findRegionById(currentRegionId),
+            tags = $('#tags-input').val().split(",");
+        if (region != null && tags.length) {
+          {% comment %}region.update({
             attributes: {
               'class': region.attributes['class'],
-              'tags': tags,
+              'tags': tags
               'event_id': region.attributes['event_id']
             }
-          });
+          });{% endcomment %}
+          region.attributes.tags = tags;
           updateEvent(region)
         }
       });

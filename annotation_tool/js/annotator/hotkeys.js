@@ -113,12 +113,16 @@ function moveCursorToRegionStart(region) {
 
 // HTML elements callbacks
 document.onkeydown = function (e) {
-  e.stopPropagation()
-  e.preventDefault()
+  if (e.target == $('#tags-input')[0]) {
+    return;
+  }
+  e.stopPropagation();
+  e.preventDefault();
 
   var region = handler.findRegionById(currentRegionId),
     key = e.key,
-    n_regions = Object.keys(handler.getWavesurferByRegion(region).regions.list).length,
+    wavesurfer = handler.getWavesurferByRegion(region),
+    n_regions = wavesurfer ? Object.keys(wavesurfer.regions.list).length : 0,
     pressCtrl = e.ctrlKey == true,
     pressShift = e.shiftKey == true,
     times;
