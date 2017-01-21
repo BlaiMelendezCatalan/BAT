@@ -463,6 +463,7 @@
     function switchToRegionMode() {
       REGIONS_STATE = true;
       $('#solve-overlaps-button, region .fa-times-circle, #tag_button, region handle, #add-wavesurfer-button').hide();
+      $('.class-btn').css('cursor', 'default');
       $('#controls-container h5').not('.common-control').hide();
       $('#back-annotations-button').show();
       handler.disableDragSelection();
@@ -490,7 +491,7 @@
     $('.class-btn').on('click', function () {
       var region = handler.findRegionById(currentRegionId),
           data = $(this).data();
-      if (region == null) {
+      if (region == null || REGIONS_STATE) {
         return null;
       }
       setClassForRegion(region, data.className, data.classColor);
