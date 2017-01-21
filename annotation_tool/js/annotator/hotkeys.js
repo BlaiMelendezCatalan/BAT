@@ -113,7 +113,7 @@ function moveCursorToRegionStart(region) {
 
 // HTML elements callbacks
 document.onkeydown = function (e) {
-  if (e.target == $('#tags-input')[0]) {
+  if (e.target == $('#tags-input-tokenfield')[0]) {
     return;
   }
   e.stopPropagation();
