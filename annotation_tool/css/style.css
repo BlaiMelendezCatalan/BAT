@@ -73,6 +73,15 @@
     display: none;
 }
 
+#tips-container {
+    text-align: center;
+}
+
+#switch-view {
+    float: right;
+    margin-top: 35px;
+}
+
 .delete-tag-button {
     cursor: pointer;
     color: black;
@@ -177,12 +186,7 @@
 }
 
 .finish-annotation-button {
-    margin-right: 10px;
-    margin-top: 10px;
-}
-
-#switch-view, #solve-overlaps-button {
-    margin-right: 10px;
+    margin-left: 10px;
 }
 
 tag span {

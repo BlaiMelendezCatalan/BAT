@@ -30,10 +30,13 @@
   </div>
 
   <div class="container">
-    <h3>Annotation Tips:</h3>
-    <h5>- Read and get used to the commands below. Annotation will be much easier.</h5>
-    <h5>- Do not worry about small silences, we will annotate them for you.</h5>
+    <div id="tips-container">
+      <h3>Annotation Tips:</h3>
+      <h5>- Read and get used to the commands below. Annotation will be much easier.</h5>
+      <h5>- Do not worry about small silences, we will annotate them for you.</h5>
+    </div>
     &nbsp;
+    <button id="switch-view" class="btn btn-success">Switch view</button>
     <div id="waveform"></div>
 
     <div style="text-align: center">
@@ -58,6 +61,21 @@
       </div>
       </p>
     </div>
+
+    {% if not request.is_superuser %}
+      <div class="row control-form">
+        <div class="col-md-12">
+          <div style="float: right;">
+            {% if project.overlap %}
+              <button id="solve-overlaps-button" class="btn btn-warning">Solve overlaps</button>
+              <button id="back-annotations-button" class="btn btn-warning">Back annotations</button>
+            {% endif %}
+            <button data-load-next="0" class="btn btn-primary finish-annotation-button">Finish annotation</button>
+            <button data-load-next="1" class="btn btn-primary finish-annotation-button">Finish annotation and load next</button>
+          </div>
+        </div>
+      </div>
+    {% endif %}
 
     <div id="class-prominence-container">
       <div class="class-prominence-item fake-item">
@@ -96,21 +114,6 @@
       <div class="col-md-1" id="regions-mode-tag-container"><span id="regions-mode-tag-label">Tags</span></div>
       <div class="col-md-2"></div>
       <div class="col-md-7" id="tags-container"></div>
-    </div>
-    <div class="row control-form">
-      <div class="col-md-4 col-md-offset-1">
-        <button id="switch-view" class="btn btn-success">Switch view</button>
-        {% if not request.is_superuser %}
-          {% if project.overlap %}
-            <button id="solve-overlaps-button" class="btn btn-warning">Solve overlaps</button>
-            <button id="add-wavesurfer-button" class="btn btn-success">Add wavesurfer</button>
-            <button id="back-annotations-button" class="btn btn-warning">Back annotations</button>
-          {% endif %}
-          <br>
-          <button data-load-next="0" class="btn btn-primary finish-annotation-button">Finish annotation</button>
-          <button data-load-next="1" class="btn btn-primary finish-annotation-button">Finish annotation and load next</button>
-        {% endif %}
-      </div>
     </div>
 
     <div id="modal-window" class="modal fade" role="dialog">
