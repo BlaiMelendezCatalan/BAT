@@ -137,31 +137,40 @@
     </div>
     <div class="jumbotron" id="controls-container">
       <h3>Controls:</h3>
-      <h5 class="common-control">- Space bar plays and pauses the audio.</h5>
-      <h5>- <strong>Click</strong> and <strong>drag</strong> on the waveform to create a <strong>new region</strong>.
-        This
-        is now the <strong>selected region</strong>.</h5>
-      <h5 class="common-control">- <strong>Click</strong> on another <strong>region</strong> to <strong>select
+      <h5 class="common-control">
+        Space bar plays and pauses the audio.
+      </h5>
+      {% if not regions %}
+      <h5>
+          <strong>Click</strong> and <strong>drag</strong> on the waveform to create a <strong>new region</strong>.
+          This is now the <strong>selected region</strong>.
+      </h5>
+      {% endif %}
+      <h5 class="common-control">
+        <strong>Click</strong> on another <strong>region</strong> to <strong>select
         it</strong>.</h5>
-      <h5>- <strong>Ctrl-Click</strong> on any <strong>region</strong> to <strong>delete it</strong>.</h5>
-      <h5>- <strong>Click</strong> a <strong>number</strong> to <strong>set</strong> the <strong>class</strong> of the
-        selected region.</h5>
-      <h5>- To <strong>tag a region</strong>: <strong>select it</strong>, write the <strong>tags separated by
-        comas</strong>
-        and click <strong>save tags</strong>.</h5>
-      <h5>- <strong>Regions does not overlap</strong>. <strong>Placing a region limit inside another region adjusts the
-        first to the second</strong>. Use this to <strong>easily concatenate regions.</strong></h5>
-      <h5>- Press <strong>"f"</strong> to <strong>glue</strong> the selected region limits to the closer borders. Do it
-        with
-        <strong>Ctrl (+ Shift)</strong> to glue only the <strong>left (right) limit</strong>.</h5>
-      <h5 class="common-control">- Press <strong>"s"</strong> to set the <strong>player</strong> at the <strong>beginning</strong>
+      {% if not regions %}
+        <h5><strong>Ctrl-Click</strong> on any <strong>region</strong> to <strong>delete it</strong>.</h5>
+        <h5><strong>Click</strong> a <strong>number</strong> to <strong>set</strong> the <strong>class</strong> of the
+          selected region.</h5>
+        <h5>To <strong>tag a region</strong>: <strong>select it</strong>, write the <strong>tags (use TAB for separate tags)</strong>
+          and click <strong>save tags button</strong>.</h5>
+        <h5><strong>Regions does not overlap</strong>. <strong>Placing a region limit inside another region adjusts the
+          first to the second</strong>. Use this to <strong>easily concatenate regions.</strong></h5>
+        <h5>Press <strong>"f"</strong> to <strong>glue</strong> the selected region limits to the closer borders. Do it
+          with
+          <strong>Ctrl (+ Shift)</strong> to glue only the <strong>left (right) limit</strong>.</h5>
+      {% endif %}
+      <h5 class="common-control">Press <strong>"s"</strong> to set the <strong>player</strong> at the <strong>beginning</strong>
         of the <strong>audio</strong>.
       </h5>
-      <h5 class="common-control">- Press <strong>"b"</strong> to set the <strong>player</strong> at the <strong>beginning</strong>
+      <h5 class="common-control">Press <strong>"b"</strong> to set the <strong>player</strong> at the <strong>beginning</strong>
         of the <strong>selected
           region</strong>.</h5>
-      <h5>- <strong>Ctrl (+ Shift) + Left/Right Arrows</strong> precisely <strong>adjusts</strong> left (right) region
+      {% if not regions %}
+      <h5><strong>Ctrl (+ Shift) + Left/Right Arrows</strong> precisely <strong>adjusts</strong> left (right) region
         <strong>limits</strong>.</h5>
+      {% endif %}
     </div>
   </div>
   {% if request.user.is_superuser %}
@@ -179,7 +188,15 @@
     </style>
   {% endif %}
   <script type="text/javascript">
-  
+
+    function renderNumbersForControlPanel() {
+      var index = 0,
+          numbers = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮'];
+      $('#controls-container h5').each(function () {
+        $(this).prepend('<span class="number">' + numbers[index++] + '</span>&nbsp;');
+      });
+    }
+    renderNumbersForControlPanel();
   
     wavesurferHandler = {
       // contain all wavesurfers
@@ -477,7 +494,7 @@
     function switchToRegionMode() {
       REGIONS_STATE = true;
       $('#solve-overlaps-button, region .fa-times-circle, #tag_button, region handle, #tags-input-tokenfield, .tags-input-container, #add-wavesurfer-button').hide();
-      $('#controls-container h5').not('.common-control').hide();
+      //$('#controls-container h5').not('.common-control').hide();
       $('#back-annotations-button, #regions-mode-tag-label').show();
       handler.disableDragSelection();
     }

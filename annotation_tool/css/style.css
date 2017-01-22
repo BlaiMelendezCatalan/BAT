@@ -120,6 +120,13 @@
 #controls-container {
     padding: 10px 30px;
     margin-top: 10px;
+    background: none;
+}
+
+#controls-container .number {
+    color: #00B1B9;
+    font-size: 18px;
+    font-weight: 600;
 }
 
 .container {
