@@ -246,7 +246,7 @@ WaveSurfer.Label = {
         });
         // If the user dbl clicks the label, trigger the dblclick event for the assiciated region
         this.element.addEventListener('click', function (e) {
-            my.region.wavesurfer.fireEvent('region-click', my.region, e);
+            my.region.wavesurfer.fireEvent('region-dblclick', my.region, e);
         });
     }
 };

@@ -137,8 +137,7 @@
     </div>
     <div class="jumbotron" id="controls-container">
       <h3>Controls:</h3>
-      <h5 class="common-control">
-        Space bar plays and pauses the audio.
+      <h5 class="common-control">Space bar plays and pauses the audio.
       </h5>
       {% if not regions %}
       <h5>
@@ -331,7 +330,10 @@
           onRegionCreated(region);
         });
 
-        wavesurfer.on('region-update-end', function (region) {
+        wavesurfer.on('region-update-end', function (region, event, eventType) {
+          if (eventType == 'drag') {
+            return;
+          }
           setTimeout(function () {
             var check_region = wavesurfer.regions.list[region.id];
             // region was deleted
@@ -361,22 +363,20 @@
           });
         });
 
+        wavesurfer.on('region-dblclick', function (region) {
+          setCurrentRegion(region.id);
+        });
+
         wavesurfer.on('region-click', function (region, event) {
-          setCurrentRegion(region.id)
-
           if (event.button == 0 && event.ctrlKey == false) {
-            redrawTagsForRegion(region);
-            redrawClassForRegion(region);
-
             // open prominence window if Region have multi class
             var classes = typeof region.attributes.class != 'undefined' ? region.attributes.class.split(' ') : [];
             if (REGIONS_STATE && classes.length > 1) {
               toggleProminencePopup(classes, region, $(event.target).offset());
             }
-          } else if (event.button == 0 && event.ctrlKey == true) {
-            if (!REGIONS_STATE) {
-              region.remove()
-            }
+          } else if (event.button == 0 && event.ctrlKey == true && !REGIONS_STATE) {
+            region.remove()
+            setCurrentRegion(-1);
           }
         });
 
@@ -511,9 +511,11 @@
 
     function redrawClassForRegion(region) {
       $('.class-btn').removeClass('active');
-      if (typeof region != 'undefined' && 'class' in region.attributes) {
+      if (typeof region != 'undefined' && region != null && 'class' in region.attributes) {
         region.attributes['class'].split(' ').forEach(function (name) {
+          if (name) {
             $('div[data-class-name=' + name + ']').addClass('active');
+          }
         });
       }
     }
@@ -693,7 +695,7 @@
       container.empty();
       $('#tags-input').val('');
 
-      if (typeof region != 'undefined' && 'tags' in region.attributes && typeof region.attributes.tags != 'undefined') {
+      if (typeof region != 'undefined' && region != null && 'tags' in region.attributes && typeof region.attributes.tags != 'undefined') {
         region.attributes['tags'].forEach(function (name) {
           if (!name.length) {
             return;
@@ -743,11 +745,25 @@
 
     function setCurrentRegion(id) {
       currentRegionId = id;
-      console.log('set current', id);
       $('tag').removeClass('active');
       if (currentRegionId != -1) {
         $('.region-label-' + currentRegionId).addClass('active');
+        var region = handler.findRegionById(currentRegionId);
+        if (region) {
+          redrawTagsForRegion(region);
+          redrawClassForRegion(region);
+          updateRegionIndexes(region);
+        }
       }
+    }
+
+
+    function updateRegionIndexes(region) {
+      var baseZIndex = 1100;
+      $('.wavesurfer-region').each(function () {
+        $(this).css('z-index', baseZIndex++);
+      });
+      $('region[data-id=' + region.id + ']').css('z-index', 3000);
     }
 
     function disableDrag(region) {
