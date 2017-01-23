@@ -117,6 +117,12 @@
     margin-top: 50px;
 }
 
+tag.active {
+    background-color: #cfca7f !important;
+    color: black !important;
+    padding: 2px 10px !important;
+}
+
 #controls-container {
     padding: 10px 30px;
     margin-top: 10px;

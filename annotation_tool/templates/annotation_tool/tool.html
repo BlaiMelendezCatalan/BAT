@@ -554,6 +554,7 @@
           handler.addRegion(wavesurfer, '{{ event.event_class|default_if_none:'' }}', tags, {{ event.id }}, {{ event.start_time }}, {{ event.end_time }}, '{{ event.color }}', true);
         {% endfor %}
       {% endif %}
+      setCurrentRegion(-1);
     }
 
     function getDuration() {
@@ -741,7 +742,12 @@
     }
 
     function setCurrentRegion(id) {
-      currentRegionId = id
+      currentRegionId = id;
+      console.log('set current', id);
+      $('tag').removeClass('active');
+      if (currentRegionId != -1) {
+        $('.region-label-' + currentRegionId).addClass('active');
+      }
     }
 
     function disableDrag(region) {
