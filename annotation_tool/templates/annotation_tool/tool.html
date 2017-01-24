@@ -896,7 +896,8 @@ function onRegionCreated(region) {
         solveOverlaps(0, allRegions);
       });
 
-
+      // in "one more iteration" use compare only with new regions
+      var newRegions = {};
       function solveOverlaps(totalOverlapsCount, allRegions) {
         /*
          find overlap
@@ -905,14 +906,20 @@ function onRegionCreated(region) {
          2. temp_region inside current_region
          3. current_region.end overlap on temp_region.start
          4. current_region.start overlap on temp_region.end
-         5. overlap with multiclasses (limits can be the same)
+         5. overlap with multiclasses (regions limits can be the same)
         */
         var oneMoreIteration = false;
+        if (typeof allRegions == 'object') {
+          allRegions = $.map(allRegions, function (item) {
+            return item;
+          });
+        }
+
         allRegions.forEach(function (current_region) {
           if (typeof current_region.deleted != 'undefined') {
             return;
           }
-          allRegions.forEach(function (temp_region) {
+          handler.getAllRegions().forEach(function (temp_region) {
             if (current_region.id == temp_region.id || typeof temp_region.deleted != 'undefined') {
               return;
             }
@@ -936,10 +943,13 @@ function onRegionCreated(region) {
             }
             // Type 2
             else if (current_region.start < temp_region.start && current_region.end > temp_region.end) {
-              new_region_end = current_region.end;
-              new_region_start = temp_region.end;
+              new_region_start = temp_region.start;
+              new_region_end = temp_region.end;
 
-             current_region.update({end: temp_region.start});
+              temp_region.update({start: current_region.start, end: new_region_start});
+              temp_region.attributes.class = current_region.attributes.class;
+              temp_region.attributes.tags = current_region.attributes.tags;
+              current_region.update({start: new_region_end});
             }
             // Type 3
             else if (current_region.start < temp_region.start && current_region.end > temp_region.start && temp_region.end > current_region.end) {
@@ -989,6 +999,12 @@ function onRegionCreated(region) {
                 current_region.deleted = true;
 
                 temp_region.update({end: current_region.start})
+              } // Type 5.5
+              else if (current_region.start == temp_region.start && current_region.end == temp_region.end) {
+                new_region_start = current_region.start;
+                new_region_end = current_region.end;
+                current_region.deleted = true;
+                temp_region.deleted = true;
               } else {
                 return;
               }
@@ -1006,6 +1022,9 @@ function onRegionCreated(region) {
                 OVERLAP_REGION_COLOR,
                 false //is loaded
             );
+
+            newRegions[new_region_id] = newRegion;
+
             createNewRegion(current_region, function () {
               createNewRegion(temp_region, function () {
                 createNewRegion(newRegion, function () {
@@ -1015,6 +1034,8 @@ function onRegionCreated(region) {
             });
             totalOverlapsCount += 1;
             oneMoreIteration = true;
+            // wait before next iteration
+            sleep(120);
           });
         });
 
@@ -1022,12 +1043,18 @@ function onRegionCreated(region) {
           if (totalOverlapsCount <= 0) {
             clearInterval(checker);
             if (oneMoreIteration) {
-              solveOverlaps(totalOverlapsCount, handler.getAllRegions());
+              solveOverlaps(totalOverlapsCount, newRegions);
             } else {
               location.reload();
             }
           }
         }, 50);
+      }
+
+      function sleep(miliseconds) {
+         var currentTime = new Date().getTime();
+
+         while (currentTime + miliseconds >= new Date().getTime()) {}
       }
       
       
