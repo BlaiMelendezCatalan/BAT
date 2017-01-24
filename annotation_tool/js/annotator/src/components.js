@@ -150,14 +150,6 @@ PlayBar.prototype = {
             my.updateTimer();
         });
 
-        // Play and pause on spacebar keydown
-        $(document).on("keydown", function (event) {
-            if (event.keyCode === 32) {
-                event.preventDefault();
-                my.trackEvent('spacebar-' + (my.wavesurfer.isPlaying() ? 'pause' : 'play'));
-                my.wavesurfer.playPause();
-            }
-        });
     },
 };
 

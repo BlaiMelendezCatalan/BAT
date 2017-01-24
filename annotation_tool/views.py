@@ -568,9 +568,12 @@ def update_event(request):
         return JsonResponse({'error': 'Event does not exist'})
 
     if 'tags' in region_data:
+        event.tags.clear()
         for t in region_data['tags']:
-            tag = models.Tag.objects.get_or_create(name=t)
-            event.tags.add(tag[0])
+            if not t:
+                continue
+            tag, _ = models.Tag.objects.get_or_create(name=t)
+            event.tags.add(tag)
 
     if 'event_class' in region_data and region_data['event_class'] and region_data['event_class'] != 'None':
         event_class = models.Class.objects.get(name=region_data['event_class'],

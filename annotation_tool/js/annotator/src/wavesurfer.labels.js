@@ -183,6 +183,7 @@ WaveSurfer.Label = {
     // Create and append individual label element
     render: function() {
         var labelEl = document.createElement('tag');
+        labelEl.className = 'region-label-' + this.region.id;
 
         this.element = this.container.appendChild(labelEl);
         this.style(this.element, {
@@ -244,8 +245,8 @@ WaveSurfer.Label = {
             my.region.play();
         });
         // If the user dbl clicks the label, trigger the dblclick event for the assiciated region
-        this.element.addEventListener('dblclick', function (e) {
-            my.region.wavesurfer.fireEvent('label-dblclick', my.region, e);
+        this.element.addEventListener('click', function (e) {
+            my.region.wavesurfer.fireEvent('region-dblclick', my.region, e);
         });
     }
 };
