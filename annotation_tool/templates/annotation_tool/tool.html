@@ -200,6 +200,7 @@
     wavesurferHandler = {
       // contain all wavesurfers
       container: [],
+      labels: [],
 
       getMainWavesurfer: function() {
         return this.container[0];
@@ -272,6 +273,7 @@
           wavesurfer: wavesurfer,
           container: container + ' .labels'
         });
+        this.labels.push(labels);
 
         // Create the play button and time that appear below the wavesurfer
         var playBar = new PlayBar(wavesurfer);
@@ -391,6 +393,7 @@
           if (isMainWavesurfer) {
             loadRegions(wavesurfer);
             wavesurfer.play();
+            that.labels[0].rearrange();
           }
         });
       },

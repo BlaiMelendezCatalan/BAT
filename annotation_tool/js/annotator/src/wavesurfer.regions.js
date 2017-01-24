@@ -67,8 +67,7 @@ WaveSurfer.Regions = {
       start = my.wavesurfer.drawer.handleEvent(e);
       region = null;
     }
-
-    this.wrapper.addEventListener('mousedown', eventDown);
+    document.body.addEventListener('mousedown', eventDown);
     this.wrapper.addEventListener('touchstart', eventDown);
     this.on('disable-drag-selection', function () {
       my.wrapper.removeEventListener('touchstart', eventDown);
@@ -437,7 +436,9 @@ WaveSurfer.Region = {
         /*if (my.drag) {
          e.stopPropagation();
          }*/
-        e.stopPropagation();
+        if (e.target.classList.contains('fa-times-circle') || e.target.classList.contains('wavesurfer-handle')) {
+          e.stopPropagation();
+        }
         startTime = my.wavesurfer.drawer.handleEvent(e) * duration;
 
         if (e.target.tagName.toLowerCase() == 'handle') {

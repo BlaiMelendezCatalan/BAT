@@ -130,9 +130,10 @@ class RegionSerializer(serializers.Serializer):
         region.save()
 
         # add tags
-        tags = dict(self.initial_data)['tags[]']
-        tags = map(lambda name: models.Tag.objects.get_or_create(name=name)[0], tags)
-        region.tags.add(*tags)
+        if 'tags[]' in self.initial_data:
+            tags = dict(self.initial_data)['tags[]']
+            tags = map(lambda name: models.Tag.objects.get_or_create(name=name)[0], tags)
+            region.tags.add(*tags)
 
         # add classes
         classes = map(lambda name: models.Class.objects.get(name=name, project=region.get_project()), classes.split())
