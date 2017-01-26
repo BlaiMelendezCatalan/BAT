@@ -118,9 +118,20 @@
 }
 
 tag.active {
-    background-color: #cfca7f !important;
-    color: black !important;
-    padding: 2px 10px !important;
+    background-color: #cfca7f;
+    color: black;
+    padding: 2px 10px;
+}
+
+tag {
+    position: absolute;
+    white-space: nowrap;
+    background-color: #7C7C7C;
+    color: #ffffff;
+    padding: 0px 5px;
+    border-radius: 2px;
+    font-size: 12px;
+    text-transform: uppercase;
 }
 
 #controls-container {

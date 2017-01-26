@@ -186,7 +186,8 @@ WaveSurfer.Label = {
         labelEl.className = 'region-label-' + this.region.id;
 
         this.element = this.container.appendChild(labelEl);
-        this.style(this.element, {
+        // now styles in css file
+/*        this.style(this.element, {
             position: 'absolute',
             whiteSpace: 'nowrap',
             backgroundColor: '#7C7C7C',
@@ -195,7 +196,7 @@ WaveSurfer.Label = {
             borderRadius: '2px',
             fontSize: '12px',
             textTransform: 'uppercase'
-        });
+        });*/
 
         // Add play button inside the label
         this.playBtn = this.element.appendChild(document.createElement('i'));

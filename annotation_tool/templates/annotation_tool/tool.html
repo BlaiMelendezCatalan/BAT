@@ -376,8 +376,10 @@
             if (REGIONS_STATE && classes.length > 1) {
               toggleProminencePopup(classes, region, $(event.target).offset());
             }
-          } else if (event.button == 0 && event.ctrlKey == true && !REGIONS_STATE) {
-            region.remove()
+            return null;
+          }
+          if (event.button == 0 && event.ctrlKey == true && !REGIONS_STATE) {
+            region.remove();
             setCurrentRegion(-1);
           }
         });
