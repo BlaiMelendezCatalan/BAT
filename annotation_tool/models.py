@@ -26,6 +26,7 @@ class Class(models.Model):
 
     class Meta:
         unique_together = (('project', 'name'), ('project', 'color'), ('project', 'shortcut'))
+        ordering = ('shortcut',)
 
     def __str__(self):
         return str(self.name)

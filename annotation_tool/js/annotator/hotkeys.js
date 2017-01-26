@@ -100,7 +100,7 @@ function setClassForRegion(region, class_name, color) {
     annotation: class_name
   });
   updateEvent(region);
-  $("#show_class").val(class_name);
+  redrawClassForRegion(region);
 }
 
 // set wavesurfer cursor to start of some region
@@ -113,12 +113,16 @@ function moveCursorToRegionStart(region) {
 
 // HTML elements callbacks
 document.onkeydown = function (e) {
-  e.stopPropagation()
-  e.preventDefault()
+  if (e.target == $('#tags-input-tokenfield')[0]) {
+    return;
+  }
+  e.stopPropagation();
+  e.preventDefault();
 
   var region = handler.findRegionById(currentRegionId),
     key = e.key,
-    n_regions = Object.keys(handler.getWavesurferByRegion(region).regions.list).length,
+    wavesurfer = handler.getWavesurferByRegion(region),
+    n_regions = wavesurfer ? Object.keys(wavesurfer.regions.list).length : 0,
     pressCtrl = e.ctrlKey == true,
     pressShift = e.shiftKey == true,
     times;
