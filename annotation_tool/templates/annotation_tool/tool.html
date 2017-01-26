@@ -196,7 +196,7 @@
       });
     }
     renderNumbersForControlPanel();
-  
+
     wavesurferHandler = {
       // contain all wavesurfers
       container: [],
@@ -246,7 +246,7 @@
 
         return '.' + classForNewContainer;
       },
-      
+
       addWavesurfer: function () {
         var container = this.addContainerForWavesurfer(),
             colorMap = this.getSpectrogramColorMap(),
@@ -365,18 +365,19 @@
           });
         });
 
-        wavesurfer.on('region-dblclick', function (region, event) {
+        wavesurfer.on('region-dblclick', function (region) {
           setCurrentRegion(region.id);
+        });
+
+        wavesurfer.on('region-click', function (region, event) {
           if (event.button == 0 && event.ctrlKey == false) {
             // open prominence window if Region have multi class
             var classes = typeof region.attributes.class != 'undefined' ? region.attributes.class.split(' ') : [];
             if (REGIONS_STATE && classes.length > 1) {
-              toggleProminencePopup(classes, region, $(region.element).offset());
+              toggleProminencePopup(classes, region, $(event.target).offset());
             }
+            return null;
           }
-        });
-
-        wavesurfer.on('region-click', function (region, event) {
           if (event.button == 0 && event.ctrlKey == true && !REGIONS_STATE) {
             region.remove();
             setCurrentRegion(-1);
@@ -497,8 +498,8 @@
 
     function switchToRegionMode() {
       REGIONS_STATE = true;
-      $('#solve-overlaps-button, region .fa-times-circle, #tag_button, region handle, #tags-input-tokenfield, .tags-input-container, #add-wavesurfer-button').hide();
-      //$('#controls-container h5').not('.common-control').hide();
+      $('#solve-overlaps-button, region .fa-times-circle, #tag_button, region handle, #add-wavesurfer-button, #tags-input-tokenfield, .tags-input-container').hide();
+      $('.class-btn').css('cursor', 'default');
       $('#back-annotations-button, #regions-mode-tag-label').show();
       handler.disableDragSelection();
     }
@@ -585,8 +586,8 @@
 
       return [new_start, new_end]
     }
-    
-    
+
+
     function updateClassProminence(region_id, className, prominence) {
       $.ajax({
         type: "POST",
@@ -681,7 +682,7 @@
       redrawTagsForRegion();
       redrawClassForRegion();
     }
-    
+
     function deleteTagFromRegion(region, tagName) {
       if (typeof region.attributes.tags != 'undefined') {
         var position = region.attributes.tags.indexOf(tagName);
@@ -692,8 +693,8 @@
         }
       }
     }
-    
-    
+
+
     function redrawTagsForRegion(region) {
       var container = $('#tags-container');
       container.empty();
@@ -707,7 +708,7 @@
           var deleteTagButton = $('<i></i>')
                   .addClass('fa fa-times-circle delete-tag-button')
                   .attr('data-tag-name', name);
-          
+
           var tag = $('<div></div>')
                   .addClass('tag-element')
                   .text(name);
@@ -723,12 +724,6 @@
     }
 
     function createNewRegion(fromRegion, callback) {
-      if (typeof fromRegion.deleted != 'undefined') {
-        if (typeof callback != 'undefined') {
-          callback();
-        }
-        return;
-      }
       var regionData = {
         color: fromRegion.color,
         start_time: fromRegion.start,
@@ -871,7 +866,9 @@ function onRegionCreated(region) {
       });
 
       $('#solve-overlaps-button').on('click', function () {
-        var allRegions = handler.getAllRegions();
+        var DELTA = 0,
+            totalOverlapsCount = 0,
+            allRegions = handler.getAllRegions();
 
         // check classes
         var regionsWithoutClass = 0;
@@ -890,15 +887,6 @@ function onRegionCreated(region) {
           modalWindow.modal('show');
           return;
         }
-
-        $('body').removeClass('loaded');
-
-        solveOverlaps(0, allRegions);
-      });
-
-      // in "one more iteration" use compare only with new regions
-      var newRegions = {};
-      function solveOverlaps(totalOverlapsCount, allRegions) {
         /*
          find overlap
          there is can be 4 types of overlap:
@@ -906,26 +894,11 @@ function onRegionCreated(region) {
          2. temp_region inside current_region
          3. current_region.end overlap on temp_region.start
          4. current_region.start overlap on temp_region.end
-         5. overlap with multiclasses (regions limits can be the same)
         */
-        var oneMoreIteration = false;
-        if (typeof allRegions == 'object') {
-          allRegions = $.map(allRegions, function (item) {
-            return item;
-          });
-        }
-
         allRegions.forEach(function (current_region) {
-          if (typeof current_region.deleted != 'undefined') {
-            return;
-          }
-          handler.getAllRegions().forEach(function (temp_region) {
-            if (current_region.id == temp_region.id || typeof temp_region.deleted != 'undefined') {
-              return;
-            }
+          allRegions.forEach(function (temp_region) {
             var new_region_id = current_region.id + temp_region.id,
                 classes = current_region.attributes.class.split(' ').concat(temp_region.attributes.class.split(' ')),
-                unique_classes = getUniqueItems(classes),
                 current_region_tags = typeof current_region.attributes.tags != 'undefined' ? current_region.attributes.tags : [],
                 temp_region_tags = typeof temp_region.attributes.tags != 'undefined' ? temp_region.attributes.tags: [],
                 tags = current_region_tags.concat(temp_region_tags),
@@ -933,88 +906,41 @@ function onRegionCreated(region) {
 
             // Type 1
             if (temp_region.start < current_region.start && temp_region.end > current_region.end) {
-              new_region_start = current_region.start;
-              new_region_end = current_region.end;
+              new_region_end = temp_region.end;
+              new_region_start = current_region.end;
 
-              current_region.update({start: temp_region.start, end: new_region_start});
-              current_region.attributes.class = temp_region.attributes.class;
-              current_region.attributes.tags = temp_region.attributes.tags;
-              temp_region.update({start: new_region_end});
+             temp_region.update({end: current_region.start - DELTA});
             }
             // Type 2
             else if (current_region.start < temp_region.start && current_region.end > temp_region.end) {
-              new_region_start = temp_region.start;
-              new_region_end = temp_region.end;
+              new_region_end = current_region.end;
+              new_region_start = temp_region.end;
 
-              temp_region.update({start: current_region.start, end: new_region_start});
-              temp_region.attributes.class = current_region.attributes.class;
-              temp_region.attributes.tags = current_region.attributes.tags;
-              current_region.update({start: new_region_end});
+             current_region.update({end: temp_region.start - DELTA});
             }
             // Type 3
-            else if (current_region.start < temp_region.start && current_region.end > temp_region.start && temp_region.end > current_region.end) {
+            else if (current_region.start < temp_region.start && current_region.end > temp_region.start) {
               new_region_end = current_region.end;
               new_region_start = temp_region.start;
 
-             current_region.update({end: temp_region.start});
-             temp_region.update({start: new_region_end});
+             current_region.update({end: temp_region.start - DELTA});
+             temp_region.update({start: new_region_end + DELTA});
             }
             // Type 4
-            else if (current_region.start > temp_region.start && current_region.start < temp_region.end && current_region.end > temp_region.end) {
+            else if (current_region.start > temp_region.start && current_region.start < temp_region.end) {
               new_region_end = temp_region.end;
               new_region_start = current_region.start;
 
-             current_region.update({start: new_region_end});
-             temp_region.update({end: new_region_start});
+             current_region.update({start: new_region_end + DELTA});
+             temp_region.update({end: new_region_start - DELTA});
             }
-            else if (unique_classes.length > 2) {
-               // Type 5.1
-              if (current_region.start == temp_region.start && current_region.end > temp_region.end) {
-                new_region_start = temp_region.start;
-                new_region_end = temp_region.end;
-                temp_region.deleted = true;
-
-                current_region.update({start: temp_region.end})
-              }
-              // Type 5.2
-              else if (current_region.start == temp_region.start && current_region.end < temp_region.end) {
-                new_region_start = current_region.start;
-                new_region_end = current_region.end;
-                current_region.deleted = true;
-
-                temp_region.update({start: current_region.end})
-              }
-              // Type 5.3
-              else if (current_region.start < temp_region.start && current_region.end == temp_region.end) {
-                new_region_start = temp_region.start;
-                new_region_end = temp_region.end;
-                temp_region.deleted = true;
-
-                current_region.update({end: temp_region.start})
-              }
-              // Type 5.4
-              else if (current_region.start > temp_region.start && current_region.end == temp_region.end) {
-                new_region_start = current_region.start;
-                new_region_end = current_region.end;
-                current_region.deleted = true;
-
-                temp_region.update({end: current_region.start})
-              } // Type 5.5
-              else if (current_region.start == temp_region.start && current_region.end == temp_region.end) {
-                new_region_start = current_region.start;
-                new_region_end = current_region.end;
-                current_region.deleted = true;
-                temp_region.deleted = true;
-              } else {
-                return;
-              }
-            } else {
+             else {
               return;
             }
             // create regions
             var newRegion = handler.addRegion(
                 handler.getMainWavesurfer(),
-                unique_classes.join(' '),
+                getUniqueItems(classes).join(' '),
                 getUniqueItems(tags),
                 new_region_id,
                 new_region_start,
@@ -1022,9 +948,6 @@ function onRegionCreated(region) {
                 OVERLAP_REGION_COLOR,
                 false //is loaded
             );
-
-            newRegions[new_region_id] = newRegion;
-
             createNewRegion(current_region, function () {
               createNewRegion(temp_region, function () {
                 createNewRegion(newRegion, function () {
@@ -1033,31 +956,23 @@ function onRegionCreated(region) {
               });
             });
             totalOverlapsCount += 1;
-            oneMoreIteration = true;
-            // wait before next iteration
-            sleep(120);
+
           });
         });
 
-        var checker = setInterval(function() {
-          if (totalOverlapsCount <= 0) {
-            clearInterval(checker);
-            if (oneMoreIteration) {
-              solveOverlaps(totalOverlapsCount, newRegions);
-            } else {
+        if (totalOverlapsCount > 0) {
+          $('body').removeClass('loaded');
+
+          var checker = setInterval(function() {
+            if (totalOverlapsCount <= 0) {
+              clearInterval(checker);
               location.reload();
             }
-          }
-        }, 50);
-      }
+          }, 50);
+        }
+      });
 
-      function sleep(miliseconds) {
-         var currentTime = new Date().getTime();
 
-         while (currentTime + miliseconds >= new Date().getTime()) {}
-      }
-      
-      
       function checkClassProminenceIsFilled() {
         if (!REGIONS_STATE) {
           return true;

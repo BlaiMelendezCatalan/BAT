@@ -569,10 +569,10 @@ def update_event(request):
 
     if 'tags' in region_data:
         event.tags.clear()
-        for t in region_data['tags']:
-            if not t:
+        for tag_name in region_data['tags']:
+            if not tag_name:
                 continue
-            tag, _ = models.Tag.objects.get_or_create(name=t)
+            tag, _ = models.Tag.objects.get_or_create(name=tag_name)
             event.tags.add(tag)
 
     if 'event_class' in region_data and region_data['event_class'] and region_data['event_class'] != 'None':
