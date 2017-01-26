@@ -14,10 +14,12 @@
   <script src="{% static 'js/annotator/colormap/colormap.min.js' %}"></script>
   <script src="{% static 'js/annotator/lib/wavesurfer.spectrogram.min.js' %}"></script>
   <script src="{% static 'js/annotator/src/wavesurfer.drawer.extended.js' %}"></script>
+  <script src="{% static 'js/bootstrap-tokenfield.min.js' %}"></script>
   <script type="text/javascript" src="{% static 'js/annotator/src/components.js' %}"></script>
   <script type="text/javascript" src="{% static 'js/annotator/src/wavesurfer.labels.js' %}"></script>
   <script type="text/javascript" src="{% static 'js/url.js' %}"></script>
   <link rel="stylesheet" href="{% static 'css/annotator/font-awesome.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/bootstrap-tokenfield.min.css' %}">
   <div id="loader-text"><h1>Please wait...</h1></div>
   <div id="loader-wrapper">
       <div id="loader"></div>
@@ -28,10 +30,13 @@
   </div>
 
   <div class="container">
-    <h3>Annotation Tips:</h3>
-    <h5>- Read and get used to the commands below. Annotation will be much easier.</h5>
-    <h5>- Do not worry about small silences, we will annotate them for you.</h5>
+    <div id="tips-container">
+      <h3>Annotation Tips:</h3>
+      <h5>- Read and get used to the commands below. Annotation will be much easier.</h5>
+      <h5>- Do not worry about small silences, we will annotate them for you.</h5>
+    </div>
     &nbsp;
+    <button id="switch-view" class="btn btn-success">Switch view</button>
     <div id="waveform"></div>
 
     <div style="text-align: center">
@@ -57,6 +62,21 @@
       </p>
     </div>
 
+    {% if not request.is_superuser %}
+      <div class="row control-form">
+        <div class="col-md-12">
+          <div style="float: right;">
+            {% if project.overlap %}
+              <button id="solve-overlaps-button" class="btn btn-warning">Solve overlaps</button>
+              <button id="back-annotations-button" class="btn btn-warning">Back annotations</button>
+            {% endif %}
+            <button data-load-next="0" class="btn btn-primary finish-annotation-button">Finish annotation</button>
+            <button data-load-next="1" class="btn btn-primary finish-annotation-button">Finish annotation and load next</button>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
     <div id="class-prominence-container">
       <div class="class-prominence-item fake-item">
         <div class="prominence-label-container">
@@ -71,7 +91,7 @@
       </div>
     </div>
 
-    <div class="row classes-container">
+    <div class="row control-form">
       <div class="col-md-1" id="class-panel-header">Class</div>
       <div class="col-md-11">
         {% for name, color, shortcut in classes %}
@@ -79,27 +99,21 @@
         {% endfor %}
       </div>
     </div>
-    <div class="row control-form">
-      <div class="col-md-4">
-        <div>Tags</div>
-        <input type="text" class="form-control" id="tags" value="">
+    <div class="row control-form tags-input-container">
+      <div class="col-md-1" id="tags-panel-header">Tags</div>
+      <div class="col-md-6">
         {% if not request.user.is_superuser %}
-          <button class="btn" id="tag_button">Save tags</button>
+          <div class="col-md-8">
+            <input type="text" class="form-control" id="tags-input" value="">
+          </div>
+          <div class="col-md-3"><button class="btn" id="tag_button">Save tags</button></div>
         {% endif %}
       </div>
-      <div class="col-md-4 col-md-offset-1">
-        <button id="switch-view" class="btn btn-success">Switch view</button>
-        {% if not request.is_superuser %}
-          {% if project.overlap %}
-            <button id="solve-overlaps-button" class="btn btn-warning">Solve overlaps</button>
-            <button id="add-wavesurfer-button" class="btn btn-success">Add wavesurfer</button>
-            <button id="back-annotations-button" class="btn btn-warning">Back annotations</button>
-          {% endif %}
-          <br>
-          <button data-load-next="0" class="btn btn-primary finish-annotation-button">Finish annotation</button>
-          <button data-load-next="1" class="btn btn-primary finish-annotation-button">Finish annotation and load next</button>
-        {% endif %}
-      </div>
+    </div>
+    <div class="row control-form">
+      <div class="col-md-1" id="regions-mode-tag-container"><span id="regions-mode-tag-label">Tags</span></div>
+      <div class="col-md-2"></div>
+      <div class="col-md-7" id="tags-container"></div>
     </div>
 
     <div id="modal-window" class="modal fade" role="dialog">
@@ -123,31 +137,39 @@
     </div>
     <div class="jumbotron" id="controls-container">
       <h3>Controls:</h3>
-      <h5 class="common-control">- Space bar plays and pauses the audio.</h5>
-      <h5>- <strong>Click</strong> and <strong>drag</strong> on the waveform to create a <strong>new region</strong>.
-        This
-        is now the <strong>selected region</strong>.</h5>
-      <h5 class="common-control">- <strong>Click</strong> on another <strong>region</strong> to <strong>select
+      <h5 class="common-control">Space bar plays and pauses the audio.
+      </h5>
+      {% if not regions %}
+      <h5>
+          <strong>Click</strong> and <strong>drag</strong> on the waveform to create a <strong>new region</strong>.
+          This is now the <strong>selected region</strong>.
+      </h5>
+      {% endif %}
+      <h5 class="common-control">
+        <strong>Click</strong> on another <strong>region</strong> to <strong>select
         it</strong>.</h5>
-      <h5>- <strong>Ctrl-Click</strong> on any <strong>region</strong> to <strong>delete it</strong>.</h5>
-      <h5>- <strong>Click</strong> a <strong>number</strong> to <strong>set</strong> the <strong>class</strong> of the
-        selected region.</h5>
-      <h5>- To <strong>tag a region</strong>: <strong>select it</strong>, write the <strong>tags separated by
-        comas</strong>
-        and click <strong>save tags</strong>.</h5>
-      <h5>- <strong>Regions does not overlap</strong>. <strong>Placing a region limit inside another region adjusts the
-        first to the second</strong>. Use this to <strong>easily concatenate regions.</strong></h5>
-      <h5>- Press <strong>"f"</strong> to <strong>glue</strong> the selected region limits to the closer borders. Do it
-        with
-        <strong>Ctrl (+ Shift)</strong> to glue only the <strong>left (right) limit</strong>.</h5>
-      <h5 class="common-control">- Press <strong>"s"</strong> to set the <strong>player</strong> at the <strong>beginning</strong>
+      {% if not regions %}
+        <h5><strong>Ctrl-Click</strong> on any <strong>region</strong> to <strong>delete it</strong>.</h5>
+        <h5><strong>Click</strong> a <strong>number</strong> to <strong>set</strong> the <strong>class</strong> of the
+          selected region.</h5>
+        <h5>To <strong>tag a region</strong>: <strong>select it</strong>, write the <strong>tags (use TAB for separate tags)</strong>
+          and click <strong>save tags button</strong>.</h5>
+        <h5><strong>Regions does not overlap</strong>. <strong>Placing a region limit inside another region adjusts the
+          first to the second</strong>. Use this to <strong>easily concatenate regions.</strong></h5>
+        <h5>Press <strong>"f"</strong> to <strong>glue</strong> the selected region limits to the closer borders. Do it
+          with
+          <strong>Ctrl (+ Shift)</strong> to glue only the <strong>left (right) limit</strong>.</h5>
+      {% endif %}
+      <h5 class="common-control">Press <strong>"s"</strong> to set the <strong>player</strong> at the <strong>beginning</strong>
         of the <strong>audio</strong>.
       </h5>
-      <h5 class="common-control">- Press <strong>"b"</strong> to set the <strong>player</strong> at the <strong>beginning</strong>
+      <h5 class="common-control">Press <strong>"b"</strong> to set the <strong>player</strong> at the <strong>beginning</strong>
         of the <strong>selected
           region</strong>.</h5>
-      <h5>- <strong>Ctrl (+ Shift) + Left/Right Arrows</strong> precisely <strong>adjusts</strong> left (right) region
+      {% if not regions %}
+      <h5><strong>Ctrl (+ Shift) + Left/Right Arrows</strong> precisely <strong>adjusts</strong> left (right) region
         <strong>limits</strong>.</h5>
+      {% endif %}
     </div>
   </div>
   {% if request.user.is_superuser %}
@@ -157,12 +179,28 @@
       }
     </style>
   {% endif %}
+  {% if regions %}
+    <style>
+      .delete-tag-button {
+        display: none;
+      }
+    </style>
+  {% endif %}
   <script type="text/javascript">
-  
-  
+
+    function renderNumbersForControlPanel() {
+      var index = 0,
+          numbers = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮'];
+      $('#controls-container h5').each(function () {
+        $(this).prepend('<span class="number">' + numbers[index++] + '</span>&nbsp;');
+      });
+    }
+    renderNumbersForControlPanel();
+
     wavesurferHandler = {
       // contain all wavesurfers
       container: [],
+      labels: [],
 
       getMainWavesurfer: function() {
         return this.container[0];
@@ -208,7 +246,7 @@
 
         return '.' + classForNewContainer;
       },
-      
+
       addWavesurfer: function () {
         var container = this.addContainerForWavesurfer(),
             colorMap = this.getSpectrogramColorMap(),
@@ -235,6 +273,7 @@
           wavesurfer: wavesurfer,
           container: container + ' .labels'
         });
+        this.labels.push(labels);
 
         // Create the play button and time that appear below the wavesurfer
         var playBar = new PlayBar(wavesurfer);
@@ -293,7 +332,10 @@
           onRegionCreated(region);
         });
 
-        wavesurfer.on('region-update-end', function (region) {
+        wavesurfer.on('region-update-end', function (region, event, eventType) {
+          if (eventType == 'drag') {
+            return;
+          }
           setTimeout(function () {
             var check_region = wavesurfer.regions.list[region.id];
             // region was deleted
@@ -323,29 +365,22 @@
           });
         });
 
+        wavesurfer.on('region-dblclick', function (region) {
+          setCurrentRegion(region.id);
+        });
+
         wavesurfer.on('region-click', function (region, event) {
-          setCurrentRegion(region.id)
-
           if (event.button == 0 && event.ctrlKey == false) {
-
-            if ("tags" in region.attributes && typeof region.attributes.tags != 'undefined') {
-              document.getElementById("tags").value = region.attributes['tags']
-            } else {
-              document.getElementById("tags").value = ""
-            }
-            // set classes
-            redrawClassForRegion(region);
-
-
             // open prominence window if Region have multi class
             var classes = typeof region.attributes.class != 'undefined' ? region.attributes.class.split(' ') : [];
             if (REGIONS_STATE && classes.length > 1) {
               toggleProminencePopup(classes, region, $(event.target).offset());
             }
-          } else if (event.button == 0 && event.ctrlKey == true) {
-            if (!REGIONS_STATE) {
-              region.remove()
-            }
+            return null;
+          }
+          if (event.button == 0 && event.ctrlKey == true && !REGIONS_STATE) {
+            region.remove();
+            setCurrentRegion(-1);
           }
         });
 
@@ -360,6 +395,7 @@
           if (isMainWavesurfer) {
             loadRegions(wavesurfer);
             wavesurfer.play();
+            that.labels[0].rearrange();
           }
         });
       },
@@ -462,10 +498,9 @@
 
     function switchToRegionMode() {
       REGIONS_STATE = true;
-      $('#solve-overlaps-button, region .fa-times-circle, #tag_button, region handle, #add-wavesurfer-button').hide();
+      $('#solve-overlaps-button, region .fa-times-circle, #tag_button, region handle, #add-wavesurfer-button, #tags-input-tokenfield, .tags-input-container').hide();
       $('.class-btn').css('cursor', 'default');
-      $('#controls-container h5').not('.common-control').hide();
-      $('#back-annotations-button').show();
+      $('#back-annotations-button, #regions-mode-tag-label').show();
       handler.disableDragSelection();
     }
 
@@ -481,9 +516,11 @@
 
     function redrawClassForRegion(region) {
       $('.class-btn').removeClass('active');
-      if (typeof region != 'undefined' && 'class' in region.attributes) {
+      if (typeof region != 'undefined' && region != null && 'class' in region.attributes) {
         region.attributes['class'].split(' ').forEach(function (name) {
+          if (name) {
             $('div[data-class-name=' + name + ']').addClass('active');
+          }
         });
       }
     }
@@ -524,6 +561,7 @@
           handler.addRegion(wavesurfer, '{{ event.event_class|default_if_none:'' }}', tags, {{ event.id }}, {{ event.start_time }}, {{ event.end_time }}, '{{ event.color }}', true);
         {% endfor %}
       {% endif %}
+      setCurrentRegion(-1);
     }
 
     function getDuration() {
@@ -548,8 +586,8 @@
 
       return [new_start, new_end]
     }
-    
-    
+
+
     function updateClassProminence(region_id, className, prominence) {
       $.ajax({
         type: "POST",
@@ -641,8 +679,48 @@
     }
 
     function resetHTML() {
-      document.getElementById("tags").value = ""
+      redrawTagsForRegion();
       redrawClassForRegion();
+    }
+
+    function deleteTagFromRegion(region, tagName) {
+      if (typeof region.attributes.tags != 'undefined') {
+        var position = region.attributes.tags.indexOf(tagName);
+        if (position != -1) {
+          region.attributes.tags.splice(position, 1);
+          updateEvent(region);
+          redrawTagsForRegion(region);
+        }
+      }
+    }
+
+
+    function redrawTagsForRegion(region) {
+      var container = $('#tags-container');
+      container.empty();
+      $('#tags-input').val('');
+
+      if (typeof region != 'undefined' && region != null && 'tags' in region.attributes && typeof region.attributes.tags != 'undefined') {
+        region.attributes['tags'].forEach(function (name) {
+          if (!name.length) {
+            return;
+          }
+          var deleteTagButton = $('<i></i>')
+                  .addClass('fa fa-times-circle delete-tag-button')
+                  .attr('data-tag-name', name);
+
+          var tag = $('<div></div>')
+                  .addClass('tag-element')
+                  .text(name);
+
+          deleteTagButton.on('click', function () {
+            deleteTagFromRegion(region, $(this).data('tag-name'))
+          });
+
+          tag.append(deleteTagButton);
+          container.append(tag);
+        });
+      }
     }
 
     function createNewRegion(fromRegion, callback) {
@@ -671,7 +749,26 @@
     }
 
     function setCurrentRegion(id) {
-      currentRegionId = id
+      currentRegionId = id;
+      $('tag').removeClass('active');
+      if (currentRegionId != -1) {
+        $('.region-label-' + currentRegionId).addClass('active');
+        var region = handler.findRegionById(currentRegionId);
+        if (region) {
+          redrawTagsForRegion(region);
+          redrawClassForRegion(region);
+          updateRegionIndexes(region);
+        }
+      }
+    }
+
+
+    function updateRegionIndexes(region) {
+      var baseZIndex = 1100;
+      $('.wavesurfer-region').each(function () {
+        $(this).css('z-index', baseZIndex++);
+      });
+      $('region[data-id=' + region.id + ']').css('z-index', 3000);
     }
 
     function disableDrag(region) {
@@ -740,17 +837,16 @@ function onRegionCreated(region) {
 
 
       $("#tag_button").click(function () {
-        if (currentRegionId != -1) {
-          var region = handler.findRegionById(currentRegionId);
-          var tags = document.getElementById("tags").value.split(",");
-          region.update({
-            attributes: {
-              'class': region.attributes['class'],
-              'tags': tags,
-              'event_id': region.attributes['event_id']
-            }
-          });
-          updateEvent(region)
+        var region = handler.findRegionById(currentRegionId),
+            tokens = $('#tags-input').tokenfield('getTokens'),
+            tags = [];
+        for (var i in tokens) {
+          tags.push(tokens[i].value);
+        }
+        if (region != null && tags.length) {
+          region.attributes.tags = getUniqueItems(tags.concat(region.attributes.tags));
+          updateEvent(region);
+          redrawTagsForRegion(region);
         }
       });
 
@@ -875,8 +971,8 @@ function onRegionCreated(region) {
           }, 50);
         }
       });
-      
-      
+
+
       function checkClassProminenceIsFilled() {
         if (!REGIONS_STATE) {
           return true;
@@ -944,6 +1040,8 @@ function onRegionCreated(region) {
         });
       });
 
+      $('#tags-input').tokenfield();
+
 
       $('#switch-view').on('click', function () {
         var parsedUrl = url.parse(location.href),
@@ -960,6 +1058,7 @@ function onRegionCreated(region) {
     {% endif %}
 
   </script>
+
   <script src="{% static 'js/annotator/hotkeys.js' %}"></script>
 
 {% endblock %}

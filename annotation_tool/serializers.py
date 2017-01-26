@@ -124,14 +124,16 @@ class RegionSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         classes = validated_data.pop('classes')
-        tags = validated_data.pop('tags')
+        validated_data.pop('tags')
 
         region = models.Region(**validated_data)
         region.save()
 
         # add tags
-        tags = map(lambda name: models.Tag.objects.get_or_create(name=name), tags)
-        region.tags.add(*tags)
+        if 'tags[]' in self.initial_data:
+            tags = dict(self.initial_data)['tags[]']
+            tags = map(lambda name: models.Tag.objects.get_or_create(name=name)[0], tags)
+            region.tags.add(*tags)
 
         # add classes
         classes = map(lambda name: models.Class.objects.get(name=name, project=region.get_project()), classes.split())
