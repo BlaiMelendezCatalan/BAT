@@ -14,10 +14,12 @@
   <script src="{% static 'js/annotator/colormap/colormap.min.js' %}"></script>
   <script src="{% static 'js/annotator/lib/wavesurfer.spectrogram.min.js' %}"></script>
   <script src="{% static 'js/annotator/src/wavesurfer.drawer.extended.js' %}"></script>
+  <script src="{% static 'js/bootstrap-tokenfield.min.js' %}"></script>
   <script type="text/javascript" src="{% static 'js/annotator/src/components.js' %}"></script>
   <script type="text/javascript" src="{% static 'js/annotator/src/wavesurfer.labels.js' %}"></script>
   <script type="text/javascript" src="{% static 'js/url.js' %}"></script>
   <link rel="stylesheet" href="{% static 'css/annotator/font-awesome.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/bootstrap-tokenfield.min.css' %}">
   <div id="loader-text"><h1>Please wait...</h1></div>
   <div id="loader-wrapper">
       <div id="loader"></div>
@@ -71,7 +73,7 @@
       </div>
     </div>
 
-    <div class="row classes-container">
+    <div class="row control-form">
       <div class="col-md-1" id="class-panel-header">Class</div>
       <div class="col-md-11">
         {% for name, color, shortcut in classes %}
@@ -79,14 +81,23 @@
         {% endfor %}
       </div>
     </div>
-    <div class="row control-form">
-      <div class="col-md-4">
-        <div>Tags</div>
-        <input type="text" class="form-control" id="tags" value="">
+    <div class="row control-form tags-input-container">
+      <div class="col-md-1" id="tags-panel-header">Tags</div>
+      <div class="col-md-6">
         {% if not request.user.is_superuser %}
-          <button class="btn" id="tag_button">Save tags</button>
+          <div class="col-md-8">
+            <input type="text" class="form-control" id="tags-input" value="">
+          </div>
+          <div class="col-md-3"><button class="btn" id="tag_button">Save tags</button></div>
         {% endif %}
       </div>
+    </div>
+    <div class="row control-form">
+      <div class="col-md-1" id="regions-mode-tag-container"><span id="regions-mode-tag-label">Tags</span></div>
+      <div class="col-md-2"></div>
+      <div class="col-md-7" id="tags-container"></div>
+    </div>
+    <div class="row control-form">
       <div class="col-md-4 col-md-offset-1">
         <button id="switch-view" class="btn btn-success">Switch view</button>
         {% if not request.is_superuser %}
@@ -157,9 +168,16 @@
       }
     </style>
   {% endif %}
+  {% if regions %}
+    <style>
+      .delete-tag-button {
+        display: none;
+      }
+    </style>
+  {% endif %}
   <script type="text/javascript">
-  
-  
+
+
     wavesurferHandler = {
       // contain all wavesurfers
       container: [],
@@ -208,7 +226,7 @@
 
         return '.' + classForNewContainer;
       },
-      
+
       addWavesurfer: function () {
         var container = this.addContainerForWavesurfer(),
             colorMap = this.getSpectrogramColorMap(),
@@ -327,15 +345,8 @@
           setCurrentRegion(region.id)
 
           if (event.button == 0 && event.ctrlKey == false) {
-
-            if ("tags" in region.attributes && typeof region.attributes.tags != 'undefined') {
-              document.getElementById("tags").value = region.attributes['tags']
-            } else {
-              document.getElementById("tags").value = ""
-            }
-            // set classes
+            redrawTagsForRegion(region);
             redrawClassForRegion(region);
-
 
             // open prominence window if Region have multi class
             var classes = typeof region.attributes.class != 'undefined' ? region.attributes.class.split(' ') : [];
@@ -462,10 +473,10 @@
 
     function switchToRegionMode() {
       REGIONS_STATE = true;
-      $('#solve-overlaps-button, region .fa-times-circle, #tag_button, region handle, #add-wavesurfer-button').hide();
+      $('#solve-overlaps-button, region .fa-times-circle, #tag_button, region handle, #add-wavesurfer-button, #tags-input-tokenfield, .tags-input-container').hide();
       $('.class-btn').css('cursor', 'default');
       $('#controls-container h5').not('.common-control').hide();
-      $('#back-annotations-button').show();
+      $('#back-annotations-button, #regions-mode-tag-label').show();
       handler.disableDragSelection();
     }
 
@@ -548,8 +559,8 @@
 
       return [new_start, new_end]
     }
-    
-    
+
+
     function updateClassProminence(region_id, className, prominence) {
       $.ajax({
         type: "POST",
@@ -641,8 +652,48 @@
     }
 
     function resetHTML() {
-      document.getElementById("tags").value = ""
+      redrawTagsForRegion();
       redrawClassForRegion();
+    }
+
+    function deleteTagFromRegion(region, tagName) {
+      if (typeof region.attributes.tags != 'undefined') {
+        var position = region.attributes.tags.indexOf(tagName);
+        if (position != -1) {
+          region.attributes.tags.splice(position, 1);
+          updateEvent(region);
+          redrawTagsForRegion(region);
+        }
+      }
+    }
+
+
+    function redrawTagsForRegion(region) {
+      var container = $('#tags-container');
+      container.empty();
+      $('#tags-input').val('');
+
+      if (typeof region != 'undefined' && 'tags' in region.attributes && typeof region.attributes.tags != 'undefined') {
+        region.attributes['tags'].forEach(function (name) {
+          if (!name.length) {
+            return;
+          }
+          var deleteTagButton = $('<i></i>')
+                  .addClass('fa fa-times-circle delete-tag-button')
+                  .attr('data-tag-name', name);
+
+          var tag = $('<div></div>')
+                  .addClass('tag-element')
+                  .text(name);
+
+          deleteTagButton.on('click', function () {
+            deleteTagFromRegion(region, $(this).data('tag-name'))
+          });
+
+          tag.append(deleteTagButton);
+          container.append(tag);
+        });
+      }
     }
 
     function createNewRegion(fromRegion, callback) {
@@ -740,17 +791,16 @@ function onRegionCreated(region) {
 
 
       $("#tag_button").click(function () {
-        if (currentRegionId != -1) {
-          var region = handler.findRegionById(currentRegionId);
-          var tags = document.getElementById("tags").value.split(",");
-          region.update({
-            attributes: {
-              'class': region.attributes['class'],
-              'tags': tags,
-              'event_id': region.attributes['event_id']
-            }
-          });
-          updateEvent(region)
+        var region = handler.findRegionById(currentRegionId),
+            tokens = $('#tags-input').tokenfield('getTokens'),
+            tags = [];
+        for (var i in tokens) {
+          tags.push(tokens[i].value);
+        }
+        if (region != null && tags.length) {
+          region.attributes.tags = getUniqueItems(tags.concat(region.attributes.tags));
+          updateEvent(region);
+          redrawTagsForRegion(region);
         }
       });
 
@@ -875,8 +925,8 @@ function onRegionCreated(region) {
           }, 50);
         }
       });
-      
-      
+
+
       function checkClassProminenceIsFilled() {
         if (!REGIONS_STATE) {
           return true;
@@ -944,6 +994,8 @@ function onRegionCreated(region) {
         });
       });
 
+      $('#tags-input').tokenfield();
+
 
       $('#switch-view').on('click', function () {
         var parsedUrl = url.parse(location.href),
@@ -960,6 +1012,7 @@ function onRegionCreated(region) {
     {% endif %}
 
   </script>
+
   <script src="{% static 'js/annotator/hotkeys.js' %}"></script>
 
 {% endblock %}
