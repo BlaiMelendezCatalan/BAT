@@ -375,17 +375,20 @@ class NewAnnotationView(LoginRequiredMixin, GenericAPIView):
             context['error'] = 'There are no more segments to annotate.'
             return Response(context)
 
-        # if resume
-        if annotation_id:
-            try:
-                context['annotation'] = models.Annotation.objects.get(id=annotation_id, user=request.user)
-                context['events'] = models.Event.objects.filter(annotation=annotation_id)
-                context['regions'] = models.Region.objects.filter(annotation=annotation_id)
-                segment = context['annotation'].segment
-            except models.Annotation.DoesNotExist:
-                return HttpResponseRedirect(reverse('new_annotation'))
-        else:
-            context['annotation'] = utils.create_annotation(segment, request.user)
+        # if new annotation so create it and redirect to edit page
+        if not annotation_id:
+            annotation = utils.create_annotation(segment, request.user)
+            url = '%s?project=%d&annotation=%d' % (reverse('new_annotation'), project.id, annotation.id)
+            return HttpResponseRedirect(url)
+
+        try:
+            context['annotation'] = models.Annotation.objects.get(id=annotation_id, user=request.user)
+            context['events'] = models.Event.objects.filter(annotation=annotation_id)
+            context['regions'] = models.Region.objects.filter(annotation=annotation_id)
+            segment = context['annotation'].segment
+        except models.Annotation.DoesNotExist:
+            return HttpResponseRedirect(reverse('new_annotation'))
+
         context['classes'] = models.Class.objects.filter(project=project).values_list('name',
                                                                                       'color',
                                                                                       'shortcut')
