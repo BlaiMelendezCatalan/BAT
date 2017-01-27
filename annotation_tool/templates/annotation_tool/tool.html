@@ -575,11 +575,26 @@
         new_end = getDuration()
       }
       Object.keys(wavesurfer.regions.list).forEach(function (id) {
-        var region = wavesurfer.regions.list[id]
-        if (current_region.start < region.start && current_region.end > region.start) {
-          new_end = region.start
-        } else if (current_region.end > region.end && current_region.start < region.end) {
-          new_start = region.end
+        if (id == current_region.id) {
+          return;
+        }
+        var temp_region = wavesurfer.regions.list[id],
+            offset = $(temp_region.element)[0].offsetLeft;
+        // Type 1 - left overlap
+        if (current_region.start < temp_region.start && current_region.end > temp_region.start && current_region.end < temp_region.end) {
+            new_end = temp_region.start;
+        }
+        // Type 2 - right overlap
+        else if (current_region.end > temp_region.end && current_region.start < temp_region.end && temp_region.start < current_region.start) {
+            new_start = temp_region.end
+        }
+        // Type 3 - include
+        else if (current_region.start < temp_region.start && current_region.end > temp_region.end) {
+          if (current_region.x < offset) {
+            new_end = temp_region.start;
+          } else {
+            new_start = temp_region.end
+          }
         }
       });
 
