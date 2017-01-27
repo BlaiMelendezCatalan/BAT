@@ -16,6 +16,7 @@ function preventOverlappingsOnArrow(current_region, inc=0.0) {
     new_end = current_region.end
   }
   if (!ALLOW_OVERLAPS) {
+    var wavesurfer = handler.getMainWavesurfer();
     Object.keys(wavesurfer.regions.list).forEach(function (id) {
       if (current_id == id) {
         return;
@@ -46,7 +47,8 @@ function sortRegionsByOption(regions, option) {
 
 // glue the selected region limits to the closer borders
 function glueSelectedRegionLimits(region, pressCtrl, pressShift) {
-  var region_list = sortRegionsByOption(wavesurfer.regions.list, "start"),
+  var wavesurfer = handler.getMainWavesurfer(),
+    region_list = sortRegionsByOption(wavesurfer.regions.list, "start"),
     new_start, new_end;
 
   for (var i = 0; i < region_list.length; i++) {
@@ -125,9 +127,10 @@ document.onkeydown = function (e) {
     n_regions = wavesurfer ? Object.keys(wavesurfer.regions.list).length : 0,
     pressCtrl = e.ctrlKey == true,
     pressShift = e.shiftKey == true,
+    isNotPlayerKey = ' s'.indexOf(key) == -1,
     times;
 
-  if (REGIONS_STATE && ('bs'.indexOf(key) == -1 || currentRegionId == -1)) {
+  if ((REGIONS_STATE || currentRegionId == -1) && isNotPlayerKey) {
     return;
   }
 

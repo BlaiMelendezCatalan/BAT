@@ -96,6 +96,7 @@ WaveSurfer.Regions = {
       }
 
       if (!region) {
+        params['x'] = e.x;
         region = my.add(params || {});
       }
 
@@ -151,6 +152,7 @@ WaveSurfer.Region = {
 
     this.maxLength = params.maxLength;
     this.minLength = params.minLength;
+    this.x = params.x || 0;
 
     this.bindInOut();
     this.render();

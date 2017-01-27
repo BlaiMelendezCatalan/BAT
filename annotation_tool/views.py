@@ -453,15 +453,13 @@ class RegionsView(LoginRequiredMixin, ListCreateAPIView):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+
         # check exists regions with same time
-        try:
-            data = serializer.validated_data
-            old_region = models.Region.objects.filter(
-                annotation=data['annotation']).get(Q(start_time=data['start_time'])
-                                                   | Q(end_time=data['end_time']))
-            old_region.delete()
-        except models.Region.DoesNotExist:
-            pass
+        data = serializer.validated_data
+        models.Region.objects.filter(
+            annotation=data['annotation']).filter(Q(start_time=data['start_time'])
+                                                  | Q(end_time=data['end_time'])).delete()
+
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
