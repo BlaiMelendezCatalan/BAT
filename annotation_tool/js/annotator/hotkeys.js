@@ -127,7 +127,7 @@ document.onkeydown = function (e) {
     n_regions = wavesurfer ? Object.keys(wavesurfer.regions.list).length : 0,
     pressCtrl = e.ctrlKey == true,
     pressShift = e.shiftKey == true,
-    isNotPlayerKey = ' s'.indexOf(key) == -1,
+    isNotPlayerKey = ' sb'.indexOf(key) == -1,
     times;
 
   if ((REGIONS_STATE || currentRegionId == -1) && isNotPlayerKey) {
@@ -160,11 +160,11 @@ document.onkeydown = function (e) {
     times = preventOverlappingsOnArrow(region, increment = 1. / 100)
     region.update({end: times[1]});
     //updateEvent(region)
-  } else if (key == 'b') {
+  } else if (key == 'b' && region != null) {
     handler.seekTo(region.start / wavesurfer.getDuration());
   } else if (key == 's') {
     handler.seekTo(0.0);
-  } else if (key == 'f' || key == 'F') {
+  } else if ((key == 'f' || key == 'F') && !ALLOW_OVERLAPS) {
     glueSelectedRegionLimits(region, pressCtrl, pressShift);
   }
   if (ALLOW_OVERLAPS) {

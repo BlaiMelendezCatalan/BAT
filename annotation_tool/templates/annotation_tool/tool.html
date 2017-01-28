@@ -154,9 +154,9 @@
           selected region.</h5>
         <h5>To <strong>tag a region</strong>: <strong>select it</strong>, write the <strong>tags (use TAB for separate tags)</strong>
           and click <strong>save tags button</strong>.</h5>
-        <h5><strong>Regions does not overlap</strong>. <strong>Placing a region limit inside another region adjusts the
+        <h5 class="only-without-overlap"><strong>Regions does not overlap</strong>. <strong>Placing a region limit inside another region adjusts the
           first to the second</strong>. Use this to <strong>easily concatenate regions.</strong></h5>
-        <h5>Press <strong>"f"</strong> to <strong>glue</strong> the selected region limits to the closer borders. Do it
+        <h5 class="only-without-overlap">Press <strong>"f"</strong> to <strong>glue</strong> the selected region limits to the closer borders. Do it
           with
           <strong>Ctrl (+ Shift)</strong> to glue only the <strong>left (right) limit</strong>.</h5>
       {% endif %}
@@ -187,15 +187,6 @@
     </style>
   {% endif %}
   <script type="text/javascript">
-
-    function renderNumbersForControlPanel() {
-      var index = 0,
-          numbers = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮'];
-      $('#controls-container h5').each(function () {
-        $(this).prepend('<span class="number">' + numbers[index++] + '</span>&nbsp;');
-      });
-    }
-    renderNumbersForControlPanel();
 
     wavesurferHandler = {
       // contain all wavesurfers
@@ -494,6 +485,18 @@
     $('#play-pause-main-button').on('click', function () {
       handler.playPause();
     });
+
+    function renderNumbersForControlPanel() {
+      if (ALLOW_OVERLAPS) {
+        $('.only-without-overlap').remove();
+      }
+      var index = 0,
+          numbers = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮'];
+      $('#controls-container h5').each(function () {
+        $(this).prepend('<span class="number">' + numbers[index++] + '</span>&nbsp;');
+      });
+    }
+    renderNumbersForControlPanel();
 
     function switchToRegionMode() {
       REGIONS_STATE = true;
@@ -954,6 +957,7 @@ function onRegionCreated(region) {
               current_region.update({start: temp_region.start, end: new_region_start});
               current_region.attributes.class = temp_region.attributes.class;
               current_region.attributes.tags = temp_region.attributes.tags;
+              current_region.color = temp_region.color;
               temp_region.update({start: new_region_end});
             }
             // Type 2
@@ -964,6 +968,7 @@ function onRegionCreated(region) {
               temp_region.update({start: current_region.start, end: new_region_start});
               temp_region.attributes.class = current_region.attributes.class;
               temp_region.attributes.tags = current_region.attributes.tags;
+              temp_region.color = current_region.color;
               current_region.update({start: new_region_end});
             }
             // Type 3
