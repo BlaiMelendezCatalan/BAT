@@ -164,19 +164,13 @@ class AnnotationFinishView(LoginRequiredMixin, GenericAPIView):
         annotation = self.get_object()
         utils.update_annotation_status(annotation,
                                        new_status=models.Annotation.FINISHED)
-        # find next annotation
-        project = annotation.get_project()
-        segment = utils.pick_segment_to_annotate(project.name, request.user.id)
 
-        if segment:
-            # if have unannotated segment
-            next_annotation = utils.create_annotation(segment, request.user)
-        else:
-            # find unfinished annotation for current project
-            segments = models.Segment.objects.filter(wav__project=project)
-            next_annotation = models.Annotation.objects.filter(user__id=request.user.id,
-                                                               segment__in=segments,
-                                                               status=models.Annotation.UNFINISHED).first()
+        # find unfinished annotation for current project
+        project = annotation.get_project()
+        segments = models.Segment.objects.filter(wav__project=project)
+        next_annotation = models.Annotation.objects.filter(user__id=request.user.id,
+                                                           segment__in=segments,
+                                                           status=models.Annotation.UNFINISHED).first()
 
         next_annotation_url = ''
         if next_annotation:
@@ -375,17 +369,20 @@ class NewAnnotationView(LoginRequiredMixin, GenericAPIView):
             context['error'] = 'There are no more segments to annotate.'
             return Response(context)
 
-        # if resume
-        if annotation_id:
-            try:
-                context['annotation'] = models.Annotation.objects.get(id=annotation_id, user=request.user)
-                context['events'] = models.Event.objects.filter(annotation=annotation_id)
-                context['regions'] = models.Region.objects.filter(annotation=annotation_id)
-                segment = context['annotation'].segment
-            except models.Annotation.DoesNotExist:
-                return HttpResponseRedirect(reverse('new_annotation'))
-        else:
-            context['annotation'] = utils.create_annotation(segment, request.user)
+        # if new annotation so create it and redirect to edit page
+        if not annotation_id:
+            annotation = utils.create_annotation(segment, request.user)
+            url = '%s?project=%d&annotation=%d' % (reverse('new_annotation'), project.id, annotation.id)
+            return HttpResponseRedirect(url)
+
+        try:
+            context['annotation'] = models.Annotation.objects.get(id=annotation_id, user=request.user)
+            context['events'] = models.Event.objects.filter(annotation=annotation_id)
+            context['regions'] = models.Region.objects.filter(annotation=annotation_id)
+            segment = context['annotation'].segment
+        except models.Annotation.DoesNotExist:
+            return HttpResponseRedirect(reverse('new_annotation'))
+
         context['classes'] = models.Class.objects.filter(project=project).values_list('name',
                                                                                       'color',
                                                                                       'shortcut')
