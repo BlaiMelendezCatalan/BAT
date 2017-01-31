@@ -59,7 +59,7 @@ function glueSelectedRegionLimits(region, pressCtrl, pressShift) {
         }
         if (region_list.length == 1) {
           if (pressCtrl == pressShift) {
-            new_end = getDuration()
+            new_end = getDuration() - 0.00000001;
           }
         } else {
           if (pressCtrl == pressShift) {
