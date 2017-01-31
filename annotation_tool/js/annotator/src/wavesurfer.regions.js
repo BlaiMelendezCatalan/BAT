@@ -67,7 +67,7 @@ WaveSurfer.Regions = {
       start = my.wavesurfer.drawer.handleEvent(e);
       region = null;
     }
-    document.body.addEventListener('mousedown', eventDown);
+    this.wrapper.addEventListener('mousedown', eventDown);
     this.wrapper.addEventListener('touchstart', eventDown);
     this.on('disable-drag-selection', function () {
       my.wrapper.removeEventListener('touchstart', eventDown);
