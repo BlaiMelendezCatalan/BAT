@@ -32,8 +32,6 @@ class Class(models.Model):
         return str(self.name)
 
 
-# class Subclass(models.Model): # for overlapping zones
-
 def get_wav_file_path(self, filename):
     return os.path.join('uploaded_wavs', '%s' % slugify(self.project.name), filename)
 
