@@ -8,7 +8,7 @@ from django.utils import timezone
 import contextlib
 import wave
 import django.core.exceptions as e
-from annotation_tool.models import Project, Wav, Segment, Annotation, Event, Tag, Class
+from annotation_tool.models import Project, Wav, Segment, Annotation, Event, Tag, Class, ClassProminence
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from config.settings.common import BASE_DIR, MEDIA_ROOT
@@ -133,6 +133,20 @@ def modify_segment_priority(segment): # MODIFY!!!
 
 def compute_interannotation_agreement(annotations, overlap): # MODIFY!!!
     
+
+def normalize_prominence(region):
+    class_prominences = ClassProminence.objects.filter(region=region)
+    classes = []
+    prominences = np.array([])
+    for cp in class_prominences:
+        classes.append(cp.class_obj.name)
+        prominences = np.append(prominences, cp.prominence)
+    prominences = prominences / float(sum(prominences))
+    dict = {}
+    for c, p in zip(classes, prominences):
+        dict[c] = p
+
+    return dict
 
 
 
