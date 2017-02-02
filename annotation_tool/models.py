@@ -64,6 +64,10 @@ class Segment(models.Model):
     end_time = models.FloatField()
     name = models.CharField(max_length=100)
     priority = models.FloatField(default=2.0)
+    reliable = models.BooleanField(default=False)
+
+    def get_project(self):
+        return self.wav.project
 
     def __str__(self):
         return str(self.start_time) + '_' + str(self.end_time)

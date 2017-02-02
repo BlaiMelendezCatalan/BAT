@@ -8,7 +8,7 @@ from django.utils import timezone
 import contextlib
 import wave
 import django.core.exceptions as e
-from annotation_tool.models import Project, Wav, Segment, Annotation, Event, Tag, Class
+from annotation_tool.models import Project, Wav, Segment, Annotation, Event, Tag, Class, ClassProminence
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from config.settings.common import BASE_DIR, MEDIA_ROOT
@@ -48,13 +48,25 @@ def get_wav_duration(wav):
 
 
 def create_segments(wav, duration, segments_length):
-    # Make the lasy segment longer or an additional shorter segment depending on the decimal part of the division
-    number_of_segments = int(np.ceil(duration / float(segments_length)))
-    for i in xrange(number_of_segments):
-        start_time = i * float(segments_length)
-        end_time = float(min(duration, (i + 1) * float(segments_length)))
-        name = wav.name.split('/')[-1].replace(".wav", "_" + str(start_time) + "_" + str(end_time) + ".wav")
-        s = Segment(wav=wav, start_time=start_time, end_time=end_time, name=name)
+    if segments_length != -1:
+        number_of_segments = duration / float(segments_length)
+        if number_of_segments % 1 > .5:
+            number_of_segments = int(np.ceil(number_of_segments))
+        else:
+            number_of_segments = int(np.floor(number_of_segments))
+        for i in xrange(number_of_segments):
+            
+            start_time = i * float(segments_length)
+            if i < number_of_segments - 1:
+                end_time = float((i + 1) * segments_length)
+            else:
+                end_time = float(duration)
+            name = wav.name.split('/')[-1].replace(".wav", "_" + str(start_time) + "_" + str(end_time) + ".wav")
+            s = Segment(wav=wav, start_time=start_time, end_time=end_time, name=name)
+            s.save()
+    else:
+        name = wav.name.split('/')[-1].replace(".wav", "_" + "0.0" + "_" + str(duration) + ".wav")
+        s = Segment(wav=wav, start_time=0.0, end_time=duration, name=name)
         s.save()
 
 
@@ -89,7 +101,7 @@ def set_user_permissions(user):
         user.user_permissions.add(p)
 
 
-def pick_segment_to_annotate(project_name, user_id):
+def pick_segment_to_annotate(project_name, user_id): # MODIFY!!!
     segments = Segment.objects.filter(wav__project__name=project_name).order_by('priority')
     for segment in segments:
         annotations = Annotation.objects.filter(segment__id=segment.id)
@@ -107,40 +119,35 @@ def update_annotation_status(annotation, new_status=Annotation.UNFINISHED):
         modify_segment_priority(annotation.segment)
 
 
-# Implemented for non-overlapping events
-def modify_segment_priority(segment):
+def modify_segment_priority(segment): # MODIFY!!!
     annotations = Annotation.objects.filter(segment=segment, status="finished")
+    project = segment.get_project()
     if len(annotations) > 1:
-        # Get the set of boundaries of all events
-        boundaries = [0.0, segment.end_time - segment.start_time]
-        classes = list(Class.objects.values_list("name",
-                                                 flat=True))  # Depending on how we handle overlappings, this should probably include class mixtures.
-        class_score = np.zeros(len(classes))
-        segment_events = []
-        for annotation in annotations:
-            events = Event.objects.filter(annotation=annotation)
-            segment_events.append(events)
-            for event in events:
-                boundaries.append(event.start_time)
-                boundaries.append(event.end_time)
-        boundaries = list(set(boundaries))
-        # Compute agreement between annotations
-        agreement = 0.0
-        for i in xrange(len(boundaries) - 1):
-            class_score = np.zeros(len(classes))
-            for event in segment_events:
-                if event.start_time <= boundaries[i] and event.end_time >= boundaries[i + 1]:
-                    class_score[classes.index(event.event_class)] += 1
-            max_score = max(class_score)
-            duration = boundaries[i + 1] - boundaries[i]
-            agreement += float(max_score) * duration / len(annotations)
+        agreement = compute_interannotation_agreement(annotations, project.overlap)
+        if agreement >= 0.8:
+            segment.reliable = True
+            segment.save()
+            generate_ground_truth()
 
-        segment.priority = (1 - agreement / (segment.end_time - segment.start_time)) / len(annotations)
-        segment.save()
-    else:
-        print "modifying priority to 1.0"
-        segment.priority = 1.0
-        segment.save()
+
+
+def compute_interannotation_agreement(annotations, overlap): # MODIFY!!!
+    
+
+def normalize_prominence(region):
+    class_prominences = ClassProminence.objects.filter(region=region)
+    classes = []
+    prominences = np.array([])
+    for cp in class_prominences:
+        classes.append(cp.class_obj.name)
+        prominences = np.append(prominences, cp.prominence)
+    prominences = prominences / float(sum(prominences))
+    dict = {}
+    for c, p in zip(classes, prominences):
+        dict[c] = p
+
+    return dict
+
 
 
 def delete_tmp_files():
@@ -164,9 +171,7 @@ def create_tmp_file(segment):
     return output_file
 
 
-# Implemented for non-overlapping events
-# It doesn't handle not annotated (unknown) parts of the segments yet		
-def merge_segment_annotations(segment):
+def merge_segment_annotations(segment): # MODIFY!!!
     annotations = Annotation.objects.filter(segment=segment)
     # Get the set of boundaries of all events
     boundaries = [0.0, segment.end_time - segment.start_time]
@@ -200,8 +205,7 @@ def merge_segment_annotations(segment):
             region.save()
 
 
-# Still unfinished due to the undefinition of the necessary output format
-def generate_ground_truth(project):
+def generate_ground_truth(project): # MODIFY!!!
     wavs = Wavs.objects.filter(project=project)
     gt_dict = {}
     for wav in wavs:
