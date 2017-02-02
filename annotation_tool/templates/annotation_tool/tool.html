@@ -28,12 +28,37 @@
       <div class="loader-section section-right"></div>
 
   </div>
-
   <div class="container">
-    <div id="tips-container">
-      <h3>Annotation Tips:</h3>
-      <h5>- Read and get used to the commands below. Annotation will be much easier.</h5>
-      <h5>- Do not worry about small silences, we will annotate them for you.</h5>
+    <button type="button" class="btn btn-default" data-toggle="collapse" data-target="#tips-container">Annotation tips</button>
+    <div class="collapse in" id="tips-container">
+      <h5>Read and get used to the commands below. Annotation will be much easier.</h5>
+      <h5>Do not worry about silences, we will annotate them for you.</h5>
+    </div>
+    <div>
+    <button type="button" class="btn btn-default" data-toggle="collapse" data-target="#controls-container">Controls</button>
+    </div>
+    <div class="collapse" id="controls-container">
+      <h5 class="common-control"><strong>Space bar</strong>: play / pause audio.
+      </h5>
+      {% if not regions %}
+      <h5>
+          <strong>Create new region</strong>: <strong>click</strong> and <strong>drag</strong> on the waveform.
+      </h5>
+      {% endif %}
+      <h5 class="common-control">
+        <strong>Select region</strong>: <strong>double-click</strong> on <strong>region</strong> or <strong>click</strong> on <strong>region's label</strong>.</h5>
+      {% if not regions %}
+        <h5><strong>Delete region</strong>: <strong>ctrl+Click</strong> on it or <strong>click</strong> on <strong>region's X button</strong>.</h5>
+        <h5><strong>Set class</strong>: <strong>click</strong> on <strong>label</strong> or use the <strong>shortcut</strong>.</h5>
+        <h5 class="only-without-overlap"><strong>Regions cannot overlap</strong>. Use this to <strong>easily concatenate regions.</strong></h5>
+        <h5 class="only-without-overlap"><strong>'f' key</strong>: <strong>glue</strong> the selected region limits to the closer borders. <strong>f + Ctrl (+ Shift)</strong> glue them only to the <strong>left (right) limit</strong>.</h5>
+      {% endif %}
+      <h5 class="common-control"><strong>'s' key</strong>: set the <strong>player</strong> at the <strong>beginning</strong> of the audio.
+      </h5>
+      <h5 class="common-control"><strong>'b' key</strong>: set the <strong>player</strong> at the <strong>beginning</strong> of the <strong>selected region</strong>.</h5>
+      {% if not regions %}
+      <h5><strong>Adjusting limits</strong>: <strong>ctrl (+ Shift) + Left/Right Arrows</strong> precisely adjusts <strong>left (right) region limits</strong>.</h5>
+      {% endif %}
     </div>
     &nbsp;
     <button id="switch-view" class="btn btn-success">Switch view</button>
@@ -92,7 +117,7 @@
           <div class="col-md-8">
             <input type="text" class="form-control" id="tags-input" value="">
           </div>
-          <div class="col-md-3"><button class="btn" id="tag_button">Save tags</button></div>
+          <div class="col-md-3"><button class="btn" id="tag_button">Add tags</button></div>
         {% endif %}
       </div>
     </div>
@@ -120,42 +145,6 @@
         </div>
 
       </div>
-    </div>
-    <div class="jumbotron" id="controls-container">
-      <h3>Controls:</h3>
-      <h5 class="common-control">Space bar plays and pauses the audio.
-      </h5>
-      {% if not regions %}
-      <h5>
-          <strong>Click</strong> and <strong>drag</strong> on the waveform to create a <strong>new region</strong>.
-          This is now the <strong>selected region</strong>.
-      </h5>
-      {% endif %}
-      <h5 class="common-control">
-        <strong>Click</strong> on another <strong>region</strong> to <strong>select
-        it</strong>.</h5>
-      {% if not regions %}
-        <h5><strong>Ctrl-Click</strong> on any <strong>region</strong> to <strong>delete it</strong>.</h5>
-        <h5><strong>Click</strong> a <strong>number</strong> to <strong>set</strong> the <strong>class</strong> of the
-          selected region.</h5>
-        <h5>To <strong>tag a region</strong>: <strong>select it</strong>, write the <strong>tags (use TAB for separate tags)</strong>
-          and click <strong>save tags button</strong>.</h5>
-        <h5 class="only-without-overlap"><strong>Regions does not overlap</strong>. <strong>Placing a region limit inside another region adjusts the
-          first to the second</strong>. Use this to <strong>easily concatenate regions.</strong></h5>
-        <h5 class="only-without-overlap">Press <strong>"f"</strong> to <strong>glue</strong> the selected region limits to the closer borders. Do it
-          with
-          <strong>Ctrl (+ Shift)</strong> to glue only the <strong>left (right) limit</strong>.</h5>
-      {% endif %}
-      <h5 class="common-control">Press <strong>"s"</strong> to set the <strong>player</strong> at the <strong>beginning</strong>
-        of the <strong>audio</strong>.
-      </h5>
-      <h5 class="common-control">Press <strong>"b"</strong> to set the <strong>player</strong> at the <strong>beginning</strong>
-        of the <strong>selected
-          region</strong>.</h5>
-      {% if not regions %}
-      <h5><strong>Ctrl (+ Shift) + Left/Right Arrows</strong> precisely <strong>adjusts</strong> left (right) region
-        <strong>limits</strong>.</h5>
-      {% endif %}
     </div>
   </div>
   {% if request.user.is_superuser %}
@@ -483,6 +472,15 @@
       });
     }
     renderNumbersForControlPanel();
+
+    function renderNumbersForTipsPanel() {
+      var index = 0,
+          numbers = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮'];
+      $('#tips-container h5').each(function () {
+        $(this).prepend('<span class="number">' + numbers[index++] + '</span>&nbsp;');
+      });
+    }
+    renderNumbersForTipsPanel();
 
     function switchToRegionMode() {
       REGIONS_STATE = true;
