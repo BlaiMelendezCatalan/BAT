@@ -58,7 +58,7 @@ def create_segments(wav, duration, segments_length):
             
             start_time = i * float(segments_length)
             if i < number_of_segments - 1:
-                end_time = float((i + 1) * segments_length)
+                end_time = (i + 1) * float(segments_length)
             else:
                 end_time = float(duration)
             name = wav.name.split('/')[-1].replace(".wav", "_" + str(start_time) + "_" + str(end_time) + ".wav")
@@ -120,18 +120,20 @@ def update_annotation_status(annotation, new_status=Annotation.UNFINISHED):
 
 
 def modify_segment_priority(segment): # MODIFY!!!
-    annotations = Annotation.objects.filter(segment=segment, status="finished")
-    project = segment.get_project()
-    if len(annotations) > 1:
-        agreement = compute_interannotation_agreement(annotations, project.overlap)
-        if agreement >= 0.8:
-            segment.reliable = True
-            segment.save()
-            generate_ground_truth()
+    segment.priority = 1
+    segment.save()
+    #annotations = Annotation.objects.filter(segment=segment, status="finished")
+    #project = segment.get_project()
+    #if len(annotations) > 1:
+        #agreement = compute_interannotation_agreement(annotations, project.overlap)
+        #if agreement >= 0.8:
+            #segment.reliable = True
+            #segment.save()
+            #generate_ground_truth()
 
 
 
-def compute_interannotation_agreement(annotations, overlap): # MODIFY!!!
+#def compute_interannotation_agreement(annotations, overlap): # MODIFY!!!
     
 
 def normalize_prominence(region):
