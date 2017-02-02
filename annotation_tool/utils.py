@@ -133,8 +133,8 @@ def modify_segment_priority(segment): # MODIFY!!!
 
 
 
-#def compute_interannotation_agreement(annotations, overlap): # MODIFY!!!
-    
+#def compute_interannotation_agreement(annotations, overlap):
+
 
 def normalize_prominence(region):
     class_prominences = ClassProminence.objects.filter(region=region)
