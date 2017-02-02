@@ -167,13 +167,12 @@ class AnnotationFinishView(LoginRequiredMixin, GenericAPIView):
 
         # find unfinished annotation for current project
         project = annotation.get_project()
-        segments = models.Segment.objects.filter(wav__project=project)
-        next_annotation = models.Annotation.objects.filter(user__id=request.user.id,
-                                                           segment__in=segments,
-                                                           status=models.Annotation.UNFINISHED).first()
+        segment = utils.pick_segment_to_annotate(project.name, request.user.id)
 
         next_annotation_url = ''
-        if next_annotation:
+        if segment:
+            # if have unannotated segment
+            next_annotation = utils.create_annotation(segment, request.user)
             next_annotation_url = '{}?project={}&annotation={}'.format(reverse('new_annotation'),
                                                                        project.id,
                                                                        next_annotation.id)
