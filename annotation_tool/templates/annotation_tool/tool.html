@@ -20,14 +20,6 @@
   <script type="text/javascript" src="{% static 'js/url.js' %}"></script>
   <link rel="stylesheet" href="{% static 'css/annotator/font-awesome.min.css' %}">
   <link rel="stylesheet" href="{% static 'css/bootstrap-tokenfield.min.css' %}">
-  <div id="loader-text"><h1>Please wait...</h1></div>
-  <div id="loader-wrapper">
-      <div id="loader"></div>
-
-      <div class="loader-section section-left"></div>
-      <div class="loader-section section-right"></div>
-
-  </div>
   <div class="container">
     <button type="button" class="btn btn-default" data-toggle="collapse" data-target="#tips-container">Annotation tips</button>
     <div class="collapse in" id="tips-container">
@@ -317,18 +309,22 @@
           redrawClassForRegion();
           var region_data = {event_id: region.attributes['event_id']};
 
-          $.ajax({
-            type: "POST",
-            url: '{% url 'remove_event' %}',
-            dataType: 'json',
-            data: {
-              region_data: JSON.stringify(region_data),
-              csrfmiddlewaretoken: '{{csrf_token}}'
-            },
-            success: function (response) {
-              that.checkOverlaps();
-            }
-          });
+          if (!('delete_event' in region.attributes)) {
+            $.ajax({
+              type: "POST",
+              url: '{% url 'remove_event' %}',
+              dataType: 'json',
+              data: {
+                region_data: JSON.stringify(region_data),
+                csrfmiddlewaretoken: '{{csrf_token}}'
+              },
+              success: function (response) {
+                that.checkOverlaps();
+              }
+            });
+          } else {
+            delete region.attributes['delete_event'];
+          }
         });
 
         wavesurfer.on('region-dblclick', function (region, event) {
@@ -724,14 +720,11 @@
       }
     }
 
-    function createNewRegion(fromRegion, callback) {
+    function createNewRegion(fromRegion) {
       if (typeof fromRegion.deleted != 'undefined') {
-        if (typeof callback != 'undefined') {
-          callback();
-        }
         return;
       }
-      var regionData = {
+      var region_data = {
         color: fromRegion.color,
         start_time: fromRegion.start,
         end_time: fromRegion.end,
@@ -741,16 +734,15 @@
       };
       $.ajax({
         type: "POST",
-        url: '{% url 'regions' %}',
+        url: '../create_region/',
         dataType: 'json',
-        beforeSend: function (xhr) {
-          xhr.setRequestHeader("X-CSRFToken", '{{ csrf_token }}');
+        data: {
+          region_data: JSON.stringify(region_data),
+          csrfmiddlewaretoken: '{{csrf_token}}'
         },
-        data: regionData,
-        success: function (response) {
-          if (typeof callback != 'undefined') {
-            callback();
-          }
+        success: function (data) {
+          console.log(data)
+          fromRegion.attributes.region_id = data.region_id
         }
       });
     }
@@ -769,7 +761,6 @@
       }
     }
 
-
     function updateRegionIndexes(region) {
       var baseZIndex = 1100;
       $('.wavesurfer-region').each(function () {
@@ -785,7 +776,7 @@
 
     {% if not request.user.is_superuser %}
       // WaveSurfer callbacks
-function onRegionCreated(region) {
+      function onRegionCreated(region) {
         setCurrentRegion(region.id)
         disableDrag(region)
 
@@ -838,10 +829,6 @@ function onRegionCreated(region) {
           }
         });
       }
-
-
-
-
 
       $("#tag_button").click(function () {
         var region = handler.findRegionById(currentRegionId),
@@ -896,6 +883,8 @@ function onRegionCreated(region) {
         $('body').removeClass('loaded');
 
         solveOverlaps(0, allRegions);
+
+        switchToRegionMode();
       });
 
       // in "one more iteration" use compare only with new regions
@@ -917,142 +906,63 @@ function onRegionCreated(region) {
           });
         }
 
+        var region_borders = [];
         allRegions.forEach(function (current_region) {
           if (typeof current_region.deleted != 'undefined') {
             return;
           }
-          handler.getAllRegions().forEach(function (temp_region) {
-            if (current_region.id == temp_region.id || typeof temp_region.deleted != 'undefined') {
-              return;
-            }
-            var new_region_id = current_region.id + temp_region.id,
-                classes = current_region.attributes.class.split(' ').concat(temp_region.attributes.class.split(' ')),
-                unique_classes = getUniqueItems(classes),
-                current_region_tags = typeof current_region.attributes.tags != 'undefined' ? current_region.attributes.tags : [],
-                temp_region_tags = typeof temp_region.attributes.tags != 'undefined' ? temp_region.attributes.tags: [],
-                tags = current_region_tags.concat(temp_region_tags),
-                new_region_end, new_region_start;
-
-            // Type 1
-            if (temp_region.start < current_region.start && temp_region.end > current_region.end) {
-              new_region_start = current_region.start;
-              new_region_end = current_region.end;
-
-              current_region.update({start: temp_region.start, end: new_region_start});
-              current_region.attributes.class = temp_region.attributes.class;
-              current_region.attributes.tags = temp_region.attributes.tags;
-              current_region.color = temp_region.color;
-              temp_region.update({start: new_region_end});
-            }
-            // Type 2
-            else if (current_region.start < temp_region.start && current_region.end > temp_region.end) {
-              new_region_start = temp_region.start;
-              new_region_end = temp_region.end;
-
-              temp_region.update({start: current_region.start, end: new_region_start});
-              temp_region.attributes.class = current_region.attributes.class;
-              temp_region.attributes.tags = current_region.attributes.tags;
-              temp_region.color = current_region.color;
-              current_region.update({start: new_region_end});
-            }
-            // Type 3
-            else if (current_region.start < temp_region.start && current_region.end > temp_region.start && temp_region.end > current_region.end) {
-              new_region_end = current_region.end;
-              new_region_start = temp_region.start;
-
-             current_region.update({end: temp_region.start});
-             temp_region.update({start: new_region_end});
-            }
-            // Type 4
-            else if (current_region.start > temp_region.start && current_region.start < temp_region.end && current_region.end > temp_region.end) {
-              new_region_end = temp_region.end;
-              new_region_start = current_region.start;
-
-             current_region.update({start: new_region_end});
-             temp_region.update({end: new_region_start});
-            }
-            else if (unique_classes.length > 2) {
-               // Type 5.1
-              if (current_region.start == temp_region.start && current_region.end > temp_region.end) {
-                new_region_start = temp_region.start;
-                new_region_end = temp_region.end;
-                temp_region.deleted = true;
-
-                current_region.update({start: temp_region.end})
-              }
-              // Type 5.2
-              else if (current_region.start == temp_region.start && current_region.end < temp_region.end) {
-                new_region_start = current_region.start;
-                new_region_end = current_region.end;
-                current_region.deleted = true;
-
-                temp_region.update({start: current_region.end})
-              }
-              // Type 5.3
-              else if (current_region.start < temp_region.start && current_region.end == temp_region.end) {
-                new_region_start = temp_region.start;
-                new_region_end = temp_region.end;
-                temp_region.deleted = true;
-
-                current_region.update({end: temp_region.start})
-              }
-              // Type 5.4
-              else if (current_region.start > temp_region.start && current_region.end == temp_region.end) {
-                new_region_start = current_region.start;
-                new_region_end = current_region.end;
-                current_region.deleted = true;
-
-                temp_region.update({end: current_region.start})
-              } // Type 5.5
-              else if (current_region.start == temp_region.start && current_region.end == temp_region.end) {
-                new_region_start = current_region.start;
-                new_region_end = current_region.end;
-                current_region.deleted = true;
-                temp_region.deleted = true;
-              } else {
-                return;
-              }
-            } else {
-              return;
-            }
-            // create regions
-            var newRegion = handler.addRegion(
-                handler.getMainWavesurfer(),
-                unique_classes.join(' '),
-                getUniqueItems(tags),
-                new_region_id,
-                new_region_start,
-                new_region_end,
-                OVERLAP_REGION_COLOR,
-                false //is loaded
-            );
-
-            newRegions[new_region_id] = newRegion;
-
-            createNewRegion(current_region, function () {
-              createNewRegion(temp_region, function () {
-                createNewRegion(newRegion, function () {
-                  totalOverlapsCount -= 1;
-                });
-              });
-            });
-            totalOverlapsCount += 1;
-            oneMoreIteration = true;
-            // wait before next iteration
-            sleep(120);
-          });
+          if (!region_borders.includes(current_region.start)) {
+            region_borders.push(current_region.start)
+          }
+          if (!region_borders.includes(current_region.end)) {
+            region_borders.push(current_region.end)
+          }
         });
 
-        var checker = setInterval(function() {
-          if (totalOverlapsCount <= 0) {
-            clearInterval(checker);
-            if (oneMoreIteration) {
-              solveOverlaps(totalOverlapsCount, newRegions);
-            } else {
-              location.reload();
+        region_borders.sort();
+
+        for (var i = 0; i < region_borders.length - 1; i++) {
+          classes = []
+          tags = []
+          allRegions.forEach(function (current_region) {
+            if (region_borders[i] >= current_region.start && region_borders[i +1] <= current_region.end) {
+              classes.push(current_region.attributes.class)
+              current_region_tags = typeof current_region.attributes.tags != 'undefined' ? current_region.attributes.tags : [];
+              tags = tags.concat(current_region_tags)
+              color = current_region.color
             }
+          });
+
+          newRegions[i] = {}
+          newRegions[i]['classes'] = getUniqueItems(classes)
+          newRegions[i]['tags'] = getUniqueItems(tags)
+          newRegions[i]['start'] = region_borders[i]
+          newRegions[i]['end'] = region_borders[i + 1]
+          if (newRegions[i]['classes'].length > 1) {
+            newRegions[i]['color'] = OVERLAP_REGION_COLOR;
+          } else {
+            newRegions[i]['color'] = color;
           }
-        }, 50);
+        }
+
+        allRegions.forEach(function (current_region) {
+          current_region.attributes['delete_event'] = false
+          current_region.remove()
+        });
+
+        for (var key in newRegions) {
+          var newRegion = handler.addRegion(
+            handler.getMainWavesurfer(),
+            newRegions[key]['classes'].join(' '),
+            newRegions[key]['tags'],
+            -1, //shouldn't the id be passed from db to frontend?
+            newRegions[key]['start'],
+            newRegions[key]['end'],
+            newRegions[key]['color'],
+            false //is loaded
+          );
+          createNewRegion(newRegion) // function needs change in declaration
+        }        
       }
 
       function sleep(miliseconds) {

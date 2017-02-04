@@ -597,3 +597,24 @@ def remove_event(request):
                                    new_status=models.Annotation.UNFINISHED)
 
     return JsonResponse({})
+
+def create_region(request):
+    region_data = json.loads(request.POST.get('region_data'))
+    annotation = models.Annotation.objects.get(id=region_data['annotation'])
+    region = models.Region(annotation=annotation)
+    region.color = region_data['color']
+    region.start_time = region_data['start_time']
+    region.end_time = region_data['end_time']
+    for t in region_data['tags']:
+        tag = models.Tag.objects.get_or_create(name=t)
+        region.tags.add(tag[0])
+    region.save()
+
+    for class_name in region_data['classes'].split():
+        class_obj = models.Class.objects.get(name=class_name,
+                                               project=annotation.get_project())
+        class_prominence = models.ClassProminence(region=region,
+                                               class_obj=class_obj)
+        class_prominence.save()
+
+    return JsonResponse({'region_id': region.id})
