@@ -22,7 +22,7 @@ class Class(models.Model):
     name = models.CharField(max_length=50)
     tags = models.ManyToManyField('Tag', blank=True)  # if none -> free tag
     color = models.CharField(max_length=50)
-    shortcut = models.CharField(max_length=1)
+    shortcut = models.PositiveSmallIntegerField()
 
     class Meta:
         unique_together = (('project', 'name'), ('project', 'color'), ('project', 'shortcut'))

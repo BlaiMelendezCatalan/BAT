@@ -48,7 +48,7 @@ def get_wav_duration(wav):
 
 
 def create_segments(wav, duration, segments_length):
-    if segments_length != -1:
+    if int(segments_length) != -1:
         number_of_segments = duration / float(segments_length)
         if number_of_segments % 1 > .5:
             number_of_segments = int(np.ceil(number_of_segments))
@@ -164,7 +164,7 @@ def create_tmp_file(segment):
     wav_file = read(input_file, 'r')
     sample_rate = wav_file[0]
     start = int(ceil(sample_rate * (segment.start_time)))
-    end = int(floor(sample_rate * (segment.end_time)))
+    end = int(floor(sample_rate * (segment.end_time + 0.0001)))
     write(
         output_file,
         sample_rate,

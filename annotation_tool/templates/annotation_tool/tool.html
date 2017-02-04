@@ -551,7 +551,7 @@
     }
 
     function getDuration() {
-      return handler.getMainWavesurfer().getDuration();
+      return handler.getMainWavesurfer().getDuration() - 0.0001;
     }
 
     function preventOverlappingsOnCreation(current_region) {
@@ -886,7 +886,7 @@ function onRegionCreated(region) {
         if (regionsWithoutClass) {
           var modalWindow = $('#modal-window'),
               text = '<p>Regions without class: ' + regionsWithoutClass + '</p>' +
-                  '<p>Please set a class to all regions for solve overlaps.</p>';
+                  '<p>Please assign a class to all regions before solving the overlaps.</p>';
           modalWindow.find('.modal-title').text('Error');
           modalWindow.find('.modal-body').html(text);
           modalWindow.modal('show');
@@ -903,7 +903,7 @@ function onRegionCreated(region) {
       function solveOverlaps(totalOverlapsCount, allRegions) {
         /*
          find overlap
-         there is can be 4 types of overlap:
+         there can be 4 types of overlap:
          1. current_region inside temp_region
          2. temp_region inside current_region
          3. current_region.end overlap on temp_region.start

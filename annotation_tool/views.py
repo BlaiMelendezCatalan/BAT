@@ -502,7 +502,6 @@ class LogoutView(LoginRequiredMixin, APIView):
 
 
 def create_event(request):
-    print("create_event")
     region_data = json.loads(request.POST.get('region_data'))
     try:
         annotation = models.Annotation.objects.get(name=region_data['annotation'])
@@ -528,7 +527,6 @@ def create_event(request):
 
 
 def update_end_event(request):
-    print("update_end_event")
     region_data = json.loads(request.POST.get('region_data'))
 
     if 'event_id' in region_data.keys():
@@ -556,7 +554,6 @@ def update_end_event(request):
 
 
 def update_event(request):
-    print("update_event")
     region_data = json.loads(request.POST.get('region_data'))
     try:
         event = models.Event.objects.get(id=region_data['event_id'])
@@ -580,8 +577,6 @@ def update_event(request):
     event.start_time = region_data['start_time']
     event.end_time = region_data['end_time']
     event.save()
-    print event.start_time
-    print event.end_time
 
     utils.update_annotation_status(event.annotation,
                                    new_status=models.Annotation.UNFINISHED)
@@ -590,14 +585,12 @@ def update_event(request):
 
 
 def remove_event(request):
-    print("remove_event")
     region_data = json.loads(request.POST.get('region_data'))
 
     try:
         event = models.Event.objects.get(id=region_data['event_id'])
     except models.Event.DoesNotExist:
         return JsonResponse({'error': 'Event does not exist'})
-    print region_data['event_id']
     event.delete()
 
     utils.update_annotation_status(event.annotation,
