@@ -577,19 +577,15 @@
 
         if (region.start <= temp_region.end && region.end >= temp_region.start) {
           if (region.start >= temp_region.start && region.end <= temp_region.end) {
-            console.log("inside")
             new_start = -1;
             break;
           } else if (region.start <= temp_region.start && region.end >= temp_region.end) {
-            console.log("cover")
             new_start = -1;
             break;
           } else if (region.start <= temp_region.start && region.end <= temp_region.end) {
-            console.log("left")
             number_of_partial_overlaps += 1;
             new_end = temp_region.start;
           } else if (region.start >= temp_region.start && region.end >= temp_region.end) {
-            console.log("right")
             number_of_partial_overlaps += 1;
             new_start = temp_region.end;
           }
