@@ -20,6 +20,15 @@
   <script type="text/javascript" src="{% static 'js/url.js' %}"></script>
   <link rel="stylesheet" href="{% static 'css/annotator/font-awesome.min.css' %}">
   <link rel="stylesheet" href="{% static 'css/bootstrap-tokenfield.min.css' %}">
+  <div id="loader-text"><h1>Please wait...</h1></div>
+  <div id="loader-wrapper">
+    <div id="loader"></div>
+
+    <div class="loader-section section-left"></div>
+    <div class="loader-section section-right"></div>
+
+  </div>
+
   <div class="container">
     <button type="button" class="btn btn-default" data-toggle="collapse" data-target="#tips-container">Annotation tips</button>
     <div class="collapse in" id="tips-container">
@@ -550,36 +559,45 @@
       return handler.getMainWavesurfer().getDuration() - 0.0001;
     }
 
-    function preventOverlappingsOnCreation(current_region) {
-      var new_start = current_region.start,
-          new_end = current_region.end,
+    function preventOverlappingsOnCreation(region) {
+      var new_start = region.start,
+          new_end = region.end,
           wavesurfer = handler.getMainWavesurfer();
       if (new_end > getDuration()) {
         new_end = getDuration()
       }
-      Object.keys(wavesurfer.regions.list).forEach(function (id) {
-        if (id == current_region.id) {
-          return;
+      number_of_partial_overlaps = 0;
+      for (var id in wavesurfer.regions.list) {
+        console.log(id)
+        if (id == region.id) {
+          continue;
         }
         var temp_region = wavesurfer.regions.list[id],
             offset = $(temp_region.element)[0].offsetLeft;
-        // Type 1 - left overlap
-        if (current_region.start < temp_region.start && current_region.end > temp_region.start && current_region.end < temp_region.end) {
+
+        if (region.start <= temp_region.end && region.end >= temp_region.start) {
+          if (region.start >= temp_region.start && region.end <= temp_region.end) {
+            console.log("inside")
+            new_start = -1;
+            break;
+          } else if (region.start <= temp_region.start && region.end >= temp_region.end) {
+            console.log("cover")
+            new_start = -1;
+            break;
+          } else if (region.start <= temp_region.start && region.end <= temp_region.end) {
+            console.log("left")
+            number_of_partial_overlaps += 1;
             new_end = temp_region.start;
-        }
-        // Type 2 - right overlap
-        else if (current_region.end > temp_region.end && current_region.start < temp_region.end && temp_region.start < current_region.start) {
-            new_start = temp_region.end
-        }
-        // Type 3 - include
-        else if (current_region.start < temp_region.start && current_region.end > temp_region.end) {
-          if (current_region.x < offset) {
-            new_end = temp_region.start;
-          } else {
-            new_start = temp_region.end
+          } else if (region.start >= temp_region.start && region.end >= temp_region.end) {
+            console.log("right")
+            number_of_partial_overlaps += 1;
+            new_start = temp_region.end;
           }
         }
-      });
+      };
+      if (number_of_partial_overlaps >= 2) {
+        new_start = -1;
+      }
 
       return [new_start, new_end]
     }
@@ -801,33 +819,41 @@
           handler.checkOverlaps();
         } else {
           times = preventOverlappingsOnCreation(region)
-          region.update({
-            start: times[0],
-            end: times[1]
-          })
-        }
-        var region_data = {
-          start_time: times[0],
-          end_time: times[1],
-          annotation: '{{ annotation.id }}',
-          color: region.color
-        };
-        if ('event_id' in region.attributes) {
-          region_data['event_id'] = region.attributes['event_id']
-        }
-        $.ajax({
-          type: "POST",
-          url: '../update_end_event/',
-          dataType: 'json',
-          data: {
-            region_data: JSON.stringify(region_data),
-            csrfmiddlewaretoken: '{{csrf_token}}'
-          },
-          success: function (data) {
-            region = wavesurfer.regions.list[currentRegionId];
-            region.attributes['event_id'] = data.event_id;
+          console.log(times)
+          if (times[0] != -1) {
+            region.update({
+              start: times[0],
+              end: times[1]
+            });
+          } else {
+            region.attributes['delete_event'] = false;
+            region.remove();
           }
-        });
+        }
+        if (times[0] != -1) {
+          var region_data = {
+            start_time: times[0],
+            end_time: times[1],
+            annotation: '{{ annotation.id }}',
+            color: region.color
+          };
+          if ('event_id' in region.attributes) {
+            region_data['event_id'] = region.attributes['event_id']
+          }
+          $.ajax({
+            type: "POST",
+            url: '../update_end_event/',
+            dataType: 'json',
+            data: {
+              region_data: JSON.stringify(region_data),
+              csrfmiddlewaretoken: '{{csrf_token}}'
+            },
+            success: function (data) {
+              region = wavesurfer.regions.list[currentRegionId];
+              region.attributes['event_id'] = data.event_id;
+            }
+          });
+        }
       }
 
       $("#tag_button").click(function () {
@@ -999,13 +1025,13 @@
         var modalWindow = $('#modal-window');
         if (ALLOW_OVERLAPS && handler.checkOverlaps()) {
           modalWindow.find('.modal-title').text('Error');
-          modalWindow.find('.modal-body').text('First solve overlaps');
+          modalWindow.find('.modal-body').text('First solve all the overlaps');
           modalWindow.modal('show');
           return;
         }
         if (!checkClassProminenceIsFilled()) {
           modalWindow.find('.modal-title').text('Error');
-          modalWindow.find('.modal-body').text('First you should to set the prominence to all regions with more than one class');
+          modalWindow.find('.modal-body').text('First you need to assign a prominence value to all regions with more than one class');
           modalWindow.modal('show');
           return;
         }
