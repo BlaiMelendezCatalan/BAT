@@ -937,26 +937,29 @@
         });
 
         for (var i = 0; i < region_borders.length - 1; i++) {
-          classes = []
-          tags = []
+          var createRegion = false;
+          var classes = []
+          var tags = []
           allRegions.forEach(function (current_region) {
-            if (region_borders[i] >= current_region.start && region_borders[i +1] <= current_region.end) {
+            if (region_borders[i] >= current_region.start && region_borders[i + 1] <= current_region.end) {
               classes.push(current_region.attributes.class)
-              current_region_tags = typeof current_region.attributes.tags != 'undefined' ? current_region.attributes.tags : [];
+              var current_region_tags = typeof current_region.attributes.tags != 'undefined' ? current_region.attributes.tags : [];
               tags = tags.concat(current_region_tags)
               color = current_region.color
+              createRegion = true
             }
           });
-
-          newRegions[i] = {}
-          newRegions[i]['classes'] = getUniqueItems(classes)
-          newRegions[i]['tags'] = getUniqueItems(tags)
-          newRegions[i]['start'] = region_borders[i]
-          newRegions[i]['end'] = region_borders[i + 1]
-          if (newRegions[i]['classes'].length > 1) {
-            newRegions[i]['color'] = OVERLAP_REGION_COLOR;
-          } else {
-            newRegions[i]['color'] = color;
+          if (createRegion) {
+            newRegions[i] = {}
+            newRegions[i]['classes'] = getUniqueItems(classes)
+            newRegions[i]['tags'] = getUniqueItems(tags)
+            newRegions[i]['start'] = region_borders[i]
+            newRegions[i]['end'] = region_borders[i + 1]
+            if (newRegions[i]['classes'].length > 1) {
+              newRegions[i]['color'] = OVERLAP_REGION_COLOR;
+            } else {
+              newRegions[i]['color'] = color;
+            }
           }
         }
 
@@ -964,6 +967,8 @@
           current_region.attributes['delete_event'] = false
           current_region.remove()
         });
+
+        console.log(Object.keys(newRegions).length)
 
         for (var key in newRegions) {
           var newRegion = handler.addRegion(

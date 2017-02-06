@@ -171,17 +171,13 @@ document.onkeydown = function (e) {
   } else if (key == "ArrowLeft" && pressCtrl && !pressShift) {
     times = preventOverlappingsOnArrow(region, increment = -1. / 100)
     region.update({start: times[0]});
-    //updateEvent(region)
   } else if (key == "ArrowRight" && pressCtrl && !pressShift) {
     region.update({start: region.start + 1. / 100});
-    //updateEvent(region)
   } else if (key == "ArrowLeft" && pressCtrl && pressShift) {
     region.update({end: region.end - 1. / 100});
-    //updateEvent(region)
   } else if (key == "ArrowRight" && pressCtrl && pressShift) {
     times = preventOverlappingsOnArrow(region, increment = 1. / 100)
     region.update({end: times[1]});
-    //updateEvent(region)
   } else if (key == 'b' && region != null) {
     handler.seekTo(region.start / wavesurfer.getTotalDuration());
   } else if (key == 's') {
