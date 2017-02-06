@@ -20,14 +20,6 @@
   <script type="text/javascript" src="{% static 'js/url.js' %}"></script>
   <link rel="stylesheet" href="{% static 'css/annotator/font-awesome.min.css' %}">
   <link rel="stylesheet" href="{% static 'css/bootstrap-tokenfield.min.css' %}">
-  <div id="loader-text"><h1>Please wait...</h1></div>
-  <div id="loader-wrapper">
-    <div id="loader"></div>
-
-    <div class="loader-section section-left"></div>
-    <div class="loader-section section-right"></div>
-
-  </div>
 
   <div class="container">
     <button type="button" class="btn btn-default" data-toggle="collapse" data-target="#tips-container">Annotation tips</button>
@@ -342,6 +334,7 @@
             // open prominence window if Region have multi class
             var classes = typeof region.attributes.class != 'undefined' ? region.attributes.class.split(' ') : [];
             if (REGIONS_STATE && classes.length > 1) {
+              console.log("before toggle")
               toggleProminencePopup(classes, region, $(region.element).offset());
             }
           }
@@ -433,9 +426,9 @@
           }
         });
 
-      $('#solve-overlaps-button').attr('disabled', !overlapWasFound);
-      return overlapWasFound;
-    },
+        $('#solve-overlaps-button').attr('disabled', !overlapWasFound);
+        return overlapWasFound;
+      },
 
       init: function () {
         this.addWavesurfer().setVolume(1);
@@ -529,6 +522,7 @@
     function loadRegions(wavesurfer) {
       // Do it with AJAX and return all info for all regions
       {% if regions %}
+        console.log("regions loaded")
         {% for region in regions %}
           var tags = [];
           {% for tag in region.tags.all %}
@@ -619,6 +613,7 @@
     }
 
     function toggleProminencePopup(classes, region, offset) {
+      console.log("entered toggle")
       var popup = $('#class-prominence-container'),
           offsetLeft = offset.left;
 
@@ -734,16 +729,16 @@
       }
     }
 
-    function createNewRegion(fromRegion) {
-      if (typeof fromRegion.deleted != 'undefined') {
+    function createNewRegion(region) {
+      if (typeof region.deleted != 'undefined') {
         return;
       }
       var region_data = {
-        color: fromRegion.color,
-        start_time: fromRegion.start,
-        end_time: fromRegion.end,
-        tags: fromRegion.attributes.tags,
-        classes: fromRegion.attributes.class,
+        color: region.color,
+        start_time: region.start,
+        end_time: region.end,
+        tags: region.attributes.tags,
+        classes: region.attributes.class,
         annotation: '{{ annotation.id }}'
       };
       $.ajax({
@@ -756,7 +751,12 @@
         },
         success: function (data) {
           console.log(data)
-          fromRegion.attributes.region_id = data.region_id
+          region.attributes.region_id = data.region_id
+          region.attributes.classProminences = {}
+          var classes = typeof region.attributes.class != 'undefined' ? region.attributes.class.split(' ') : [];
+          for (var i = 0; i < classes.length; i++){
+            region.attributes.classProminences[classes[i]] = 0
+          }
         }
       });
     }
@@ -904,14 +904,12 @@
 
         $('body').removeClass('loaded');
 
-        solveOverlaps(0, allRegions);
+        solveOverlaps(allRegions);
 
         switchToRegionMode();
       });
 
-      // in "one more iteration" use compare only with new regions
-      var newRegions = {};
-      function solveOverlaps(totalOverlapsCount, allRegions) {
+      function solveOverlaps(allRegions) {
         /*
          find overlap
          there can be 4 types of overlap:
@@ -921,7 +919,7 @@
          4. current_region.start overlap on temp_region.end
          5. overlap with multiclasses (regions limits can be the same)
         */
-        var oneMoreIteration = false;
+        var newRegions = {};
         if (typeof allRegions == 'object') {
           allRegions = $.map(allRegions, function (item) {
             return item;
@@ -986,13 +984,6 @@
           createNewRegion(newRegion) // function needs change in declaration
         }        
       }
-
-      function sleep(miliseconds) {
-         var currentTime = new Date().getTime();
-
-         while (currentTime + miliseconds >= new Date().getTime()) {}
-      }
-
 
       function checkClassProminenceIsFilled() {
         if (!REGIONS_STATE) {
