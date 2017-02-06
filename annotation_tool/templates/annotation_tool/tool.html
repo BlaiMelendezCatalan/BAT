@@ -932,7 +932,9 @@
           }
         });
 
-        region_borders.sort();
+        region_borders.sort(function(a, b){
+          return a - b;
+        });
 
         for (var i = 0; i < region_borders.length - 1; i++) {
           classes = []
