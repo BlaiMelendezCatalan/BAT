@@ -334,7 +334,6 @@
             // open prominence window if Region have multi class
             var classes = typeof region.attributes.class != 'undefined' ? region.attributes.class.split(' ') : [];
             if (REGIONS_STATE && classes.length > 1) {
-              console.log("before toggle")
               toggleProminencePopup(classes, region, $(region.element).offset());
             }
           }
@@ -412,14 +411,13 @@
             var current_region = wavesurfer.regions.list[i];
             that.container.forEach(function (temp_wavesurfer) {
               Object.keys(temp_wavesurfer.regions.list).forEach(function (id) {
-                var temp_region = temp_wavesurfer.regions.list[id],
-                    overlapType1 = temp_region.start < current_region.start && temp_region.end > current_region.end,
-                    overlapType2 = current_region.start < temp_region.start && current_region.end > temp_region.end,
-                    overlapType3 = current_region.start < temp_region.start && current_region.end > temp_region.start,
-                    overlapType4 = current_region.start > temp_region.start && current_region.start < temp_region.end;
-                if (overlapType1 || overlapType2 || overlapType3 || overlapType4) {
-                  overlapWasFound = true;
-                  return;
+                var temp_region = temp_wavesurfer.regions.list[id];
+                if (current_region != temp_region) {
+                      overlap = current_region.start <= temp_region.end && current_region.end >= temp_region.start
+                  if (overlap) {
+                    overlapWasFound = true;
+                    return;
+                  }
                 }
               });
             });
@@ -522,7 +520,6 @@
     function loadRegions(wavesurfer) {
       // Do it with AJAX and return all info for all regions
       {% if regions %}
-        console.log("regions loaded")
         {% for region in regions %}
           var tags = [];
           {% for tag in region.tags.all %}
@@ -562,7 +559,6 @@
       }
       number_of_partial_overlaps = 0;
       for (var id in wavesurfer.regions.list) {
-        console.log(id)
         if (id == region.id) {
           continue;
         }
@@ -613,7 +609,6 @@
     }
 
     function toggleProminencePopup(classes, region, offset) {
-      console.log("entered toggle")
       var popup = $('#class-prominence-container'),
           offsetLeft = offset.left;
 
@@ -750,7 +745,6 @@
           csrfmiddlewaretoken: '{{csrf_token}}'
         },
         success: function (data) {
-          console.log(data)
           region.attributes.region_id = data.region_id
           region.attributes.classProminences = {}
           var classes = typeof region.attributes.class != 'undefined' ? region.attributes.class.split(' ') : [];
@@ -815,7 +809,6 @@
           handler.checkOverlaps();
         } else {
           times = preventOverlappingsOnCreation(region)
-          console.log(times)
           if (times[0] != -1) {
             region.update({
               start: times[0],
