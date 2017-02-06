@@ -98,9 +98,8 @@ class Annotation(models.Model):
 
 class Event(models.Model):
     annotation = models.ForeignKey('Annotation', on_delete=models.CASCADE)
-    # class_name is the name of a Class object if no overlappings are allowed. Otherwise, it is a secondary (mixture) class name
     event_class = models.ForeignKey('Class', null=True,
-                                    on_delete=models.CASCADE)  # This should be models.ManyToManyField('Class', blank=True) to allow overlappings
+                                    on_delete=models.CASCADE)
     start_time = models.FloatField(default=0.0)
     end_time = models.FloatField(default=0.01)
     color = models.CharField(max_length=50, blank=True)
@@ -111,7 +110,7 @@ class Event(models.Model):
 
     class Meta:
         unique_together = ("annotation", "event_class", "start_time",
-                           "end_time")  # This should be unique_together = ("annotation", "start_time", "end_time") to allow overlappings
+                           "end_time")
 
     def __str__(self):
         return str(self.id)

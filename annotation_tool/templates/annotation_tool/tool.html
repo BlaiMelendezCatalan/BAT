@@ -307,7 +307,7 @@
 
         wavesurfer.on('region-removed', function (region) {
           setCurrentRegion(-1);
-          redrawClassForRegion();
+          resetHTML();
           var region_data = {event_id: region.attributes['event_id']};
 
           if (!('delete_event' in region.attributes)) {
@@ -342,7 +342,6 @@
         wavesurfer.on('region-click', function (region, event) {
           if (event.button == 0 && event.ctrlKey == true && !REGIONS_STATE) {
             region.remove();
-            setCurrentRegion(-1);
           }
         });
 
@@ -788,16 +787,17 @@
     {% if not request.user.is_superuser %}
       // WaveSurfer callbacks
       function onRegionCreated(region) {
-        setCurrentRegion(region.id)
+        setCurrentRegion(-1);
         disableDrag(region)
-
         resetHTML()
 
-        if (!('loaded' in region.attributes) && !('created' in region.attributes) && !('created_overlap' in region.attributes)) {
+        if ('loaded' in region.attributes) {
+          delete region.attributes['loaded']
+        } else if ('created_overlap' in region.attributes) {
+          delete region.attributes['created_overlap']
+        } else {
           region.attributes['class'] = "None"
           region.attributes['tags'] = []
-        } else if ('loaded' in region.attributes) {
-          delete region.attributes['loaded']
         }
       }
 
@@ -805,7 +805,6 @@
         if (REGIONS_STATE) {
           return;
         }
-        setCurrentRegion(region.id);
         var times;
         if (ALLOW_OVERLAPS) {
           times = [region.start, region.end];
@@ -841,8 +840,8 @@
               csrfmiddlewaretoken: '{{csrf_token}}'
             },
             success: function (data) {
-              region = wavesurfer.regions.list[currentRegionId];
               region.attributes['event_id'] = data.event_id;
+              setCurrentRegion(region.id);
             }
           });
         }
@@ -970,8 +969,6 @@
           current_region.attributes['delete_event'] = false
           current_region.remove()
         });
-
-        console.log(Object.keys(newRegions).length)
 
         for (var key in newRegions) {
           var newRegion = handler.addRegion(

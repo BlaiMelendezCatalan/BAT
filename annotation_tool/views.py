@@ -568,7 +568,7 @@ def update_event(request):
             tag, _ = models.Tag.objects.get_or_create(name=tag_name)
             event.tags.add(tag)
 
-    if 'event_class' in region_data and region_data['event_class'] != 'None':
+    if 'event_class' in region_data and region_data['event_class'] and region_data['event_class'] != 'None':
         event_class = models.Class.objects.get(name=region_data['event_class'],
                                                project=event.get_project())
         event.event_class = event_class
