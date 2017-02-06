@@ -401,6 +401,9 @@
       },
 
       checkOverlaps: function () {
+        if (REGIONS_STATE) {
+          return false;
+        }
         var overlapWasFound = false,
             that = this;
         this.container.forEach(function (wavesurfer) {
