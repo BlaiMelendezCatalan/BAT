@@ -264,7 +264,7 @@
       findRegionById: function (id) {
         for (var i in this.container) {
           var wavesurfer = this.container[i];
-            if (wavesurfer.regions.list[id] != undefined) {
+          if (wavesurfer.regions.list[id] != undefined) {
             return wavesurfer.regions.list[id];
           }
         }
@@ -362,7 +362,9 @@
       },
 
       updateAllRegions: function () {
-        this.getAllRegions().forEach(updateEvent);
+        if (currentRegionId != -1) {
+          this.getAllRegions().forEach(updateEvent);
+        }
       },
 
       playPause: function () {
@@ -502,7 +504,7 @@
       $('.class-btn').removeClass('active');
       if (typeof region != 'undefined' && region != null && 'class' in region.attributes) {
         region.attributes['class'].split(' ').forEach(function (name) {
-          if (name) {
+          if (name != 'None') {
             $('div[data-class-name=' + name + ']').addClass('active');
           }
         });
@@ -826,7 +828,6 @@
             start_time: times[0],
             end_time: times[1],
             annotation: '{{ annotation.id }}',
-            color: region.color
           };
           if ('event_id' in region.attributes) {
             region_data['event_id'] = region.attributes['event_id']

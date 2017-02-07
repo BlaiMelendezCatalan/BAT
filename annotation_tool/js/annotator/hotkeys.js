@@ -123,14 +123,6 @@ function setClassForRegion(region, class_name, color) {
   redrawClassForRegion(region);
 }
 
-// set wavesurfer cursor to start of some region
-function moveCursorToRegionStart(region) {
-  var region_list = sortRegionsByOption(wavesurfer.regions.list, "start")
-  region = region_list[parseInt(key) - 1]
-  currentRegionId = region.id
-  wavesurfer.seekTo(region.start / wavesurfer.getTotalDuration())
-}
-
 function getTotalDuration() {
   return getDuration() - 0.0001
 }
@@ -156,9 +148,6 @@ document.onkeydown = function (e) {
     return;
   }
 
-  if (!isNaN(parseInt(key)) && parseInt(key) > 0 && parseInt(key) <= n_regions && pressCtrl) {
-    moveCursorToRegionStart(region);
-  }
   // set class for region
   for (var i = 0; i < CLASS_DICT.length; i++) {
     if (CLASS_DICT[i][2] == key && !pressCtrl) {

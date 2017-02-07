@@ -501,53 +501,29 @@ class LogoutView(LoginRequiredMixin, APIView):
         return HttpResponseRedirect(reverse('loginsignup'))
 
 
-def create_event(request):
-    region_data = json.loads(request.POST.get('region_data'))
-    try:
-        annotation = models.Annotation.objects.get(name=region_data['annotation'])
-    except models.Annotation.DoesNotExist:
-        return JsonResponse({'error': 'Annotation does not exist'})
-    event = models.Event(annotation=annotation)
-    event.color = region_data['color']
-    event.start_time = region_data['start_time']
-    event.end_time = region_data['end_time']
-    if region_data['event_class'] != "None":
-        event_class = models.Class.objects.get(name=region_data['event_class'],
-                                               project=annotation.get_project())
-        event.event_class = event_class
-    for t in region_data['tags']:
-        tag = models.Tag.objects.get_or_create(name=t)
-        event.tags.add(tag[0])
-    event.save()
-
-    utils.update_annotation_status(annotation,
-                                   new_status=models.Annotation.UNFINISHED)
-
-    return JsonResponse({'event_id': event.id})
-
-
 def update_end_event(request):
     region_data = json.loads(request.POST.get('region_data'))
+    try:
+        annotation = models.Annotation.objects.get(id=region_data['annotation'])
+    except models.Annotation.DoesNotExist:
+        return JsonResponse({'error': 'Annotation does not exist'})
 
     if 'event_id' in region_data.keys():
         try:
             event = models.Event.objects.get(id=region_data['event_id'])
+            event.start_time = region_data['start_time']
+            event.end_time = region_data['end_time']
         except models.Event.DoesNotExist:
             return JsonResponse({'error': 'Event does not exist'})
         annotation = event.annotation
     else:
-        try:
-            annotation = models.Annotation.objects.get(id=region_data['annotation'])
-        except models.Annotation.DoesNotExist:
-            return JsonResponse({'error': 'Annotation does not exist'})
-        event = models.Event(annotation=annotation)
-        event.color = region_data['color']
+        event = models.Event(
+                    annotation=annotation,
+                    start_time=region_data['start_time'],
+                    end_time=region_data['end_time'])
 
     utils.update_annotation_status(annotation,
-                                   new_status=models.Annotation.UNFINISHED)
-
-    event.start_time = region_data['start_time']
-    event.end_time = region_data['end_time']
+                                   new_status=models.Annotation.UNFINISHED)   
     event.save()
 
     return JsonResponse({'event_id': event.id})
