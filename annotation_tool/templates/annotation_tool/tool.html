@@ -774,11 +774,11 @@
     }
 
     function updateRegionIndexes(region) {
-      var baseZIndex = 1100;
+      var baseZIndex = 100;
       $('.wavesurfer-region').each(function () {
         $(this).css('z-index', baseZIndex++);
       });
-      $('region[data-id=' + region.id + ']').css('z-index', 3000);
+      $('region[data-id=' + region.id + ']').css('z-index', 300);
     }
 
     function disableDrag(region) {

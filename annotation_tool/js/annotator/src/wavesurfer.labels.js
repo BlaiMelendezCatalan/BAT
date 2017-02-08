@@ -222,7 +222,7 @@ WaveSurfer.Label = {
         this.style(this.element, {
             left: Math.max(this.region.element.offsetLeft + offset, 0) + 'px',
             bottom: bottom + 'px',
-            zIndex: this.wavesurfer.drawer.wrapper.scrollWidth - this.element.offsetWidth
+            zIndex: 100
         });
     },
 
