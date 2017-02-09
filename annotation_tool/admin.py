@@ -11,5 +11,6 @@ admin.site.register(Class)
 admin.site.register(Tag)
 admin.site.register(Region)
 admin.site.register(ClassProminence)
+admin.site.register(Log)
 
 # Register your models here.

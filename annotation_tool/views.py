@@ -574,6 +574,7 @@ def remove_event(request):
 
     return JsonResponse({})
 
+
 def create_region(request):
     region_data = json.loads(request.POST.get('region_data'))
     annotation = models.Annotation.objects.get(id=region_data['annotation'])
@@ -595,3 +596,13 @@ def create_region(request):
         class_prominence.save()
 
     return JsonResponse({'region_id': region.id})
+
+
+def insert_log(request):
+    log_data = json.loads(request.POST.get('log_data'))
+    annotation = models.Annotation.objects.get(id=log_data['annotation'])
+    log = models.Log(annotation=annotation,
+                     action=log_data['action'],
+                     value=log_data['value'],
+                     time=log_data['time'])
+    log.save()

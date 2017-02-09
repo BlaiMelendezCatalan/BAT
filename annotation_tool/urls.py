@@ -27,5 +27,6 @@ urlpatterns = [
     url(r'^update_end_event/$', views.update_end_event, name='update_end_event'),
     url(r'^create_region/$', views.create_region, name='create_region'),
     url(r'^remove_event/$', views.remove_event, name='remove_event'),
+    url(r'^insert_log/$', views.insert_log, name='insert_log'),
     url(r'^logout/$', views.LogoutView.as_view(), name='logout'),
 ]

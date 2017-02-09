@@ -451,6 +451,9 @@
     var OVERLAP_REGION_COLOR = 'rgba(220, 220, 220, 0.8)';
     var WAVESURFER_HEIGHT = 128;
     var REGIONS_STATE = false;
+    var d = new Date();
+    var START_TIME = d.getDate();
+    insertLog('start', 0.0)
     var handler = new wavesurferHandler.create();
 
     $('#add-wavesurfer-button').on('click', function () {
@@ -460,6 +463,29 @@
     $('#play-pause-main-button').on('click', function () {
       handler.playPause();
     });
+
+    function getTime() {
+      return (d.getDate() - START_TIME) / 1000.;
+    }
+
+    function insertLog(action, time, value="") {
+      log_data = {'action': action,
+                  'time': time,
+                  'value': value,
+                  'annotation': '{{ annotation.id }}'}
+      $.ajax({
+        type: "POST",
+        url: '../insert_log/',
+        dataType: 'json',
+        data: {
+          region_data: JSON.stringify(log_data),
+          csrfmiddlewaretoken: '{{csrf_token}}'
+        },
+        success: function (data) {
+        }
+      });
+
+    }
 
     function renderNumbersForControlPanel() {
       if (ALLOW_OVERLAPS) {
@@ -791,6 +817,7 @@
       function onRegionCreated(region) {
         setCurrentRegion(-1);
         disableDrag(region)
+        insertLog("region_created", getTime())
         resetHTML()
 
         if ('loaded' in region.attributes) {

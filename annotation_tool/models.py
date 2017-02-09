@@ -167,3 +167,10 @@ class Tag(models.Model):
 
     def __str__(self):
         return str(self.name)
+
+
+class Log(models.Model):
+    annotation = models.ForeignKey('Annotation', on_delete=models.CASCADE)
+    action = models.CharField(max_length=50, blank=False)
+    value = models.CharField(max_length=50, blank=True)
+    time = models.FloatField(null=False, blank=False)
