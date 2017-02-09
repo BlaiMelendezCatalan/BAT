@@ -581,6 +581,7 @@ def create_region(request):
     region.color = region_data['color']
     region.start_time = region_data['start_time']
     region.end_time = region_data['end_time']
+    region.save()
     for t in region_data['tags']:
         tag = models.Tag.objects.get_or_create(name=t)
         region.tags.add(tag[0])
