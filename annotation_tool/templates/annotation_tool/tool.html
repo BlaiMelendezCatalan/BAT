@@ -1007,6 +1007,9 @@
       }
 
       function sumColor(color, current_color) {
+        if (color == current_color) {
+          return color;
+        }
         var rgba = color.split('(')[1]
         rgba = rgba.substring(0, rgba.length - 1)
         var [r, g, b, a] = rgba.split(', ')
