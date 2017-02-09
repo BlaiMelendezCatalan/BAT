@@ -943,12 +943,13 @@
           var createRegion = false;
           var classes = []
           var tags = []
+          var color = 'rgba(0, 0, 0, 0.5)'
           allRegions.forEach(function (current_region) {
             if (region_borders[i] >= current_region.start && region_borders[i + 1] <= current_region.end) {
               classes.push(current_region.attributes.class)
               var current_region_tags = typeof current_region.attributes.tags != 'undefined' ? current_region.attributes.tags : [];
               tags = tags.concat(current_region_tags)
-              color = current_region.color
+              color = sumColor(color, current_region.color)
               createRegion = true
             }
           });
@@ -958,11 +959,7 @@
             newRegions[i]['tags'] = getUniqueItems(tags)
             newRegions[i]['start'] = region_borders[i]
             newRegions[i]['end'] = region_borders[i + 1]
-            if (newRegions[i]['classes'].length > 1) {
-              newRegions[i]['color'] = OVERLAP_REGION_COLOR;
-            } else {
-              newRegions[i]['color'] = color;
-            }
+            newRegions[i]['color'] = color;
           }
         }
 
@@ -976,13 +973,13 @@
             handler.getMainWavesurfer(),
             newRegions[key]['classes'].join(' '),
             newRegions[key]['tags'],
-            -1, //shouldn't the id be passed from db to frontend?
+            -1,
             newRegions[key]['start'],
             newRegions[key]['end'],
             newRegions[key]['color'],
             false //is loaded
           );
-          createNewRegion(newRegion) // function needs change in declaration
+          createNewRegion(newRegion)
         }
         handler.labels[0].rearrange()
       }
@@ -1007,6 +1004,29 @@
           }
         }
         return true;
+      }
+
+      function sumColor(color, current_color) {
+        var rgba = color.split('(')[1]
+        rgba = rgba.substring(0, rgba.length - 1)
+        var [r, g, b, a] = rgba.split(', ')
+        var current_rgba = current_color.split('(')[1]
+        current_rgba = current_rgba.substring(0, current_rgba.length - 1)
+        var [cr, cg, cb, ca] = current_rgba.split(', ')
+        rr = parseInt(r) + parseInt(cr)
+        rg = parseInt(g) + parseInt(cg)
+        rb = parseInt(b) + parseInt(cb)
+        if (rr > 255 || rg > 255 || rb > 255) {
+          max = Math.max(rr, rg, rb)
+          if (max > 0) {
+            rr = Math.round(rr / max) * 255
+            rg = Math.round(rg / max) * 255
+            rb = Math.round(rb / max) * 255
+          }
+        }
+        result_color = 'rgba(' + rr.toString() + ', ' + rg.toString() + ', ' + rb.toString() + ', ' + a.toString() + ')'
+
+        return result_color;
       }
 
 
