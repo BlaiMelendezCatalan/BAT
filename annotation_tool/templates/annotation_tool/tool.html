@@ -22,39 +22,63 @@
   <link rel="stylesheet" href="{% static 'css/bootstrap-tokenfield.min.css' %}">
 
   <div class="container">
-    <button type="button" class="btn btn-default" data-toggle="collapse" data-target="#tips-container">Annotation tips</button>
-    <div class="collapse in" id="tips-container">
-      <h5>Read and get used to the controls below. Annotation will be much easier.</h5>
-      <h5>Do not worry about silences, we will annotate them for you.</h5>
+    <div class="row">
+      <div class="col-xs-6">
+        <button type="button" class="btn btn-default" data-toggle="collapse" data-target="#tips-container">Annotation tips</button>
+        <div class="collapse in" id="tips-container">
+          <h5>Read and get used to the controls. Annotation will be much easier.</h5>
+          <h5>Do not worry about silences, we will annotate them for you.</h5>
+        </div>
+      </div>
+      <div class="col-xs-6">
+        <button type="button" class="btn btn-default" data-toggle="collapse" data-target="#controls-container">Controls</button>
+        <div class="collapse" id="controls-container">
+          <h5 class="common-control"><strong>Space bar</strong>: play / pause audio.
+          </h5>
+          {% if not regions %}
+          <h5>
+              <strong>Create new region</strong>: <strong>click</strong> and <strong>drag</strong> on the waveform.
+          </h5>
+          {% endif %}
+          <h5 class="common-control">
+            <strong>Select region</strong>: <strong>double-click</strong> on <strong>region</strong> or <strong>click</strong> on <strong>region's label</strong>.</h5>
+          {% if not regions %}
+            <h5><strong>Delete region</strong>: <strong>ctrl+Click</strong> on it or <strong>click</strong> on <strong>region's X button</strong>.</h5>
+            <h5><strong>Set class</strong>: <strong>click</strong> on <strong>label</strong> or use the <strong>shortcut</strong>.</h5>
+            <h5 class="only-without-overlap"><strong>Regions cannot overlap</strong>. Use this to <strong>easily concatenate regions.</strong></h5>
+            <h5 class="only-without-overlap"><strong>'f' key</strong>: <strong>glue</strong> the selected region limits to the closer borders. <strong>f + Ctrl (+ Shift)</strong> glue them only to the <strong>left (right) limit</strong>.</h5>
+          {% endif %}
+          <h5 class="common-control"><strong>'s' key</strong>: set the <strong>player</strong> at the <strong>beginning</strong> of the audio.
+          </h5>
+          <h5 class="common-control"><strong>'b' key</strong>: set the <strong>player</strong> at the <strong>beginning</strong> of the <strong>selected region</strong>.</h5>
+          {% if not regions %}
+          <h5><strong>Adjusting limits</strong>: <strong>ctrl (+ Shift) + Left/Right Arrows</strong> precisely adjusts <strong>left (right) region limits</strong>.</h5>
+          {% endif %}
+        </div>
+      </div>
     </div>
-    <div>
-    <button type="button" class="btn btn-default" data-toggle="collapse" data-target="#controls-container">Controls</button>
+    <div class="row">
+      <div class="col-xs-6">
+        <button id="switch-view" class="btn btn-success">Switch view</button>
+      </div>
+      <div class="col-xs-6">
+        {% if not request.is_superuser %}
+          <div class="row control-form">
+            <div class="col-md-12">
+              <div style="float: right;">
+                {% if project.overlap %}
+                  <button id="solve-overlaps-button" class="btn btn-warning">Solve overlaps</button>
+                  <button id="back-annotations-button" class="btn btn-warning">Back to annotation</button>
+                {% endif %}
+                <button data-load-next="0" class="btn btn-primary finish-annotation-button">Finish annotation</button>
+                <button data-load-next="1" class="btn btn-primary finish-annotation-button">Finish annotation and load next</button>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+      </div>
     </div>
-    <div class="collapse" id="controls-container">
-      <h5 class="common-control"><strong>Space bar</strong>: play / pause audio.
-      </h5>
-      {% if not regions %}
-      <h5>
-          <strong>Create new region</strong>: <strong>click</strong> and <strong>drag</strong> on the waveform.
-      </h5>
-      {% endif %}
-      <h5 class="common-control">
-        <strong>Select region</strong>: <strong>double-click</strong> on <strong>region</strong> or <strong>click</strong> on <strong>region's label</strong>.</h5>
-      {% if not regions %}
-        <h5><strong>Delete region</strong>: <strong>ctrl+Click</strong> on it or <strong>click</strong> on <strong>region's X button</strong>.</h5>
-        <h5><strong>Set class</strong>: <strong>click</strong> on <strong>label</strong> or use the <strong>shortcut</strong>.</h5>
-        <h5 class="only-without-overlap"><strong>Regions cannot overlap</strong>. Use this to <strong>easily concatenate regions.</strong></h5>
-        <h5 class="only-without-overlap"><strong>'f' key</strong>: <strong>glue</strong> the selected region limits to the closer borders. <strong>f + Ctrl (+ Shift)</strong> glue them only to the <strong>left (right) limit</strong>.</h5>
-      {% endif %}
-      <h5 class="common-control"><strong>'s' key</strong>: set the <strong>player</strong> at the <strong>beginning</strong> of the audio.
-      </h5>
-      <h5 class="common-control"><strong>'b' key</strong>: set the <strong>player</strong> at the <strong>beginning</strong> of the <strong>selected region</strong>.</h5>
-      {% if not regions %}
-      <h5><strong>Adjusting limits</strong>: <strong>ctrl (+ Shift) + Left/Right Arrows</strong> precisely adjusts <strong>left (right) region limits</strong>.</h5>
-      {% endif %}
-    </div>
-    &nbsp;
-    <button id="switch-view" class="btn btn-success">Switch view</button>
+
     <div id="waveform"></div>
 
     <div style="text-align: center">
@@ -66,34 +90,6 @@
       </button>
     </div>
 
-    {% if not request.is_superuser %}
-      <div class="row control-form">
-        <div class="col-md-12">
-          <div style="float: right;">
-            {% if project.overlap %}
-              <button id="solve-overlaps-button" class="btn btn-warning">Solve overlaps</button>
-              <button id="back-annotations-button" class="btn btn-warning">Back to annotation</button>
-            {% endif %}
-            <button data-load-next="0" class="btn btn-primary finish-annotation-button">Finish annotation</button>
-            <button data-load-next="1" class="btn btn-primary finish-annotation-button">Finish annotation and load next</button>
-          </div>
-        </div>
-      </div>
-    {% endif %}
-
-    <div id="class-prominence-container">
-      <div class="class-prominence-item fake-item">
-        <div class="prominence-label-container">
-          <div class="prominence-label"></div>
-        </div>
-        <div class="prominence-circles">
-          {% for id, name in prominence_choices %}
-            <div class="circle" data-toggle="tooltip" data-placement="bottom" data-id="{{ id }}"
-                 title="{{ name }}"></div>
-          {% endfor %}
-        </div>
-      </div>
-    </div>
 
     <div class="row control-form">
       <div class="col-md-1" id="class-panel-header">Class</div>
@@ -119,7 +115,20 @@
       <div class="col-md-2"></div>
       <div class="col-md-7" id="tags-container"></div>
     </div>
-
+    <div id="class-prominence-container">
+      <div class="class-prominence-item fake-item">
+        <div class="prominence-label-container">
+          <div class="prominence-label"></div>
+        </div>
+        <div class="prominence-circles">
+          {% for id, name in prominence_choices %}
+            <div class="circle" data-toggle="tooltip" data-placement="bottom" data-id="{{ id }}"
+                 title="{{ name }}"></div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <div>&nbsp;</div>
     <div id="modal-window" class="modal fade" role="dialog">
       <div class="modal-dialog">
 
@@ -889,11 +898,9 @@
         });
 
         if (regionsWithoutClass) {
-          var modalWindow = $('#modal-window'),
-              text = '<p>Regions without class: ' + regionsWithoutClass + '</p>' +
-                  '<p>Please assign a class to all regions before solving the overlaps.</p>';
-          modalWindow.find('.modal-title').text('Error');
-          modalWindow.find('.modal-body').html(text);
+          var modalWindow = $('#modal-window');
+          modalWindow.find('.modal-title').text('Wait a moment...');
+          modalWindow.find('.modal-body').html('Please, assign a class to all regions before starting to solve the overlaps.');
           modalWindow.modal('show');
           return;
         }
@@ -1036,14 +1043,14 @@
       $(".finish-annotation-button").click(function() {
         var modalWindow = $('#modal-window');
         if (ALLOW_OVERLAPS && handler.checkOverlaps()) {
-          modalWindow.find('.modal-title').text('Error');
-          modalWindow.find('.modal-body').text('First solve all the overlaps');
+          modalWindow.find('.modal-title').text('Wait a moment...');
+          modalWindow.find('.modal-body').text('Please, solve all the overlaps first');
           modalWindow.modal('show');
           return;
         }
         if (!checkClassProminenceIsFilled()) {
-          modalWindow.find('.modal-title').text('Error');
-          modalWindow.find('.modal-body').text('First you need to assign a prominence value to all regions with more than one class');
+          modalWindow.find('.modal-title').text('Wait a moment...');
+          modalWindow.find('.modal-body').text('please, assign a prominence value to all regions with more than one class first');
           modalWindow.modal('show');
           return;
         }
@@ -1070,7 +1077,7 @@
                 text += '<p><b>There are no more segments to annotate for this project.</b></p>';
               }
             }
-            modalWindow.find('.modal-title').text('Success');
+            modalWindow.find('.modal-title').text('Success!');
             modalWindow.find('.modal-body').html(text);
             modalWindow.modal('show');
           }
