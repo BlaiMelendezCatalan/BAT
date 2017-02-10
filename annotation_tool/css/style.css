@@ -11,7 +11,6 @@
   background-color: #dff0d8 !important;
 }
 
-
 #logout-button {
     background: none;
     border: none;
@@ -87,8 +86,8 @@
 }
 
 #switch-view {
-    float: right;
-    margin-top: 35px;
+    float: left;
+    margin-top: 55px;
 }
 
 .delete-tag-button {
