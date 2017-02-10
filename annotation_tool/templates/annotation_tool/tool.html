@@ -351,6 +351,7 @@
         wavesurfer.on('region-click', function (region, event) {
           if (event.button == 0 && event.ctrlKey == true && !REGIONS_STATE) {
             region.remove();
+            insertLog("dele")
           }
         });
 
@@ -379,6 +380,12 @@
       playPause: function () {
         this.container.forEach(function (wavesurfer) {
           wavesurfer.playPause();
+        });
+      },
+
+      isPlaying: function () {
+        this.container.forEach(function (wavesurfer) {
+          wavesurfer.isPlaying();
         });
       },
 
@@ -471,6 +478,11 @@
 
     $('#play-pause-main-button').on('click', function () {
       handler.playPause();
+      if (handler.isPlaying()){
+        insertLog("play", getTime())
+      } else {
+        insertLog("pause", getTime())
+      }
     });
 
     function getTime() {
@@ -487,10 +499,10 @@
         url: '../insert_log/',
         dataType: 'json',
         data: {
-          region_data: JSON.stringify(log_data),
+          log_data: JSON.stringify(log_data),
           csrfmiddlewaretoken: '{{csrf_token}}'
         },
-        success: function (data) {
+        success: function (response) {
         }
       });
 
@@ -826,7 +838,6 @@
       function onRegionCreated(region) {
         setCurrentRegion(-1);
         disableDrag(region)
-        insertLog("region_created", getTime())
         resetHTML()
 
         if ('loaded' in region.attributes) {
@@ -837,6 +848,7 @@
           region.attributes['class'] = "None"
           region.attributes['tags'] = []
         }
+        insertLog("create region", getTime())
       }
 
       function onRegionUpdateEnd(wavesurfer, region) {
@@ -879,6 +891,7 @@
             success: function (data) {
               region.attributes['event_id'] = data.event_id;
               setCurrentRegion(region.id);
+              insertLog("update region limits", getTime(), )
             }
           });
         }

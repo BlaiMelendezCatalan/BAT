@@ -606,3 +606,5 @@ def insert_log(request):
                      value=log_data['value'],
                      time=log_data['time'])
     log.save()
+
+    return JsonResponse({})

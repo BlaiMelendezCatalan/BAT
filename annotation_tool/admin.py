@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Project, Wav, Segment, Annotation, Event, Class, Tag, Region, ClassProminence
+from .models import Project, Wav, Segment, Annotation, Event, Class, Tag, Region, ClassProminence, Log
 
 admin.site.register(Project)
 admin.site.register(Wav)
