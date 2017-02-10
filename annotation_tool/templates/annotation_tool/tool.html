@@ -90,7 +90,6 @@
       </button>
     </div>
 
-
     <div class="row control-form">
       <div class="col-md-1" id="class-panel-header">Class</div>
       <div class="col-md-11">
@@ -319,6 +318,14 @@
           resetHTML();
           var region_data = {event_id: region.attributes['event_id']};
 
+          if ('click_remove' in region.attributes) {
+            insertLog("click-delete region", getTime(), region.attributes.class)
+            console.log("click delete")
+          } else if (!('delete_event' in region.attributes)) {
+            insertLog("cross-delete region", getTime(), region.attributes.class)
+            console.log("cross delete")
+          }
+
           if (!('delete_event' in region.attributes)) {
             $.ajax({
               type: "POST",
@@ -350,8 +357,10 @@
 
         wavesurfer.on('region-click', function (region, event) {
           if (event.button == 0 && event.ctrlKey == true && !REGIONS_STATE) {
+            event.stopPropagation();
+            event.preventDefault();
+            region.attributes['click_remove'] = true
             region.remove();
-            insertLog("dele")
           }
         });
 
@@ -369,24 +378,29 @@
             that.labels[0].rearrange();
           }
         });
-      },
 
-      updateAllRegions: function () {
-        if (currentRegionId != -1) {
-          this.getAllRegions().forEach(updateEvent);
-        }
+        wavesurfer.on('seek', function (value) {
+          if (isMainWavesurfer) {
+            insertLog("seek", getTime(), value.toString())
+            console.log("seek")
+          }
+        });
       },
 
       playPause: function () {
-        this.container.forEach(function (wavesurfer) {
-          wavesurfer.playPause();
-        });
+        wavesurfer = this.getMainWavesurfer();
+        wavesurfer.playPause();
+        if (this.isPlaying()){
+          insertLog("play", getTime());
+          console.log("play")
+        } else {
+          insertLog("pause", getTime());
+          console.log("pause")
+        }
       },
 
       isPlaying: function () {
-        this.container.forEach(function (wavesurfer) {
-          wavesurfer.isPlaying();
-        });
+        return this.getMainWavesurfer().isPlaying();
       },
 
       addRegion: function(wavesurfer, classes, tags, id, start_time, end_time, color, loaded) {
@@ -470,6 +484,7 @@
     var d = new Date();
     var START_TIME = d.getDate();
     insertLog('start', 0.0)
+    console.log("start")
     var handler = new wavesurferHandler.create();
 
     $('#add-wavesurfer-button').on('click', function () {
@@ -478,11 +493,6 @@
 
     $('#play-pause-main-button').on('click', function () {
       handler.playPause();
-      if (handler.isPlaying()){
-        insertLog("play", getTime())
-      } else {
-        insertLog("pause", getTime())
-      }
     });
 
     function getTime() {
@@ -551,7 +561,7 @@
       $('.class-btn').removeClass('active');
       if (typeof region != 'undefined' && region != null && 'class' in region.attributes) {
         region.attributes['class'].split(' ').forEach(function (name) {
-          if (name != 'None') {
+          if (name != '') {
             $('div[data-class-name=' + name + ']').addClass('active');
           }
         });
@@ -845,10 +855,11 @@
         } else if ('created_overlap' in region.attributes) {
           delete region.attributes['created_overlap']
         } else {
-          region.attributes['class'] = "None"
+          region.attributes['class'] = ""
           region.attributes['tags'] = []
         }
         insertLog("create region", getTime())
+        console.log("create region")
       }
 
       function onRegionUpdateEnd(wavesurfer, region) {
@@ -891,7 +902,10 @@
             success: function (data) {
               region.attributes['event_id'] = data.event_id;
               setCurrentRegion(region.id);
-              insertLog("update region limits", getTime(), )
+              insertLog("update region limits mouse",
+                        getTime(),
+                        times[0].toString() + ' ' + times[1].toString())
+              console.log("update region limits")
             }
           });
         }

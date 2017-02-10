@@ -174,3 +174,6 @@ class Log(models.Model):
     action = models.CharField(max_length=50, blank=False)
     value = models.CharField(max_length=50, blank=True)
     time = models.FloatField(null=False, blank=False)
+
+    def __str__(self):
+        return self.action

@@ -121,6 +121,8 @@ function setClassForRegion(region, class_name, color) {
   });
   updateEvent(region);
   redrawClassForRegion(region);
+  insertLog("update region class", getTime(), class_name)
+  console.log("update region class")
 }
 
 function getTotalDuration() {
@@ -168,7 +170,7 @@ document.onkeydown = function (e) {
     times = preventOverlappingsOnArrow(region, increment = 1. / 100)
     region.update({end: times[1]});
   } else if (key == 'b' && region != null) {
-    handler.seekTo(region.start / wavesurfer.getTotalDuration());
+    handler.seekTo(region.start / getTotalDuration());
   } else if (key == 's') {
     handler.seekTo(0.0);
   } else if (key == 'f' || key == 'F') {
@@ -183,6 +185,12 @@ document.onkeydown = function (e) {
 document.onkeyup = function (e) {
   var key = e.key;
   if (key == "ArrowLeft" || key == "ArrowRight") {
-    handler.updateAllRegions();
+    if (currentRegionId != -1) {
+      region = wavesurfer.regions.list[currentRegionId];
+      updateEvent(region);
+      insertLog("update region limits keyboard",
+                getTime(),
+                region.start.toString() + ' ' + region.end.toString())
+    }
   }
 }
