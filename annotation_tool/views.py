@@ -598,6 +598,45 @@ def create_region(request):
     return JsonResponse({'region_id': region.id})
 
 
+def remove_regions(request):
+    data = json.loads(request.POST.get('back_data'))
+    annotation = models.Annotation.objects.get(id=data['annotation'])
+    regions = models.Region.objects.filter(annotation=annotation)
+    events = models.Event.objects.filter(annotation=annotation)
+    for region in regions:
+        region.delete()
+
+    event_dict = {}
+    for i, event in enumerate(events):
+        event_dict[i] = {}
+        event_dict[i]['event_id'] = event.id
+        event_dict[i]['event_class'] = event.event_class.name
+        event_dict[i]['start_time'] = float(event.start_time)
+        event_dict[i]['end_time'] = float(event.end_time)
+        event_dict[i]['color'] = event.color
+        event_tags = []
+        for tag in event.tags.all():
+            event_tags.append(tag.name)
+        event_dict[i]['tags'] = event_tags
+
+    return JsonResponse(event_dict)
+
+
+def update_class_prominence(request):
+    prom_dict = json.loads(request.POST.get('prom_dict'))
+    try:
+        region = models.Region.objects.get(id=prom_dict['region_id'])
+        class_obj = models.Class.objects.get(name=prom_dict['class_name'],
+                                             project=region.get_project())
+        prominence = prom_dict['prominence']
+    except (models.Region.DoesNotExist, models.ClassProminence.DoesNotExist):
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+    models.ClassProminence.objects.update_or_create(region=region,
+                                                    class_obj=class_obj,
+                                                    defaults={'prominence': prominence})
+    return JsonResponse({})
+
+
 def insert_log(request):
     log_data = json.loads(request.POST.get('log_data'))
     annotation = models.Annotation.objects.get(id=log_data['annotation'])

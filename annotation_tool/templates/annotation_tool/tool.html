@@ -263,6 +263,12 @@
         });
       },
 
+      enableDragSelection: function () {
+        this.container.forEach(function (wavesurfer) {
+          wavesurfer.enableDragSelection({});
+        });
+      },
+
       disableDragSelection: function () {
         this.container.forEach(function (wavesurfer) {
           wavesurfer.disableDragSelection({});
@@ -312,7 +318,6 @@
           }, 50);
         });
 
-
         wavesurfer.on('region-removed', function (region) {
           setCurrentRegion(-1);
           resetHTML();
@@ -321,12 +326,12 @@
           if ('click_remove' in region.attributes) {
             insertLog("click-delete region", getTime(), region.attributes.class)
             console.log("click delete")
-          } else if (!('delete_event' in region.attributes)) {
+          } else if (!('delete' in region.attributes)) {
             insertLog("cross-delete region", getTime(), region.attributes.class)
             console.log("cross delete")
           }
 
-          if (!('delete_event' in region.attributes)) {
+          if (!('delete' in region.attributes)) {
             $.ajax({
               type: "POST",
               url: '{% url 'remove_event' %}',
@@ -340,7 +345,7 @@
               }
             });
           } else {
-            delete region.attributes['delete_event'];
+            delete region.attributes['delete'];
           }
         });
 
@@ -462,6 +467,16 @@
         return overlapWasFound;
       },
 
+      clearRegionsOnBack: function () {
+        this.container.forEach(function (wavesurfer) {
+          Object.keys(wavesurfer.regions.list).forEach(function (id) {
+            region = wavesurfer.regions.list[id];
+            region.attributes['delete'] = false;
+            region.remove();
+          });
+        });
+      },
+
       init: function () {
         this.addWavesurfer().setVolume(1);
       }
@@ -545,6 +560,15 @@
       $('.class-btn').css('cursor', 'default');
       $('#back-annotations-button, #regions-mode-tag-label').show();
       handler.disableDragSelection();
+    }
+
+    function switchToEventMode() {
+      REGIONS_STATE = false;
+      $('#solve-overlaps-button, region .fa-times-circle, #tag_button, region handle, #add-wavesurfer-button, #tags-input-tokenfield, .tags-input-container').show();
+      $('.class-btn').css('cursor', 'pointer');
+      $('#back-annotations-button, #regions-mode-tag-label').hide();
+      closeProminencePopup();
+      handler.enableDragSelection();
     }
 
     function getUniqueItems(items) {
@@ -651,22 +675,27 @@
 
 
     function updateClassProminence(region_id, className, prominence) {
+      prom_dict = {
+        'region_id': region_id,
+        'class_name': className,
+        'prominence': prominence
+      }
       $.ajax({
         type: "POST",
-        url: '{% url 'class_prominence' %}',
+        url: '../update_class_prominence/',
         dataType: 'json',
-        beforeSend: function (xhr) {
-          xhr.setRequestHeader("X-CSRFToken", '{{ csrf_token }}');
-        },
         data: {
-          'region_id': region_id,
-          'class_name': className,
-          'prominence': prominence
+          prom_dict: JSON.stringify(prom_dict),
+          csrfmiddlewaretoken: '{{csrf_token}}'
         },
-        success: function () {
-          location.reload();
+        success: function (response) {
         }
       });
+    }
+
+    function closeProminencePopup() {
+      var popup = $('#class-prominence-container')
+      popup.removeClass('active');
     }
 
     function toggleProminencePopup(classes, region, offset) {
@@ -854,12 +883,14 @@
           delete region.attributes['loaded']
         } else if ('created_overlap' in region.attributes) {
           delete region.attributes['created_overlap']
+        } else if ('back_to_annotation' in region.attributes) {
+          delete region.attributes['back_to_annotation']
         } else {
           region.attributes['class'] = ""
           region.attributes['tags'] = []
+          insertLog("create region", getTime())
+          console.log("create region")
         }
-        insertLog("create region", getTime())
-        console.log("create region")
       }
 
       function onRegionUpdateEnd(wavesurfer, region) {
@@ -878,7 +909,7 @@
               end: times[1]
             });
           } else {
-            region.attributes['delete_event'] = false;
+            region.attributes['delete'] = false;
             region.remove();
           }
         }
@@ -926,16 +957,31 @@
       });
 
       $('#back-annotations-button').on('click', function () {
+        back_data = {annotation: '{{ annotation.id }}'}
         $.ajax({
-          type: "DELETE",
-          url: '{% url 'regions' %}',
+          type: "POST",
+          url: '../remove_regions/',
           dataType: 'json',
-          beforeSend: function(xhr) {
-            xhr.setRequestHeader("X-CSRFToken", '{{ csrf_token }}');
+          data: {
+            back_data: JSON.stringify(back_data),
+            csrfmiddlewaretoken: '{{csrf_token}}'
           },
-          data: {'annotation_id': {{ annotation.id }} },
-          success: function () {
-            location.reload();
+          success: function (event_dict) {
+            handler.clearRegionsOnBack()
+            for (var i = 0; i < Object.keys(event_dict).length; i++) {
+              region = handler.addRegion(
+                handler.getMainWavesurfer(),
+                event_dict[i]['event_class'],
+                event_dict[i]['tags'],
+                event_dict[i]['event_id'],
+                event_dict[i]['start_time'],
+                event_dict[i]['end_time'],
+                event_dict[i]['color'],
+                true
+              );
+              region.attributes['back_to_annotation'] = true;
+            }
+            switchToEventMode();
           }
         });
       });
@@ -1025,7 +1071,7 @@
         }
 
         allRegions.forEach(function (current_region) {
-          current_region.attributes['delete_event'] = false
+          current_region.attributes['delete'] = false
           current_region.remove()
         });
 
@@ -1038,7 +1084,7 @@
             newRegions[key]['start'],
             newRegions[key]['end'],
             newRegions[key]['color'],
-            false //is loaded
+            false
           );
           createNewRegion(newRegion)
         }
@@ -1130,10 +1176,11 @@
               } else {
                 text += '<p><b>There are no more segments to annotate for this project.</b></p>';
               }
+            } else {
+              modalWindow.find('.modal-title').text('Success!');
+              modalWindow.find('.modal-body').html(text);
+              modalWindow.modal('show');
             }
-            modalWindow.find('.modal-title').text('Success!');
-            modalWindow.find('.modal-body').html(text);
-            modalWindow.modal('show');
           }
         });
       });
