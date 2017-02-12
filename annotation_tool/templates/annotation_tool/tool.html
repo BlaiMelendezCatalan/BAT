@@ -390,16 +390,29 @@
             console.log("seek")
           }
         });
+
+        wavesurfer.on('finish', function () {
+          if (isMainWavesurfer) {
+            insertLog("end of waveform", getTime())
+            console.log("end of waveform")
+          }
+        });
+      },
+
+      rearrangeLabels: function () {
+        that = this;
+        that.labels[0].rearrange();
       },
 
       playPause: function () {
         wavesurfer = this.getMainWavesurfer();
         wavesurfer.playPause();
+        time = wavesurfer.getCurrentTime();
         if (this.isPlaying()){
-          insertLog("play", getTime());
+          insertLog("play", getTime(), time.toString());
           console.log("play")
         } else {
-          insertLog("pause", getTime());
+          insertLog("pause", getTime(), time.toString());
           console.log("pause")
         }
       },
@@ -638,7 +651,8 @@
     function preventOverlappingsOnCreation(region) {
       var new_start = region.start,
           new_end = region.end,
-          wavesurfer = handler.getMainWavesurfer();
+          wavesurfer = handler.getMainWavesurfer(),
+          overlap = false;
       if (new_end > getDuration()) {
         new_end = getDuration()
       }
@@ -651,6 +665,7 @@
             offset = $(temp_region.element)[0].offsetLeft;
 
         if (region.start <= temp_region.end && region.end >= temp_region.start) {
+          overlap = true;
           if (region.start >= temp_region.start && region.end <= temp_region.end) {
             new_start = -1;
             break;
@@ -668,6 +683,10 @@
       };
       if (number_of_partial_overlaps >= 2) {
         new_start = -1;
+      }
+      if (overlap == true) {
+        insertLog("prevent overlap", getTime());
+        console.log("prevent overlap")
       }
 
       return [new_start, new_end]
@@ -689,6 +708,11 @@
           csrfmiddlewaretoken: '{{csrf_token}}'
         },
         success: function (response) {
+          insertLog(
+              "update class prominence",
+              getTime(),
+              className + ' ' + prominence.toString());
+          console.log("update class prominence")
         }
       });
     }
@@ -705,7 +729,12 @@
       // close popup if click on same region
       if (popup.hasClass('active') && popup.offset().left == offsetLeft) {
         popup.removeClass('active');
+        insertLog("untoggle prominence popup", getTime(), region.attributes.class)
+        console.log("untoggle prominence popup")
         return;
+      } else {
+        insertLog("toggle prominence popup", getTime(), region.attributes.class)
+        console.log("toggle prominence popup")
       }
 
       // open popup
@@ -729,7 +758,7 @@
         newItem.find('.circle[data-id=' + initProminence + ']').addClass('active');
         popup.append(newItem);
 
-        // click on circle for set prominence
+        // click on circle to set prominence
         $(newItem).find('.circle').on('click', function () {
           var className = $(this).closest('.class-prominence-item').find('.prominence-label').text(),
               prominence = $(this).data('id');
@@ -856,6 +885,8 @@
           redrawClassForRegion(region);
           updateRegionIndexes(region);
         }
+        insertLog("select region", getTime(), region.attributes.class)
+        console.log("select region")
       }
     }
 
@@ -888,13 +919,16 @@
         } else {
           region.attributes['class'] = ""
           region.attributes['tags'] = []
-          insertLog("create region", getTime())
-          console.log("create region")
         }
       }
 
       function onRegionUpdateEnd(wavesurfer, region) {
         if (REGIONS_STATE) {
+          return;
+        }
+        if (region.end - region.start < 0.05) {
+          region.attributes['delete'] = true;
+          region.remove();
           return;
         }
         var times;
@@ -932,6 +966,8 @@
             },
             success: function (data) {
               region.attributes['event_id'] = data.event_id;
+              insertLog("create region", getTime())
+              console.log("create region")
               setCurrentRegion(region.id);
               insertLog("update region limits mouse",
                         getTime(),
@@ -982,6 +1018,9 @@
               region.attributes['back_to_annotation'] = true;
             }
             switchToEventMode();
+            handler.rearrangeLabels();
+            insertLog("back to annotation", getTime())
+            console.log("back to annotation")
           }
         });
       });
@@ -1010,6 +1049,9 @@
         solveOverlaps(allRegions);
 
         switchToRegionMode();
+
+        insertLog("solve overlaps", getTime())
+        console.log("solve overlaps")
       });
 
       function solveOverlaps(allRegions) {
@@ -1088,7 +1130,7 @@
           );
           createNewRegion(newRegion)
         }
-        handler.labels[0].rearrange()
+        handler.rearrangeLabels();
       }
 
       function checkClassProminenceIsFilled() {
@@ -1146,12 +1188,16 @@
           modalWindow.find('.modal-title').text('Wait a moment...');
           modalWindow.find('.modal-body').text('Please, solve all the overlaps first');
           modalWindow.modal('show');
+          insertLog("error", getTime(), "overlaps not solved")
+          console.log("error: overlaps not solved")
           return;
         }
         if (!checkClassProminenceIsFilled()) {
           modalWindow.find('.modal-title').text('Wait a moment...');
           modalWindow.find('.modal-body').text('please, assign a prominence value to all regions with more than one class first');
           modalWindow.modal('show');
+          insertLog("error", getTime(), "prominence not assigned")
+          console.log("error: prominence not assigned")
           return;
         }
 
@@ -1176,10 +1222,14 @@
               } else {
                 text += '<p><b>There are no more segments to annotate for this project.</b></p>';
               }
+              insertLog("finish annotation and load next", getTime())
+              console.log("finish annotation and load next")
             } else {
               modalWindow.find('.modal-title').text('Success!');
               modalWindow.find('.modal-body').html(text);
               modalWindow.modal('show');
+              insertLog("finish annotation", getTime())
+              console.log("finish annotation")
             }
           }
         });

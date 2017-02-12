@@ -107,6 +107,11 @@ function glueSelectedRegionLimits(region, pressCtrl, pressShift, overlaps) {
       }
     }
   }
+  insertLog(
+      "shortcut F",
+      getTime(),
+      pressCtrl.toString() + ' ' + pressShift.toString());
+  console.log("shortcut F")
 }
 
 function setClassForRegion(region, class_name, color) {
@@ -171,8 +176,12 @@ document.onkeydown = function (e) {
     region.update({end: times[1]});
   } else if (key == 'b' && region != null) {
     handler.seekTo(region.start / getTotalDuration());
+    insertLog("shortcut B", getTime());
+    console.log("shortcut B")
   } else if (key == 's') {
     handler.seekTo(0.0);
+    insertLog("shortcut S", getTime());
+    console.log("shortcut S")
   } else if (key == 'f' || key == 'F') {
     glueSelectedRegionLimits(region, pressCtrl, pressShift, ALLOW_OVERLAPS);
   }
@@ -190,7 +199,8 @@ document.onkeyup = function (e) {
       updateEvent(region);
       insertLog("update region limits keyboard",
                 getTime(),
-                region.start.toString() + ' ' + region.end.toString())
+                region.start.toString() + ' ' + region.end.toString());
+      console.log("update region limits keyboard")
     }
   }
 }
