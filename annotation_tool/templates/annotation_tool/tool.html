@@ -35,25 +35,19 @@
         <div class="collapse" id="controls-container">
           <h5 class="common-control"><strong>Space bar</strong>: play / pause audio.
           </h5>
-          {% if not regions %}
-          <h5>
+          <h5 class="only-pre-solve-overlaps">
               <strong>Create new region</strong>: <strong>click</strong> and <strong>drag</strong> on the waveform.
           </h5>
-          {% endif %}
           <h5 class="common-control">
             <strong>Select region</strong>: <strong>double-click</strong> on <strong>region</strong> or <strong>click</strong> on <strong>region's label</strong>.</h5>
-          {% if not regions %}
-            <h5><strong>Delete region</strong>: <strong>ctrl+Click</strong> on it or <strong>click</strong> on <strong>region's X button</strong>.</h5>
-            <h5><strong>Set class</strong>: <strong>click</strong> on <strong>label</strong> or use the <strong>shortcut</strong>.</h5>
-            <h5 class="only-without-overlap"><strong>Regions cannot overlap</strong>. Use this to <strong>easily concatenate regions.</strong></h5>
-            <h5 class="only-without-overlap"><strong>'f' key</strong>: <strong>glue</strong> the selected region limits to the closer borders. <strong>f + Ctrl (+ Shift)</strong> glue them only to the <strong>left (right) limit</strong>.</h5>
-          {% endif %}
+          <h5 class="only-pre-solve-overlaps"><strong>Delete region</strong>: <strong>ctrl+Click</strong> on it or <strong>click</strong> on <strong>region's X button</strong>.</h5>
+          <h5 class="only-pre-solve-overlaps"><strong>Set class</strong>: <strong>click</strong> on <strong>label</strong> or use the <strong>shortcut</strong>.</h5>
+          <h5 class="only-without-overlap"><strong>Regions cannot overlap</strong>. Use this to <strong>easily concatenate regions.</strong></h5>
+          <h5 class="only-pre-solve-overlaps"><strong>'f' key</strong>: <strong>glue</strong> the selected region limits to the closer borders. <strong>f + Ctrl (+ Shift)</strong> glue them only to the <strong>left (right) limit</strong>.</h5>
+          <h5 class="only-pre-solve-overlaps"><strong>Adjusting limits</strong>: <strong>ctrl (+ Shift) + Left/Right Arrows</strong> precisely adjusts <strong>left (right) region limits</strong>.</h5>
           <h5 class="common-control"><strong>'s' key</strong>: set the <strong>player</strong> at the <strong>beginning</strong> of the audio.
           </h5>
           <h5 class="common-control"><strong>'b' key</strong>: set the <strong>player</strong> at the <strong>beginning</strong> of the <strong>selected region</strong>.</h5>
-          {% if not regions %}
-          <h5><strong>Adjusting limits</strong>: <strong>ctrl (+ Shift) + Left/Right Arrows</strong> precisely adjusts <strong>left (right) region limits</strong>.</h5>
-          {% endif %}
         </div>
       </div>
     </div>
@@ -225,7 +219,8 @@
               fillParent: true,
               height: WAVESURFER_HEIGHT,
               colorMap: colorMap,
-              fftSamples: WAVESURFER_HEIGHT * 2
+              fftSamples: WAVESURFER_HEIGHT * 2,
+              hideScrollbar: true
         });
 
         wavesurfer.setVolume(0);
@@ -569,7 +564,7 @@
 
     function switchToRegionMode() {
       REGIONS_STATE = true;
-      $('#solve-overlaps-button, region .fa-times-circle, #tag_button, region handle, #add-wavesurfer-button, #tags-input-tokenfield, .tags-input-container').hide();
+      $('#solve-overlaps-button, region .fa-times-circle, #tag_button, region handle, #add-wavesurfer-button, #tags-input-tokenfield, .tags-input-container, .only-pre-solve-overlaps').hide();
       $('.class-btn').css('cursor', 'default');
       $('#back-annotations-button, #regions-mode-tag-label').show();
       handler.disableDragSelection();
@@ -577,7 +572,7 @@
 
     function switchToEventMode() {
       REGIONS_STATE = false;
-      $('#solve-overlaps-button, region .fa-times-circle, #tag_button, region handle, #add-wavesurfer-button, #tags-input-tokenfield, .tags-input-container').show();
+      $('#solve-overlaps-button, region .fa-times-circle, #tag_button, region handle, #add-wavesurfer-button, #tags-input-tokenfield, .tags-input-container, .only-pre-solve-overlaps').show();
       $('.class-btn').css('cursor', 'pointer');
       $('#back-annotations-button, #regions-mode-tag-label').hide();
       closeProminencePopup();
