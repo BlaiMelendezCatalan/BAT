@@ -723,11 +723,12 @@
     }
 
     function toggleProminencePopup(classes, region, offset) {
-      var popup = $('#class-prominence-container'),
-          offsetLeft = offset.left;
+      var popup = $('#class-prominence-container');
+      var offsetLeft1 = offset.left;
+      var offsetLeft2 = offset.left - popup.width() + region.element.clientWidth;
 
       // close popup if click on same region
-      if (popup.hasClass('active') && popup.offset().left == offsetLeft) {
+      if (popup.hasClass('active') && (popup.offset().left == offsetLeft1 || popup.offset().left == offsetLeft2)) {
         popup.removeClass('active');
         insertLog("untoggle prominence popup", getTime(), region.attributes.class)
         console.log("untoggle prominence popup")
@@ -738,11 +739,19 @@
       }
 
       // open popup
-      popup.css({
-        'top': (offset.top + WAVESURFER_HEIGHT) + 'px',
-        'left': offset.left + 'px'
-      });
-      popup.addClass('active');
+      if (region.start <= getDuration() / 2.) {
+        popup.css({
+          'top': (offset.top + WAVESURFER_HEIGHT) + 'px',
+          'left': offsetLeft1 + 'px'
+        });
+        popup.addClass('active');
+      } else {
+        popup.css({
+          'top': (offset.top + WAVESURFER_HEIGHT) + 'px',
+          'left': offsetLeft2 + 'px'
+        });
+        popup.addClass('active');
+      }
 
       // remove old classes
       popup.find('.class-prominence-item').not('.fake-item').remove();
