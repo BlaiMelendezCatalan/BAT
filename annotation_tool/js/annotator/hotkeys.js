@@ -1,4 +1,4 @@
-function preventOverlappingsOnArrow(current_region, inc=0.0) {
+function preventOverlapsOnArrow(current_region, inc=0.0) {
   var new_start, new_end,
     current_id = current_region.id;
 
@@ -165,14 +165,14 @@ document.onkeydown = function (e) {
   if (key == " ") {
     handler.playPause();
   } else if (key == "ArrowLeft" && pressCtrl && !pressShift) {
-    times = preventOverlappingsOnArrow(region, increment = -1. / 100)
+    times = preventOverlapsOnArrow(region, increment = -1. / 100)
     region.update({start: times[0]});
   } else if (key == "ArrowRight" && pressCtrl && !pressShift) {
     region.update({start: region.start + 1. / 100});
   } else if (key == "ArrowLeft" && pressCtrl && pressShift) {
     region.update({end: region.end - 1. / 100});
   } else if (key == "ArrowRight" && pressCtrl && pressShift) {
-    times = preventOverlappingsOnArrow(region, increment = 1. / 100)
+    times = preventOverlapsOnArrow(region, increment = 1. / 100)
     region.update({end: times[1]});
   } else if (key == 'b' && region != null) {
     handler.seekTo(region.start / getTotalDuration());

@@ -648,7 +648,7 @@
       return handler.getMainWavesurfer().getDuration() - 0.0001;
     }
 
-    function preventOverlappingsOnCreation(region) {
+    function preventOverlapsOnCreation(region) {
       var new_start = region.start,
           new_end = region.end,
           wavesurfer = handler.getMainWavesurfer(),
@@ -936,7 +936,7 @@
           times = [region.start, region.end];
           handler.checkOverlaps();
         } else {
-          times = preventOverlappingsOnCreation(region)
+          times = preventOverlapsOnCreation(region)
           if (times[0] != -1) {
             region.update({
               start: times[0],
@@ -1249,6 +1249,8 @@
         }
         var newUrl = parsedUrl.scheme + '://' + parsedUrl.host + port + parsedUrl.path + '?' + $.param(params)
         window.location = newUrl;
+        insertLog("switch view", getTime(), wavesurfer.params.visualization)
+        console.log("switch view")
       });
     {% endif %}
 
