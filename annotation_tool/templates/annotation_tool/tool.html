@@ -946,7 +946,7 @@
         if (REGIONS_STATE) {
           return;
         }
-        if (region.end - region.start < 0.05) {
+        if (region.end - region.start < {{ padding }} / 10. && region.start > {{ padding }} && region.end < getDuration() - {{ padding }}) {
           region.attributes['delete'] = true;
           region.remove();
           return;
