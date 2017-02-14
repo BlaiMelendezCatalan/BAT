@@ -368,7 +368,7 @@ class NewAnnotationView(LoginRequiredMixin, GenericAPIView):
             context['error'] = 'There are no more segments to annotate.'
             return Response(context)
 
-        # if new annotation so create it and redirect to edit page
+        # if annotation is new, create it and redirect to edit page
         if not annotation_id:
             annotation = utils.create_annotation(segment, request.user)
             url = '%s?project=%d&annotation=%d' % (reverse('new_annotation'), project.id, annotation.id)
@@ -391,7 +391,7 @@ class NewAnnotationView(LoginRequiredMixin, GenericAPIView):
 
         # create tmp file
         utils.delete_tmp_files()
-        context['tmp_segment_path'] = utils.create_tmp_file(segment)
+        context['tmp_segment_path'], context['padding'] = utils.create_tmp_file(segment)
 
         context['base_template'] = 'annotation_tool/base.html' if request.user.is_superuser else \
             'annotation_tool/base_normal.html'
@@ -511,8 +511,8 @@ def update_end_event(request):
     if 'event_id' in region_data.keys():
         try:
             event = models.Event.objects.get(id=region_data['event_id'])
-            event.start_time = region_data['start_time']
-            event.end_time = region_data['end_time']
+            event.start_time = region_data['start_time'] - region_data['padding']
+            event.end_time = region_data['end_time'] -  region_data['padding']
         except models.Event.DoesNotExist:
             return JsonResponse({'error': 'Event does not exist'})
         annotation = event.annotation
@@ -550,8 +550,8 @@ def update_event(request):
         event.event_class = event_class
         event.color = region_data['color']
 
-    event.start_time = region_data['start_time']
-    event.end_time = region_data['end_time']
+    event.start_time = region_data['start_time'] - region_data['padding']
+    event.end_time = region_data['end_time'] - region_data['padding']
     event.save()
 
     utils.update_annotation_status(event.annotation,
@@ -580,8 +580,8 @@ def create_region(request):
     annotation = models.Annotation.objects.get(id=region_data['annotation'])
     region = models.Region(annotation=annotation)
     region.color = region_data['color']
-    region.start_time = region_data['start_time']
-    region.end_time = region_data['end_time']
+    region.start_time = region_data['start_time'] - region_data['padding']
+    region.end_time = region_data['end_time'] - region_data['padding']
     region.save()
     for t in region_data['tags']:
         tag = models.Tag.objects.get_or_create(name=t)
@@ -611,8 +611,8 @@ def remove_regions(request):
         event_dict[i] = {}
         event_dict[i]['event_id'] = event.id
         event_dict[i]['event_class'] = event.event_class.name
-        event_dict[i]['start_time'] = float(event.start_time)
-        event_dict[i]['end_time'] = float(event.end_time)
+        event_dict[i]['start_time'] = float(event.start_time + data['padding'])
+        event_dict[i]['end_time'] = float(event.end_time + data['padding'])
         event_dict[i]['color'] = event.color
         event_tags = []
         for tag in event.tags.all():

@@ -163,14 +163,24 @@ def create_tmp_file(segment):
     output_file = 'tmp/' + input_file.split('/')[-1]
     wav_file = read(input_file, 'r')
     sample_rate = wav_file[0]
-    start = int(ceil(sample_rate * (segment.start_time)))
-    end = int(floor(sample_rate * (segment.end_time + 0.0001)))
+    padding = (segment.end_time - segment.start_time) / 20.
+    print segment.start_time, segment.end_time, padding
+    if segment.start_time != 0:
+        start = int(ceil(sample_rate * (segment.start_time - padding)))
+        end = int(floor(sample_rate * (segment.end_time + padding)))
+        wav = wav_file[1]
+    else:
+        start = 0
+        end = int(floor(sample_rate * (segment.end_time + 2 * padding)))
+        wav = np.memmap('/tmp/wav.array', dtype='int16', mode='w+', shape=(sample_rate * padding + len(wav_file[1]),))
+        wav[:] = 0
+        wav[int(round(sample_rate * padding)):] = wav_file[1]
     write(
         output_file,
         sample_rate,
-        wav_file[1][start:end])
+        wav[start:end])
 
-    return output_file
+    return output_file, padding
 
 
 def merge_segment_annotations(segment): # MODIFY!!!

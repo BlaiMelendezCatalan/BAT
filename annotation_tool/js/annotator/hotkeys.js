@@ -1,17 +1,16 @@
 function preventOverlapsOnArrow(current_region, inc=0.0) {
   var new_start, new_end,
     current_id = current_region.id;
-
   if (inc > 0.0) {
     new_start = current_region.start;
     new_end = current_region.end + inc;
-    if (new_end > getTotalDuration()) {
-      new_end = getTotalDuration()
+    if (new_end > getDuration() - getPadding()) {
+      new_end = getDuration() - getPadding();
     }
   } else if (inc < 0.0) {
     new_start = current_region.start + inc;
-    if (new_start < 0.0) {
-      new_end = 0.0
+    if (new_start < getPadding()) {
+      new_start = getPadding();
     }
     new_end = current_region.end
   }
@@ -55,11 +54,11 @@ function glueSelectedRegionLimits(region, pressCtrl, pressShift, overlaps) {
       if (region == region_list[i]) {
         if (i == 0) {
           if (!pressShift) {
-            new_start = 0.0
+            new_start = getPadding();
           }
           if (region_list.length == 1) {
             if (pressCtrl == pressShift) {
-              new_end = getTotalDuration()
+              new_end = getDuration() - getPadding();
             }
           } else {
             if (pressCtrl == pressShift) {
@@ -71,7 +70,7 @@ function glueSelectedRegionLimits(region, pressCtrl, pressShift, overlaps) {
             new_start = region_list[i - 1].end
           }
           if (pressShift == pressCtrl) {
-            new_end = getTotalDuration()
+            new_end = getDuration() - getPadding();
           }
         } else {
           if (!pressShift) {
@@ -93,10 +92,10 @@ function glueSelectedRegionLimits(region, pressCtrl, pressShift, overlaps) {
     for (var i = 0; i < region_list.length; i++) {
       if (region == region_list[i]) {
         if (!pressShift) {
-          new_start = 0.0
+          new_start = getPadding();
         }
         if (pressCtrl == pressShift) {
-          new_end = getTotalDuration()
+          new_end = getDuration() - getPadding();
         }
         region.update({
           start: new_start,
@@ -128,10 +127,6 @@ function setClassForRegion(region, class_name, color) {
   redrawClassForRegion(region);
   insertLog("update region class", getTime(), class_name)
   console.log("update region class")
-}
-
-function getTotalDuration() {
-  return getDuration() - 0.0001
 }
 
 // HTML elements callbacks
@@ -175,7 +170,7 @@ document.onkeydown = function (e) {
     times = preventOverlapsOnArrow(region, increment = 1. / 100)
     region.update({end: times[1]});
   } else if (key == 'b' && region != null) {
-    handler.seekTo(region.start / getTotalDuration());
+    handler.seekTo(region.start / getDuration());
     insertLog("shortcut B", getTime());
     console.log("shortcut B")
   } else if (key == 's') {
@@ -193,6 +188,7 @@ document.onkeydown = function (e) {
 
 document.onkeyup = function (e) {
   var key = e.key;
+  var wavesurfer = handler.getMainWavesurfer();
   if (key == "ArrowLeft" || key == "ArrowRight") {
     if (currentRegionId != -1) {
       region = wavesurfer.regions.list[currentRegionId];
