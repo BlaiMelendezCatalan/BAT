@@ -1255,6 +1255,9 @@
                 location.href = response.next_annotation_url;
               } else {
                 text += '<p><b>There are no more segments to annotate for this project.</b></p>';
+                modalWindow.find('.modal-title').text('Success!');
+                modalWindow.find('.modal-body').html(text);
+                modalWindow.modal('show');
               }
               insertLog("finish annotation and load next", getTime())
               console.log("finish annotation and load next")

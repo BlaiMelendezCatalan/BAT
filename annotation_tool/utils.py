@@ -102,7 +102,7 @@ def set_user_permissions(user):
 
 
 def pick_segment_to_annotate(project_name, user_id): # MODIFY!!!
-    segments = Segment.objects.filter(wav__project__name=project_name).order_by('priority')
+    segments = Segment.objects.filter(wav__project__name=project_name)
     for segment in segments:
         annotations = Annotation.objects.filter(segment__id=segment.id)
         if user_id in annotations.values_list('user__id', flat=True):
@@ -116,7 +116,7 @@ def update_annotation_status(annotation, new_status=Annotation.UNFINISHED):
     if old_status != new_status:
         annotation.status = new_status
         annotation.save()
-        modify_segment_priority(annotation.segment)
+        #modify_segment_priority(annotation.segment)
 
 
 def modify_segment_priority(segment): # MODIFY!!!
@@ -163,8 +163,7 @@ def create_tmp_file(segment):
     output_file = 'tmp/' + input_file.split('/')[-1]
     wav_file = read(input_file, 'r')
     sample_rate = wav_file[0]
-    padding = (segment.end_time - segment.start_time) / 20.
-    print segment.start_time, segment.end_time, padding
+    padding = round((segment.end_time - segment.start_time) / 20., 2)
     if segment.start_time != 0:
         start = int(ceil(sample_rate * (segment.start_time - padding)))
         end = int(floor(sample_rate * (segment.end_time + padding)))
@@ -172,7 +171,8 @@ def create_tmp_file(segment):
     else:
         start = 0
         end = int(floor(sample_rate * (segment.end_time + 2 * padding)))
-        wav = np.memmap('/tmp/wav.array', dtype='int16', mode='w+', shape=(sample_rate * padding + len(wav_file[1]),))
+        wav = np.memmap('/tmp/wav.array', dtype='int16',
+                        mode='w+', shape=(int(sample_rate * padding + len(wav_file[1])),))
         wav[:] = 0
         wav[int(round(sample_rate * padding)):] = wav_file[1]
     write(
