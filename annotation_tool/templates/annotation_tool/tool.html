@@ -630,7 +630,7 @@
           {% for tag in region.tags.all %}
             tags.push('{{ tag.name }}')
           {% endfor %}
-          var region = handler.addRegion(wavesurfer, '{{ region.classes.all|join:" " }}', tags, {{ region.id }}, {{ region.start_time }} + {{ padding }}, {{ region.end_time }}, '{{ region.color }}', true);
+          var region = handler.addRegion(wavesurfer, '{{ region.classes.all|join:" " }}', tags, {{ region.id }}, {{ region.start_time }} + {{ padding }}, {{ region.end_time }} + {{ padding }}, '{{ region.color }}', true);
           {% if region.classes.count > 1 %}
             region.attributes.classProminences = {};
             {% for class_prominence in region.classes.all %}
@@ -645,7 +645,7 @@
           {% for tag in event.tags.all %}
             tags.push('{{ tag.name }}')
           {% endfor %}
-          handler.addRegion(wavesurfer, '{{ event.event_class|default_if_none:'' }}', tags, {{ event.id }}, {{ event.start_time }} + {{ padding }}, {{ event.end_time }}, '{{ event.color }}', true);
+          handler.addRegion(wavesurfer, '{{ event.event_class|default_if_none:'' }}', tags, {{ event.id }}, {{ event.start_time }} + {{ padding }}, {{ event.end_time }} + {{ padding }}, '{{ event.color }}', true);
         {% endfor %}
       {% endif %}
       setCurrentRegion(-1);
