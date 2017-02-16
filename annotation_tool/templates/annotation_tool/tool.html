@@ -1022,6 +1022,8 @@
           region.attributes.tags = getUniqueItems(tags.concat(region.attributes.tags));
           updateEvent(region);
           redrawTagsForRegion(region);
+          insertLog("add tags", getTime(), ' '.join(region.attributes.tags))
+          console.log("add tags")
         }
       });
 
