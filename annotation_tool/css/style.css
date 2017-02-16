@@ -154,6 +154,14 @@ tag {
     font-weight: 600;
 }
 
+#controls-button2 {
+    display: none;
+}
+
+#tips-button2 {
+    display: none;
+}
+
 .container {
     padding-left: 0;
     padding-right: 0;

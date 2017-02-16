@@ -25,14 +25,16 @@
   <div class="container">
     <div class="row">
       <div class="col-xs-6">
-        <button type="button" class="btn btn-default" data-toggle="collapse" data-target="#tips-container">Annotation tips</button>
+        <button id="tips-button1" type="button" class="btn btn-default" data-toggle="collapse" data-target="#tips-container">Annotation tips</button>
+        <button id="tips-button2" type="button" class="btn btn-default" data-toggle="collapse" data-target="#tips-container">Annotation tips</button>
         <div class="collapse in" id="tips-container">
           <h5>Read and get used to the controls. Annotation will be much easier.</h5>
           <h5>Do not worry about silences, we will annotate them for you.</h5>
         </div>
       </div>
       <div class="col-xs-6">
-        <button type="button" class="btn btn-default" data-toggle="collapse" data-target="#controls-container">Controls</button>
+        <button id="controls-button1" type="button" class="btn btn-default" data-toggle="collapse" data-target="#controls-container">Controls</button>
+        <button id="controls-button2" type="button" class="btn btn-default" data-toggle="collapse" data-target="#controls-container">Controls</button>
         <div class="collapse" id="controls-container">
           <h5 class="common-control"><strong>Space bar</strong>: play / pause audio.
           </h5>
@@ -1062,7 +1064,6 @@
       $('#solve-overlaps-button').on('click', function () {
         var allRegions = handler.getAllRegions();
 
-        // check classes
         var regionsWithoutClass = 0;
         allRegions.forEach(function (region) {
           if (typeof region.attributes.class == 'undefined' || region.attributes.class == 'None' || region.attributes.class == '') {
@@ -1089,15 +1090,6 @@
       });
 
       function solveOverlaps(allRegions) {
-        /*
-         find overlap
-         there can be 4 types of overlap:
-         1. current_region inside temp_region
-         2. temp_region inside current_region
-         3. current_region.end overlap on temp_region.start
-         4. current_region.start overlap on temp_region.end
-         5. overlap with multiclasses (regions limits can be the same)
-        */
         var newRegions = {};
         if (typeof allRegions == 'object') {
           allRegions = $.map(allRegions, function (item) {
@@ -1274,7 +1266,6 @@
 
       $('#tags-input').tokenfield();
 
-
       $('#switch-view').on('click', function () {
         var parsedUrl = url.parse(location.href),
             params = parsedUrl.get,
@@ -1288,6 +1279,34 @@
         window.location = newUrl;
         insertLog("switch view", getTime(), wavesurfer.params.visualization)
         console.log("switch view")
+      });
+
+      $('#tips-button1').on('click', function () {
+        $('#tips-button1').hide()
+        $('#tips-button2').show()
+        insertLog("click tips button", getTime())
+        console.log("click tips 1 button")
+      });
+
+      $('#tips-button2').on('click', function () {
+        $('#tips-button1').show()
+        $('#tips-button2').hide()
+        insertLog("click tips button", getTime())
+        console.log("click tips 2 button")
+      });
+
+      $('#controls-button1').on('click', function () {
+        $('#controls-button1').hide()
+        $('#controls-button2').show()
+        insertLog("click controls button", getTime())
+        console.log("click controls 1 button")
+      });
+
+      $('#controls-button2').on('click', function () {
+        $('#controls-button1').show()
+        $('#controls-button2').hide()
+        insertLog("click controls button", getTime())
+        console.log("click controls 2 button")
       });
     {% endif %}
 
