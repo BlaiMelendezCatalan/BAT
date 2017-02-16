@@ -172,7 +172,7 @@ def create_tmp_file(segment):
         start = 0
         end = int(floor(sample_rate * (segment.end_time + 2 * padding)))
         wav = np.memmap('/tmp/wav.array', dtype='int16',
-                        mode='w+', shape=(int(sample_rate * padding + len(wav_file[1])),))
+                        mode='w+', shape=(int(round(sample_rate * padding)) + len(wav_file[1]),))
         wav[:] = 0
         wav[int(round(sample_rate * padding)):] = wav_file[1]
     write(
