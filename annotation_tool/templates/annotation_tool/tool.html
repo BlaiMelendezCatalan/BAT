@@ -733,6 +733,7 @@
       var popup = $('#class-prominence-container');
       var offsetLeft1 = offset.left;
       var offsetLeft2 = offset.left - popup.width() + region.element.clientWidth;
+      classes.sort()
 
       // close popup if click on same region
       if (popup.hasClass('active') && (popup.offset().left == offsetLeft1 || popup.offset().left == offsetLeft2)) {
