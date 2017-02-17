@@ -924,6 +924,22 @@
       return {{ padding }};
     }
 
+    function avoidPadding(region) {
+      if (region.start > getDuration() - {{ padding }}) {
+        return -1;
+      } else if (region.end > getDuration() - {{ padding }}) {
+        region.update({
+          end: getDuration() - {{ padding }}
+        });
+      }
+      if (region.end < {{ padding }}) {
+        return -1;
+      } else if (region.start < {{ padding }}) {
+        region.update({
+          start: {{ padding }}
+        });
+      }
+    }
 
     {% if not request.user.is_superuser %}
       // WaveSurfer callbacks
@@ -953,15 +969,10 @@
           region.remove();
           return;
         }
-        if (region.end > getDuration() - {{ padding }}) {
-          region.update({
-            end: getDuration() - {{ padding }}
-          });
-        }
-        if (region.start < {{ padding }}) {
-          region.update({
-            start: {{ padding }}
-          });
+        if (avoidPadding(region) == -1) {
+          region.attributes['delete'] = true;
+          region.remove();
+          return;
         }
         var times;
         if (ALLOW_OVERLAPS) {
@@ -999,6 +1010,7 @@
             },
             success: function (data) {
               region.attributes['event_id'] = data.event_id;
+              updateEvent(region);
               insertLog("create region", getTime())
               console.log("create region")
               setCurrentRegion(region.id);
