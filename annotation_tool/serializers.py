@@ -44,6 +44,7 @@ class ClassSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         del validated_data['tags']
+        validated_data['name'] = validated_data['name'].replace(' ', '_')
         class_object = models.Class(**validated_data)
         class_object.save()
         # add tags
