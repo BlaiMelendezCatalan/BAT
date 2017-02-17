@@ -1199,9 +1199,9 @@
         if (rr > 255 || rg > 255 || rb > 255) {
           max = Math.max(rr, rg, rb)
           if (max > 0) {
-            rr = Math.round(rr / max) * 255
-            rg = Math.round(rg / max) * 255
-            rb = Math.round(rb / max) * 255
+            rr = Math.round(rr / max) * 128
+            rg = Math.round(rg / max) * 128
+            rb = Math.round(rb / max) * 128
           }
         }
         result_color = 'rgba(' + rr.toString() + ', ' + rg.toString() + ', ' + rb.toString() + ', ' + a.toString() + ')'
