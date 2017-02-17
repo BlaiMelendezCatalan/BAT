@@ -1161,7 +1161,7 @@
         for (var key in newRegions) {
           var newRegion = handler.addRegion(
             handler.getMainWavesurfer(),
-            newRegions[key]['classes'].join(' '),
+            newRegions[key]['classes'].sort().join(' '),
             newRegions[key]['tags'],
             -1,
             newRegions[key]['start'],
