@@ -467,15 +467,16 @@
             if (overlapWasFound) {
               break;
             }
-            var current_region = wavesurfer.regions.list[i];
+            var region = wavesurfer.regions.list[i];
             that.container.forEach(function (temp_wavesurfer) {
               Object.keys(temp_wavesurfer.regions.list).forEach(function (id) {
-                var temp_region = temp_wavesurfer.regions.list[id];
-                if (current_region != temp_region) {
-                      overlap = current_region.start <= temp_region.end && current_region.end >= temp_region.start
-                  if (overlap) {
-                    overlapWasFound = true;
-                    return;
+                var tmp_region = temp_wavesurfer.regions.list[id];
+                if (region != tmp_region) {
+                  if (region.start <= tmp_region.end && region.end >= tmp_region.start) {
+                    if (!(region.end == tmp_region.start && region.start < tmp_region.start) && !(region.start == tmp_region.end && region.end > tmp_region.end)) {
+                      overlapWasFound = true;
+                      return;
+                    }
                   }
                 }
               });
@@ -942,6 +943,49 @@
       }
     }
 
+    function adjustLimits(region) {
+      var new_start = region.start;
+      var new_end = region.end;
+      console.log(new_start)
+      console.log(new_end)
+      allRegions = handler.getAllRegions();
+      min_distance = {};
+      min_distance['start'] = [getDuration() + 1, new_start];
+      min_distance['end'] = [getDuration() + 1, new_end];
+      allRegions.forEach(function (tmp_region) {
+        if (region != tmp_region) {
+          if (Math.abs(region.start - tmp_region.start) < min_distance['start'][0]){
+            min_distance['start'] = [Math.abs(region.start - tmp_region.start),
+                                     tmp_region.start];
+          }
+          if (Math.abs(region.start - tmp_region.end) < min_distance['start'][0]) {
+            min_distance['start'] = [Math.abs(region.start - tmp_region.end),
+                                     tmp_region.end];
+          }
+          if (Math.abs(region.end - tmp_region.start) < min_distance['end'][0]){
+            min_distance['end'] = [Math.abs(region.end - tmp_region.start),
+                                   tmp_region.start];
+          }
+          if (Math.abs(region.end - tmp_region.end) < min_distance['end'][0]) {
+            min_distance['end'] = [Math.abs(region.end - tmp_region.end),
+                                   tmp_region.end];
+          }
+        }
+      });
+      console.log(min_distance['start'])
+      console.log(min_distance['end'])
+      if (min_distance['start'][0] < {{ padding }} / 10.) {
+        new_start = min_distance['start'][1];
+      }
+      if (min_distance['end'][0] < {{ padding }} / 10.) {
+        new_end = min_distance['end'][1];
+      }
+      console.log(new_start)
+      console.log(new_end)
+
+      return [new_start, new_end];
+    }
+
     {% if not request.user.is_superuser %}
       // WaveSurfer callbacks
       function onRegionCreated(region) {
@@ -965,7 +1009,7 @@
         if (REGIONS_STATE) {
           return;
         }
-        if (region.end - region.start < {{ padding }} / 10. && region.start > {{ padding }} && region.end < getDuration() - {{ padding }}) {
+        if (region.end - region.start < {{ padding }} / 10.) {
           region.attributes['delete'] = true;
           region.remove();
           return;
@@ -977,10 +1021,14 @@
         }
         var times;
         if (ALLOW_OVERLAPS) {
-          times = [region.start, region.end];
+          times = adjustLimits(region)
+          region.update({
+            start: times[0],
+            end: times[1]
+          });
           handler.checkOverlaps();
         } else {
-          times = preventOverlapsOnCreation(region)
+          times = preventOverlapsOnCreation(region);
           if (times[0] != -1) {
             region.update({
               start: times[0],
@@ -1113,15 +1161,15 @@
         }
 
         var region_borders = [];
-        allRegions.forEach(function (current_region) {
-          if (typeof current_region.deleted != 'undefined') {
+        allRegions.forEach(function (region) {
+          if (typeof region.deleted != 'undefined') {
             return;
           }
-          if (!region_borders.includes(current_region.start)) {
-            region_borders.push(current_region.start)
+          if (!region_borders.includes(region.start)) {
+            region_borders.push(region.start)
           }
-          if (!region_borders.includes(current_region.end)) {
-            region_borders.push(current_region.end)
+          if (!region_borders.includes(region.end)) {
+            region_borders.push(region.end)
           }
         });
 
@@ -1134,12 +1182,12 @@
           var classes = []
           var tags = []
           var color = 'rgba(0, 0, 0, 0.5)'
-          allRegions.forEach(function (current_region) {
-            if (region_borders[i] >= current_region.start && region_borders[i + 1] <= current_region.end) {
-              classes.push(current_region.attributes.class)
-              var current_region_tags = typeof current_region.attributes.tags != 'undefined' ? current_region.attributes.tags : [];
-              tags = tags.concat(current_region_tags)
-              color = sumColor(color, current_region.color)
+          allRegions.forEach(function (region) {
+            if (region_borders[i] >= region.start && region_borders[i + 1] <= region.end) {
+              classes.push(region.attributes.class)
+              var region_tags = typeof region.attributes.tags != 'undefined' ? region.attributes.tags : [];
+              tags = tags.concat(region_tags)
+              color = sumColor(color, region.color)
               createRegion = true
             }
           });
@@ -1153,9 +1201,9 @@
           }
         }
 
-        allRegions.forEach(function (current_region) {
-          current_region.attributes['delete'] = false
-          current_region.remove()
+        allRegions.forEach(function (region) {
+          region.attributes['delete'] = false
+          region.remove()
         });
 
         for (var key in newRegions) {
