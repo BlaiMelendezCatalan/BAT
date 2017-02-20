@@ -517,8 +517,7 @@
     var OVERLAP_REGION_COLOR = 'rgba(220, 220, 220, 0.8)';
     var WAVESURFER_HEIGHT = 128;
     var REGIONS_STATE = false;
-    var d = new Date();
-    var START_TIME = d.getDate();
+    var START_TIME = Date.now();
     insertLog('start', 0.0)
     console.log("start")
     var handler = new wavesurferHandler.create();
@@ -532,7 +531,7 @@
     });
 
     function getTime() {
-      return (d.getDate() - START_TIME) / 1000.;
+      return (Date.now() - START_TIME) / 1000.;
     }
 
     function insertLog(action, time, value="") {
@@ -946,8 +945,6 @@
     function adjustLimits(region) {
       var new_start = region.start;
       var new_end = region.end;
-      console.log(new_start)
-      console.log(new_end)
       allRegions = handler.getAllRegions();
       min_distance = {};
       min_distance['start'] = [getDuration() + 1, new_start];
@@ -972,16 +969,12 @@
           }
         }
       });
-      console.log(min_distance['start'])
-      console.log(min_distance['end'])
       if (min_distance['start'][0] < {{ padding }} / 10.) {
         new_start = min_distance['start'][1];
       }
       if (min_distance['end'][0] < {{ padding }} / 10.) {
         new_end = min_distance['end'][1];
       }
-      console.log(new_start)
-      console.log(new_end)
 
       return [new_start, new_end];
     }
