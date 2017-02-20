@@ -350,13 +350,6 @@
 
         wavesurfer.on('region-dblclick', function (region, event) {
           setCurrentRegion(region.id);
-          if (event.button == 0 && event.ctrlKey == false) {
-            // open prominence window if Region have multi class
-            var classes = typeof region.attributes.class != 'undefined' ? region.attributes.class.split(' ') : [];
-            if (REGIONS_STATE && classes.length > 1) {
-              toggleProminencePopup(classes, region, $(region.element).offset());
-            }
-          }
         });
 
         wavesurfer.on('region-click', function (region, event) {
@@ -531,7 +524,6 @@
     });
 
     function getTime() {
-      console.log((Date.now() - START_TIME) / 1000.);
       return (Date.now() - START_TIME) / 1000.;
     }
 
@@ -732,12 +724,7 @@
 
     function toggleProminencePopup(classes, region, offset) {
       var popup = $('#class-prominence-container');
-      var offsetLeft1 = offset.left;
-      var offsetLeft2 = offset.left - popup.width() + region.element.clientWidth;
-      classes.sort()
-
-      // close popup if click on same region
-      if (popup.hasClass('active') && (popup.offset().left == offsetLeft1 || popup.offset().left == offsetLeft2)) {
+      if (classes.length == 1) {
         popup.removeClass('active');
         insertLog("untoggle prominence popup", getTime(), region.attributes.class)
         console.log("untoggle prominence popup")
@@ -746,6 +733,9 @@
         insertLog("toggle prominence popup", getTime(), region.attributes.class)
         console.log("toggle prominence popup")
       }
+      var offsetLeft1 = offset.left;
+      var offsetLeft2 = offset.left - popup.width() + region.element.clientWidth;
+      classes.sort()
 
       // open popup
       if (region.start <= getDuration() / 2.) {
@@ -895,6 +885,10 @@
     }
 
     function setCurrentRegion(id) {
+      changePopup = false;
+      if (currentRegionId != id){
+        changePopup = true;
+      }
       currentRegionId = id;
       $('tag').removeClass('active');
       if (currentRegionId != -1) {
@@ -904,6 +898,12 @@
           redrawTagsForRegion(region);
           redrawClassForRegion(region);
           updateRegionIndexes(region);
+        }
+        if (changePopup) {
+          var classes = typeof region.attributes.class != 'undefined' ? region.attributes.class.split(' ') : [];
+          if (REGIONS_STATE) {
+            toggleProminencePopup(classes, region, $(region.element).offset());
+          }
         }
         insertLog("select region", getTime(), region.attributes.class)
         console.log("select region")
