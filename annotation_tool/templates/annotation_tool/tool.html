@@ -613,7 +613,8 @@
         return null;
       }
       setClassForRegion(region, data.className, data.classColor);
-
+      insertLog("update region class by click", getTime(), data.className)
+      console.log("update region class by click")
     });
 
     function loadRegions(wavesurfer) {
@@ -929,18 +930,26 @@
 
     function avoidPadding(region) {
       if (region.start > getDuration() - {{ padding }}) {
+        insertLog("avoid padding", getTime())
+        console.log("avoid padding")
         return -1;
       } else if (region.end > getDuration() - {{ padding }}) {
         region.update({
           end: getDuration() - {{ padding }}
         });
+        insertLog("avoid padding", getTime())
+        console.log("avoid padding")
       }
       if (region.end < {{ padding }}) {
+        insertLog("avoid padding", getTime())
+        console.log("avoid padding")
         return -1;
       } else if (region.start < {{ padding }}) {
         region.update({
           start: {{ padding }}
         });
+        insertLog("avoid padding", getTime())
+        console.log("avoid padding")
       }
     }
 
@@ -973,9 +982,13 @@
       });
       if (min_distance['start'][0] < {{ padding }} / 10.) {
         new_start = min_distance['start'][1];
+        insertLog("adjust limits", getTime())
+        console.log("adjust limits")
       }
       if (min_distance['end'][0] < {{ padding }} / 10.) {
         new_end = min_distance['end'][1];
+        insertLog("adjust limits", getTime())
+        console.log("adjust limits")
       }
 
       return [new_start, new_end];
