@@ -159,6 +159,15 @@ document.onkeydown = function (e) {
 
   if (key == " ") {
     handler.playPause();
+    wavesurfer = handler.getMainWavesurfer();
+    time = wavesurfer.getCurrentTime();
+    if (handler.isPlaying()){
+      insertLog("play", getTime(), time.toString());
+      console.log("play keyboard")
+    } else {
+      insertLog("pause", getTime(), time.toString());
+      console.log("pause keyboard")
+    }
   } else if (key == "ArrowLeft" && pressCtrl && !pressShift) {
     times = preventOverlapsOnArrow(region, increment = -1. / 100)
     region.update({start: times[0]});

@@ -373,6 +373,8 @@
           if (isMainWavesurfer) {
             loadRegions(wavesurfer);
             wavesurfer.play();
+            insertLog("play", getTime(), '0.0');
+            console.log("play")
             that.labels[0].rearrange();
           }
           var timeline = Object.create(WaveSurfer.Timeline);
@@ -408,14 +410,6 @@
       playPause: function () {
         wavesurfer = this.getMainWavesurfer();
         wavesurfer.playPause();
-        time = wavesurfer.getCurrentTime();
-        if (this.isPlaying()){
-          insertLog("play", getTime(), time.toString());
-          console.log("play")
-        } else {
-          insertLog("pause", getTime(), time.toString());
-          console.log("pause")
-        }
       },
 
       isPlaying: function () {
@@ -522,6 +516,15 @@
 
     $('#play-pause-main-button').on('click', function () {
       handler.playPause();
+      wavesurfer = handler.getMainWavesurfer();
+      time = wavesurfer.getCurrentTime();
+      if (handler.isPlaying()){
+        insertLog("play", getTime(), time.toString());
+        console.log("play mouse")
+      } else {
+        insertLog("pause", getTime(), time.toString());
+        console.log("pause mouse")
+      }
     });
 
     function getTime() {
