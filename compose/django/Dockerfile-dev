@@ -1,6 +1,6 @@
 FROM bitnami/minideb:jessie
 
-RUN install_packages python python-pip gcc python-dev libblas-dev liblapack-dev libatlas-base-dev gfortran g++ libpq-dev
+RUN install_packages python python-pip gcc python-dev libblas-dev liblapack-dev libatlas-base-dev gfortran g++ libpq-dev libffi6 libffi-dev
 
 ENV PYTHONUNBUFFERED 1
 

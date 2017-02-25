@@ -379,7 +379,10 @@ class NewAnnotationView(LoginRequiredMixin, GenericAPIView):
             return HttpResponseRedirect(url)
 
         try:
-            context['annotation'] = models.Annotation.objects.get(id=annotation_id, user=request.user)
+            annotation_request_params = {'id': annotation_id}
+            if not request.user.is_superuser:
+                annotation_request_params['user'] = request.user
+            context['annotation'] = models.Annotation.objects.get(**annotation_request_params)
             context['events'] = models.Event.objects.filter(annotation=annotation_id)
             context['regions'] = models.Region.objects.filter(annotation=annotation_id)
             segment = context['annotation'].segment

@@ -27,6 +27,7 @@ services:
       - USE_DOCKER=yes
     volumes:
       - .:/app
+      - ../shared:/app/shared
     ports:
       - "8000:8000"
     links:

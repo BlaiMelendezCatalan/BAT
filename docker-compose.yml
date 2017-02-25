@@ -22,6 +22,7 @@ services:
       - postgres
     command: /gunicorn.sh
     volumes:
+      - ../shared:/app/shared
       - staticfiles:/app/staticfiles
     env_file: .env
 

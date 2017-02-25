@@ -61,7 +61,7 @@ class ClassSerializer(serializers.Serializer):
 class UploadDataSerializer(serializers.Serializer):
     project = serializers.PrimaryKeyRelatedField(queryset=models.Project.objects.all())
     segments_length = serializers.FloatField(label='Segment length')
-    upload_file_field = serializers.FileField()
+    upload_file_field = serializers.FileField(style={'template': 'fields/_file_field.html'})
 
 
 class LoginSerializer(serializers.Serializer):

@@ -4,3 +4,6 @@ scipy==0.18.1
 django-environ==0.4.0
 psycopg2==2.6.2
 djangorestframework==3.5.3
+ipdb==0.10.1
+pgcontents==0.5.0
+jupyter==1.0.0
