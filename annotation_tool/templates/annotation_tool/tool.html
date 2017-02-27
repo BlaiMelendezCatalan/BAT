@@ -519,10 +519,10 @@
       wavesurfer = handler.getMainWavesurfer();
       time = wavesurfer.getCurrentTime();
       if (handler.isPlaying()){
-        insertLog("play", getTime(), time.toString());
+        insertLog("play mouse", getTime(), time.toString());
         console.log("play mouse")
       } else {
-        insertLog("pause", getTime(), time.toString());
+        insertLog("pause mouse", getTime(), time.toString());
         console.log("pause mouse")
       }
     });
@@ -1079,7 +1079,7 @@
               insertLog("update region limits mouse",
                         getTime(),
                         times[0].toString() + ' ' + times[1].toString())
-              console.log("update region limits")
+              console.log("update region limits mouse")
             }
           });
         }

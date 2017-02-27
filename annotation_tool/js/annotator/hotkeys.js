@@ -162,10 +162,10 @@ document.onkeydown = function (e) {
     wavesurfer = handler.getMainWavesurfer();
     time = wavesurfer.getCurrentTime();
     if (handler.isPlaying()){
-      insertLog("play", getTime(), time.toString());
+      insertLog("play keyboard", getTime(), time.toString());
       console.log("play keyboard")
     } else {
-      insertLog("pause", getTime(), time.toString());
+      insertLog("pause keyboard", getTime(), time.toString());
       console.log("pause keyboard")
     }
   } else if (key == "ArrowLeft" && pressCtrl && !pressShift) {
