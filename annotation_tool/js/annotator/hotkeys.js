@@ -152,13 +152,22 @@ document.onkeydown = function (e) {
   for (var i = 0; i < CLASS_DICT.length; i++) {
     if (CLASS_DICT[i][2] == key && !pressCtrl) {
       setClassForRegion(region, CLASS_DICT[i][0], CLASS_DICT[i][1])
-      insertLog("update region class by shortcut", getTime(), data.className)
-      console.log("update region class by shortcut")
+      insertLog("update region class keyboard", getTime(), data.className)
+      console.log("update region class keyboard")
     }
   }
 
   if (key == " ") {
     handler.playPause();
+    wavesurfer = handler.getMainWavesurfer();
+    time = wavesurfer.getCurrentTime();
+    if (handler.isPlaying()){
+      insertLog("play", getTime(), time.toString());
+      console.log("play keyboard")
+    } else {
+      insertLog("pause", getTime(), time.toString());
+      console.log("pause keyboard")
+    }
   } else if (key == "ArrowLeft" && pressCtrl && !pressShift) {
     times = preventOverlapsOnArrow(region, increment = -1. / 100)
     region.update({start: times[0]});

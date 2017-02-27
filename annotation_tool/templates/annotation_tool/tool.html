@@ -373,6 +373,8 @@
           if (isMainWavesurfer) {
             loadRegions(wavesurfer);
             wavesurfer.play();
+            insertLog("play", getTime(), '0.0');
+            console.log("play")
             that.labels[0].rearrange();
           }
           var timeline = Object.create(WaveSurfer.Timeline);
@@ -408,14 +410,6 @@
       playPause: function () {
         wavesurfer = this.getMainWavesurfer();
         wavesurfer.playPause();
-        time = wavesurfer.getCurrentTime();
-        if (this.isPlaying()){
-          insertLog("play", getTime(), time.toString());
-          console.log("play")
-        } else {
-          insertLog("pause", getTime(), time.toString());
-          console.log("pause")
-        }
       },
 
       isPlaying: function () {
@@ -522,6 +516,15 @@
 
     $('#play-pause-main-button').on('click', function () {
       handler.playPause();
+      wavesurfer = handler.getMainWavesurfer();
+      time = wavesurfer.getCurrentTime();
+      if (handler.isPlaying()){
+        insertLog("play", getTime(), time.toString());
+        console.log("play mouse")
+      } else {
+        insertLog("pause", getTime(), time.toString());
+        console.log("pause mouse")
+      }
     });
 
     function getTime() {
@@ -613,8 +616,8 @@
         return null;
       }
       setClassForRegion(region, data.className, data.classColor);
-      insertLog("update region class by click", getTime(), data.className)
-      console.log("update region class by click")
+      insertLog("update region class mouse", getTime(), data.className)
+      console.log("update region class mouse")
     });
 
     function loadRegions(wavesurfer) {
@@ -821,6 +824,8 @@
           region.attributes.tags.splice(position, 1);
           updateEvent(region);
           redrawTagsForRegion(region);
+          insertLog("delete tag", getTime(), tagName)
+          console.log("delete tag")
         }
       }
     }
@@ -1091,7 +1096,7 @@
           region.attributes.tags = getUniqueItems(tags.concat(region.attributes.tags));
           updateEvent(region);
           redrawTagsForRegion(region);
-          insertLog("add tags", getTime(), ' '.join(region.attributes.tags))
+          insertLog("add tags", getTime(), region.attributes.tags.join(' '))
           console.log("add tags")
         }
       });
