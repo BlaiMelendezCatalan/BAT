@@ -1349,6 +1349,7 @@
         var parsedUrl = url.parse(location.href),
             params = parsedUrl.get,
             port = parsedUrl.port == undefined ? '': (':' + parsedUrl.port);
+        var wavesurfer = handler.getMainWavesurfer();
         if ('visualization' in params) {
           delete params['visualization'];
         } else {
