@@ -824,6 +824,8 @@
           region.attributes.tags.splice(position, 1);
           updateEvent(region);
           redrawTagsForRegion(region);
+          insertLog("delete tag", getTime(), tagName)
+          console.log("delete tag")
         }
       }
     }
@@ -1094,7 +1096,7 @@
           region.attributes.tags = getUniqueItems(tags.concat(region.attributes.tags));
           updateEvent(region);
           redrawTagsForRegion(region);
-          insertLog("add tags", getTime(), ' '.join(region.attributes.tags))
+          insertLog("add tags", getTime(), region.attributes.tags.join(' '))
           console.log("add tags")
         }
       });
