@@ -152,7 +152,7 @@ document.onkeydown = function (e) {
   for (var i = 0; i < CLASS_DICT.length; i++) {
     if (CLASS_DICT[i][2] == key && !pressCtrl) {
       setClassForRegion(region, CLASS_DICT[i][0], CLASS_DICT[i][1])
-      insertLog("update region class keyboard", getTime(), data.className)
+      insertLog("update region class keyboard", getTime(), CLASS_DICT[i][0])
       console.log("update region class keyboard")
     }
   }
@@ -162,10 +162,10 @@ document.onkeydown = function (e) {
     wavesurfer = handler.getMainWavesurfer();
     time = wavesurfer.getCurrentTime();
     if (handler.isPlaying()){
-      insertLog("play", getTime(), time.toString());
+      insertLog("play keyboard", getTime(), time.toString());
       console.log("play keyboard")
     } else {
-      insertLog("pause", getTime(), time.toString());
+      insertLog("pause keyboard", getTime(), time.toString());
       console.log("pause keyboard")
     }
   } else if (key == "ArrowLeft" && pressCtrl && !pressShift) {

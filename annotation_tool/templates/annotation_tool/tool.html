@@ -519,10 +519,10 @@
       wavesurfer = handler.getMainWavesurfer();
       time = wavesurfer.getCurrentTime();
       if (handler.isPlaying()){
-        insertLog("play", getTime(), time.toString());
+        insertLog("play mouse", getTime(), time.toString());
         console.log("play mouse")
       } else {
-        insertLog("pause", getTime(), time.toString());
+        insertLog("pause mouse", getTime(), time.toString());
         console.log("pause mouse")
       }
     });
@@ -1016,6 +1016,8 @@
           region.attributes['class'] = ""
           region.attributes['tags'] = []
         }
+        insertLog("create region", getTime())
+        console.log("create region")
       }
 
       function onRegionUpdateEnd(wavesurfer, region) {
@@ -1073,13 +1075,11 @@
             success: function (data) {
               region.attributes['event_id'] = data.event_id;
               updateEvent(region);
-              insertLog("create region", getTime())
-              console.log("create region")
               setCurrentRegion(region.id);
               insertLog("update region limits mouse",
                         getTime(),
                         times[0].toString() + ' ' + times[1].toString())
-              console.log("update region limits")
+              console.log("update region limits mouse")
             }
           });
         }
@@ -1131,7 +1131,7 @@
             }
             switchToEventMode();
             handler.rearrangeLabels();
-            insertLog("back to annotation", getTime())
+            insertLog("back to annotation", getTime(), Object.keys(event_dict).length.toString())
             console.log("back to annotation")
           }
         });
@@ -1152,6 +1152,8 @@
           modalWindow.find('.modal-title').text('Wait a moment...');
           modalWindow.find('.modal-body').html('Please, assign a class to all regions before starting to solve the overlaps.');
           modalWindow.modal('show');
+          insertLog("error", getTime(), "classes not assigned before solve overlaps")
+          console.log("error: classes not assigned before solve overlaps")
           return;
         }
 
@@ -1161,8 +1163,7 @@
 
         switchToRegionMode();
 
-        insertLog("solve overlaps", getTime())
-        console.log("solve overlaps")
+        
       });
 
       function solveOverlaps(allRegions) {
@@ -1233,6 +1234,8 @@
           createNewRegion(newRegion)
         }
         handler.rearrangeLabels();
+        insertLog("solve overlaps", getTime(), Object.keys(newRegions).length.toString())
+        console.log("solve overlaps")
       }
 
       function checkClassProminenceIsFilled() {
@@ -1296,7 +1299,7 @@
         }
         if (!checkClassProminenceIsFilled()) {
           modalWindow.find('.modal-title').text('Wait a moment...');
-          modalWindow.find('.modal-body').text('please, assign a prominence value to all regions with more than one class first');
+          modalWindow.find('.modal-body').text('Please, assign a prominence value to all regions with more than one class first');
           modalWindow.modal('show');
           insertLog("error", getTime(), "prominence not assigned")
           console.log("error: prominence not assigned")
@@ -1346,6 +1349,7 @@
         var parsedUrl = url.parse(location.href),
             params = parsedUrl.get,
             port = parsedUrl.port == undefined ? '': (':' + parsedUrl.port);
+        var wavesurfer = handler.getMainWavesurfer();
         if ('visualization' in params) {
           delete params['visualization'];
         } else {
