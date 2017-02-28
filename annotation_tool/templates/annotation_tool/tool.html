@@ -1316,7 +1316,7 @@
           beforeSend: function (xhr) {
             xhr.setRequestHeader("X-CSRFToken", '{{ csrf_token }}');
           },
-          data: {},
+          data: {'load next': loadNextAnnotation},
           success: function (response) {
             var modalWindow = $('#modal-window'),
                 text = 'Annotation is finished.';

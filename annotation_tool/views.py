@@ -170,13 +170,15 @@ class AnnotationFinishView(LoginRequiredMixin, GenericAPIView):
         segment = utils.pick_segment_to_annotate(project.name, request.user.id)
 
         next_annotation_url = ''
-        if segment:
+        if segment and request.data.get('load next') == '1':
             # if have unannotated segment
             next_annotation = utils.create_annotation(segment, request.user)
             next_annotation_url = '{}?project={}&annotation={}'.format(reverse('new_annotation'),
                                                                        project.id,
                                                                        next_annotation.id)
-        return Response(data={'next_annotation_url': next_annotation_url}, status=status.HTTP_200_OK)
+            return Response(data={'next_annotation_url': next_annotation_url}, status=status.HTTP_200_OK)
+        else:
+            return JsonResponse({})
 
 
 class EventsView(SuperuserRequiredMixin, GenericAPIView):
