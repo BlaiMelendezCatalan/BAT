@@ -3,7 +3,7 @@ from math import ceil, floor
 import numpy as np
 import random
 import datetime
-from annotation_tool.models import Project, Wav, Segment, Annotation, Event, Tag, Class, ClassProminence, Annotator
+from annotation_tool.models import Annotation, Event, Region, ClassProminence, Log
 import annotation_tool.utils
 
 
@@ -15,13 +15,13 @@ ALL_ACTIONS = ['start', 'play mouse', 'pause mouse', 'play keyboard', 'pause key
 			   'classes not assigned before solve overlaps', 'switch view', 'click tips button',
 			   'click controls button', 'finish annotation', 'finish annotation and load next', 'seek',
 			   'end of waveform', 'adjust limits', 'avoid padding', 'prevent overlap on creation',
-			   'prevent overlap on arrow', 'untoggle prominence popup', 'solve overlaps	']
+			   'prevent overlap on arrow', 'untoggle prominence popup', 'solve overlaps']
 NONE_ACTIONS = ['seek', 'end of waveform', 'adjust limits', 'avoid padding', 'prevent overlap on creation',
 				'prevent overlap on arrow', 'untoggle prominence popup']
 
 
 def get_annotations(model_obj):
-	if model_obj.__class__.__name__ == 'Porject':
+	if model_obj.__class__.__name__ == 'Project':
 		annotations = Annotation.objects.filter(segment__wav__project=model_obj)
 	elif model_obj.__class__.__name__ == 'Wav':
 		annotations = Annotation.objects.filter(segment__wav=model_obj)
@@ -49,10 +49,11 @@ def get_total_annotation_time_stats(model_obj):
 		total_annotation_time = 0
 		start = 0
 		end_of_waveform = 0
-		logs = Log.objects.filter(annotation=annotation)
+		logs = Log.objects.filter(annotation=annotation).order_by('time')
 		for i in xrange(len(logs)):
 			if i != 0:
-				total_time += logs[i] - logs[i - 1]
+				print logs[i - 1].time, logs[i].time, logs[i].action
+				total_time += max(0, logs[i].time - logs[i - 1].time)
 				if logs[i].action in ['play mouse', 'play keyboard']:
 					start = logs[i].time
 				elif logs[i].action in ['pause mouse', 'pause keyboard']:
@@ -60,7 +61,7 @@ def get_total_annotation_time_stats(model_obj):
 				elif logs[i].action == 'end of waveform':
 					end_of_waveform += 1
 				elif not logs[i].action in NONE_ACTIONS:
-					total_annotation_time += logs[i] - logs[i - 1]
+					total_annotation_time += max(0, logs[i].time - logs[i - 1].time)
 
 		user_dict[annotation.user.username]['total_time'].append(total_time)
 		user_dict[annotation.user.username]['total_playback_time'].append(total_playback_time)
@@ -81,7 +82,7 @@ def get_annotation_time_in_events_and_regions_states_stats(model_obj):
 		current_state = 'events_state'
 		events_state_time = 0
 		regions_state_time = 0
-		logs = Log.objects.filter(annotation=annotation)
+		logs = Log.objects.filter(annotation=annotation).order_by('time')
 		for i in xrange(len(logs) - 1):
 			if i != 0:
 				if logs[i].action == 'solve overlaps':
@@ -122,6 +123,7 @@ def get_number_of_extra_actions(model_obj):
 	for user in user_dict.keys():
 		user_dict[user]['number_of_regions'] = []
 		user_dict[user]['number_of_regions_multiclass'] = []
+		user_dict[user]['number_of_toggle_lines'] = []
 		user_dict[user]['total_extra_annotation_actions'] = []
 	for annotation in annotations:
 		regions = Region.objects.filter(annotation=annotation)
