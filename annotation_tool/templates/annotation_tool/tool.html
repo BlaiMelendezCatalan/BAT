@@ -451,6 +451,9 @@
         var overlapWasFound = false,
             that = this;
         this.container.forEach(function (wavesurfer) {
+          if (!('regions' in wavesurfer)) {
+            return false;
+          }
           for (var i in wavesurfer.regions.list) {
             if (overlapWasFound) {
               break;
@@ -471,7 +474,6 @@
             });
           }
         });
-
         $('#solve-overlaps-button').attr('disabled', !overlapWasFound);
         return overlapWasFound;
       },
@@ -509,6 +511,7 @@
     insertLog('start', 0.0)
     console.log("start")
     var handler = new wavesurferHandler.create();
+    handler.checkOverlaps()
 
     $('#add-wavesurfer-button').on('click', function () {
       handler.addWavesurfer();
