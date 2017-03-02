@@ -217,16 +217,31 @@ def merge_segment_annotations(segment): # MODIFY!!!
             region.save()
 
 
-def generate_ground_truth(project): # MODIFY!!!
+def generate_ground_truth(project):
+    path = BASE_DIR + '/ground_truth/'
+    if not os.path.exists(path):
+        os.makedirs(path)
+    path += project.name.replace(' ', '_') + '/'
+    if not os.path.exists(path):
+        os.makedirs(path)
     wavs = Wavs.objects.filter(project=project)
     gt_dict = {}
     for wav in wavs:
-        gt_dict[wav.name] = {}
+        path_wav = path + wav.name.replace('.wav', '') + '/'
+        if not os.path.exists(path_wav):
+            os.makedirs(path_wav)
+        gt_dict[path_wav] = {}
         segments = Segment.objects.filter(wav=wav)
         for segment in segments:
-            gt_dict[wav.name][segment.name] = {}
-            regions = Region.objects.filter(segment=segment)
-            for region in regions:
-                gt_dict[wav.name][segment.name]['class'] = region.class_name
-                gt_dict[wav.name][segment.name]['start_time'] = region.start_time
-                gt_dict[wav.name][segment.name]['end_time'] = region.end_time
+            annotations = Annotation.objects.filter(segment=segment)
+            for annotation in annotations:
+                path_user = path_wav + annotation.user.username.replace(' ', '_') + '/'
+                if not os.path.exists(path_user):
+                    os.makedirs(path_user)
+
+                gt_dict[wav.name][segment.name] = {}
+                regions = Region.objects.filter(annotation=annotation).order_by('start_time')
+                for region in regions:
+                    gt_dict[wav.name][segment.name]['class'] = region.class_name
+                    gt_dict[wav.name][segment.name]['start_time'] = region.start_time
+                    gt_dict[wav.name][segment.name]['end_time'] = region.end_time
