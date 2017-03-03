@@ -7,8 +7,9 @@ from scipy.io.wavfile import write
 from django.utils import timezone
 import contextlib
 import wave
+import csv
 import django.core.exceptions as e
-from annotation_tool.models import Project, Wav, Segment, Annotation, Event, Tag, Class, ClassProminence
+from annotation_tool.models import Project, Class, Wav, Segment, Annotation, Event, Region, ClassProminence, Tag
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from config.settings.common import BASE_DIR, MEDIA_ROOT
@@ -217,31 +218,57 @@ def merge_segment_annotations(segment): # MODIFY!!!
             region.save()
 
 
-def generate_ground_truth(project):
+def save_ground_truth_to_csv(project):
     path = BASE_DIR + '/ground_truth/'
-    if not os.path.exists(path):
-        os.makedirs(path)
     path += project.name.replace(' ', '_') + '/'
+    if os.path.exists(path):
+        shutil.rmtree(path)
+    os.makedirs(path)
     if not os.path.exists(path):
         os.makedirs(path)
-    wavs = Wavs.objects.filter(project=project)
-    gt_dict = {}
+    wavs = Wav.objects.filter(project=project)
     for wav in wavs:
-        path_wav = path + wav.name.replace('.wav', '') + '/'
-        if not os.path.exists(path_wav):
-            os.makedirs(path_wav)
-        gt_dict[path_wav] = {}
-        segments = Segment.objects.filter(wav=wav)
+        #path_wav = path + wav.name.replace('.wav', '') + '/'
+        #if not os.path.exists(path_wav):
+            #os.makedirs(path_wav)
+        segments = Segment.objects.filter(wav=wav).order_by('start_time')
         for segment in segments:
             annotations = Annotation.objects.filter(segment=segment)
             for annotation in annotations:
-                path_user = path_wav + annotation.user.username.replace(' ', '_') + '/'
-                if not os.path.exists(path_user):
-                    os.makedirs(path_user)
-
-                gt_dict[wav.name][segment.name] = {}
+                #path_user = path_wav + annotation.user.username.replace(' ', '_') + '/'
+                #if not os.path.exists(path_user):
+                    #os.makedirs(path_user)
+                path_csv = path + wav.name.replace('.wav', '.csv')
                 regions = Region.objects.filter(annotation=annotation).order_by('start_time')
-                for region in regions:
-                    gt_dict[wav.name][segment.name]['class'] = region.class_name
-                    gt_dict[wav.name][segment.name]['start_time'] = region.start_time
-                    gt_dict[wav.name][segment.name]['end_time'] = region.end_time
+                if regions:
+                    for region in regions:
+                        class_prominences = ClassProminence.objects.filter(
+                                                region=region).order_by('class_obj__name')
+                        classes = []
+                        prominences = []
+                        for cp in class_prominences:
+                            classes.append(cp.class_obj.name)
+                            prominences.append(cp.prominence)
+                        row = []
+                        row.append(wav.name.replace('.wav', ''))
+                        row.append(annotation.user.username)
+                        row.append(segment.start_time + region.start_time)
+                        row.append(segment.start_time + region.end_time)
+                        for i in xrange(len(classes)):
+                            row.append(classes[i])
+                            row.append(str(prominences[i]))
+                        with open(path_csv, 'ab') as csvfile:
+                            gtwriter = csv.writer(csvfile, delimiter=' ', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+                            gtwriter.writerow(row)
+                else:
+                    events = Event.objects.filter(annotation=annotation).order_by('start_time')
+                    for event in events:
+                        row = []
+                        row.append(wav.name.replace('.wav', ''))
+                        row.append(annotation.user.username)
+                        row.append(segment.start_time + event.start_time)
+                        row.append(segment.start_time + event.end_time)
+                        row.append(event.event_class.name)
+                        with open(path_csv, 'ab') as csvfile:
+                            gtwriter = csv.writer(csvfile, delimiter=' ', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+                            gtwriter.writerow(row)
