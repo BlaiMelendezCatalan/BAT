@@ -257,9 +257,8 @@ def save_ground_truth_to_csv(project):
                         row.append(annotation.user.username)
                         row.append(segment.start_time + region.start_time)
                         row.append(segment.start_time + region.end_time)
-                        for i in xrange(len(classes)):
-                            row.append(classes[i])
-                            row.append(str(prominences[i]))
+                        row.append('/'.join(classes))
+                        row.append('/'.join(str(x) for x in prominences))
                         with open(path_csv, 'ab') as csvfile:
                             gtwriter = csv.writer(csvfile, delimiter=' ', quotechar='|', quoting=csv.QUOTE_MINIMAL)
                             gtwriter.writerow(row)
