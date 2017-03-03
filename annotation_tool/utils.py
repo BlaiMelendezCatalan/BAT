@@ -237,16 +237,10 @@ def save_ground_truth_to_csv(project):
         os.makedirs(path)
     wavs = Wav.objects.filter(project=project)
     for wav in wavs:
-        #path_wav = path + wav.name.replace('.wav', '') + '/'
-        #if not os.path.exists(path_wav):
-            #os.makedirs(path_wav)
         segments = Segment.objects.filter(wav=wav).order_by('start_time')
         for segment in segments:
             annotations = Annotation.objects.filter(segment=segment)
             for annotation in annotations:
-                #path_user = path_wav + annotation.user.username.replace(' ', '_') + '/'
-                #if not os.path.exists(path_user):
-                    #os.makedirs(path_user)
                 path_csv = path + wav.name.replace('.wav', '.csv')
                 regions = Region.objects.filter(annotation=annotation).order_by('start_time')
                 if regions:
