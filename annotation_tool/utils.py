@@ -230,18 +230,16 @@ def merge_segment_annotations(segment): # MODIFY!!!
 def save_ground_truth_to_csv(project):
     path = BASE_DIR + '/ground_truth/'
     path += project.name.replace(' ', '_') + '/'
+    path_csv = path + project.name.replace(' ', '_') + '.csv'
     if os.path.exists(path):
         shutil.rmtree(path)
     os.makedirs(path)
-    if not os.path.exists(path):
-        os.makedirs(path)
     wavs = Wav.objects.filter(project=project)
     for wav in wavs:
         segments = Segment.objects.filter(wav=wav).order_by('start_time')
         for segment in segments:
             annotations = Annotation.objects.filter(segment=segment)
             for annotation in annotations:
-                path_csv = path + wav.name.replace('.wav', '.csv')
                 regions = Region.objects.filter(annotation=annotation).order_by('start_time')
                 if regions:
                     for region in regions:
