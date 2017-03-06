@@ -100,7 +100,7 @@ def get_total_annotation_time_stats(model_obj, users=[]):
 		user_dict[annotation.user.username]['total_annotation_time'].append(total_annotation_time)
 		user_dict[annotation.user.username]['number_of_end_of_waveform'].append(end_of_waveform)
 
-	return user_dict
+	return user_dict, annotations
 
 
 def get_annotation_time_in_events_and_regions_states_stats(model_obj, users=[]):
@@ -133,7 +133,7 @@ def get_annotation_time_in_events_and_regions_states_stats(model_obj, users=[]):
 		user_dict[annotation.user.username]['events_state'].append(events_state_time)
 		user_dict[annotation.user.username]['regions_state'].append(regions_state_time)
 
-	return user_dict
+	return user_dict, annotations
 
 
 def get_all_actions_use_times(model_obj, users=[]):
@@ -158,7 +158,7 @@ def get_all_actions_use_times(model_obj, users=[]):
 			else:
 				user_dict[annotation.user.username][logs[j].action][i] += 1	
 
-	return user_dict
+	return user_dict, annotations
 
 
 def get_number_of_extra_actions(model_obj, users=[]):
@@ -225,7 +225,7 @@ def get_number_of_extra_actions(model_obj, users=[]):
 				extra_limits_update + extra_shortcut_f + extra_toggles + extra_prom_updates + \
 				extra_selects + deletes + backs + solves + finishes + errors + tips_controls)
 
-	return user_dict
+	return user_dict, annotations
 
 
 def get_number_of_overlaps(model_obj, users=[]):
@@ -259,4 +259,4 @@ def get_number_of_overlaps(model_obj, users=[]):
 			user_dict[annotation.user.username][
 						'number of classes per overlap'].append([])
 
-	return user_dict
+	return user_dict, annotations
