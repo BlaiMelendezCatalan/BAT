@@ -160,8 +160,7 @@ def get_all_actions_use_times(model_obj, users=[]):
 
 
 def get_number_of_extra_actions(model_obj, users=[]):
-	annotations = get_annotations(model_obj, users)
-	user_dict, annotations = get_all_actions_use_times(model_obj)
+	user_dict, annotations = get_all_actions_use_times(model_obj, users)
 	for user in user_dict.keys():
 		user_dict[user]['number_of_regions'] = []
 		user_dict[user]['number_of_regions_multiclass'] = []
@@ -214,9 +213,7 @@ def get_number_of_extra_actions(model_obj, users=[]):
 			solves = max(0, user_dict[user]['solve overlaps'][i] - 1)
 			finishes = max(0, user_dict[user]['finish annotation'][i] + \
 							  user_dict[user]['finish annotation and load next'][i] - 1)
-			errors = user_dict[user]['overlaps not solved'][i] + \
-					 user_dict[user]['prominence not assigned'][i] + \
-					 user_dict[user]['classes not assigned before solve overlaps'][i]
+			errors = user_dict[user]['error'][i]
 			tips_controls = user_dict[user]['click controls button'][i] + \
 							user_dict[user]['click tips button'][i]
 			user_dict[user]['total_extra_annotation_actions'].append(extra_class_update + \
