@@ -25,21 +25,36 @@ ANNOTATION_ACTIONS = ['update region limits mouse', 'update region limits keyboa
 			   'solve overlaps']
 
 
-def get_annotations(model_obj):
+def get_annotations(model_obj, users=[]):
 	if model_obj.__class__.__name__ == 'Project':
-		annotations = Annotation.objects.filter(segment__wav__project=model_obj).order_by('id')
+		if users == []:
+			annotations = Annotation.objects.filter(segment__wav__project=model_obj).order_by('id')
+		else:
+			annotations = Annotation.objects.filter(
+								segment__wav__project=model_obj,
+								user__username__in=users).order_by('id')
 	elif model_obj.__class__.__name__ == 'Wav':
-		annotations = Annotation.objects.filter(segment__wav=model_obj).order_by('id')
+		if users == []:
+			annotations = Annotation.objects.filter(segment__wav=model_obj).order_by('id')
+		else:
+			annotations = Annotation.objects.filter(
+								segment__wav=model_obj,
+								user__username__in=users).order_by('id')
 	elif model_obj.__class__.__name__ == 'Segment':
-		annotations = Annotation.objects.filter(segment=model_obj).order_by('id')
+		if users == []:
+			annotations = Annotation.objects.filter(segment=model_obj).order_by('id')
+		else:
+			annotations = Annotation.objects.filter(
+								segment=model_obj,
+								user__username__in=users).order_by('id')
 	else:
 		raise ValueError('Model should be Project, Wav, Segment or Annotation')
 
 	return annotations
 
 
-def get_total_annotation_time_stats(model_obj):
-	annotations = get_annotations(model_obj)
+def get_total_annotation_time_stats(model_obj, users=[]):
+	annotations = get_annotations(model_obj, users)
 	user_dict = {}
 	for annotation in annotations:
 		if not annotation.user.username in user_dict.keys():
@@ -88,8 +103,8 @@ def get_total_annotation_time_stats(model_obj):
 	return user_dict
 
 
-def get_annotation_time_in_events_and_regions_states_stats(model_obj):
-	annotations = get_annotations(model_obj)
+def get_annotation_time_in_events_and_regions_states_stats(model_obj, users=[]):
+	annotations = get_annotations(model_obj, users)
 	user_dict = {}
 	for annotation in annotations:
 		if not annotation.user.username in user_dict.keys():
@@ -121,8 +136,8 @@ def get_annotation_time_in_events_and_regions_states_stats(model_obj):
 	return user_dict
 
 
-def get_all_actions_use_times(model_obj):
-	annotations = get_annotations(model_obj)
+def get_all_actions_use_times(model_obj, users=[]):
+	annotations = get_annotations(model_obj, users)
 	user_dict = {}
 	for annotation in annotations:
 		if not annotation.user.username in user_dict.keys():
@@ -146,8 +161,8 @@ def get_all_actions_use_times(model_obj):
 	return user_dict
 
 
-def get_number_of_extra_actions(model_obj):
-	annotations = get_annotations(model_obj)
+def get_number_of_extra_actions(model_obj, users=[]):
+	annotations = get_annotations(model_obj, users)
 	user_dict = get_all_actions_use_times(model_obj)
 	for user in user_dict.keys():
 		user_dict[user]['number_of_regions'] = []
@@ -213,8 +228,8 @@ def get_number_of_extra_actions(model_obj):
 	return user_dict
 
 
-def get_number_of_overlaps(model_obj):
-	annotations = get_annotations(model_obj)
+def get_number_of_overlaps(model_obj, users=[]):
+	annotations = get_annotations(model_obj, users)
 	user_dict = {}
 	for annotation in annotations:
 		if not annotation.user.username in user_dict.keys():
