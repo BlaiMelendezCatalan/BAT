@@ -161,7 +161,7 @@ def get_all_actions_use_times(model_obj, users=[]):
 
 def get_number_of_extra_actions(model_obj, users=[]):
 	annotations = get_annotations(model_obj, users)
-	user_dict = get_all_actions_use_times(model_obj)
+	user_dict, annotations = get_all_actions_use_times(model_obj)
 	for user in user_dict.keys():
 		user_dict[user]['number_of_regions'] = []
 		user_dict[user]['number_of_regions_multiclass'] = []
