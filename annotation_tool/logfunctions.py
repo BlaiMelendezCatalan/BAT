@@ -52,8 +52,7 @@ def get_annotations(model_obj, users=[]):
 	return annotations
 
 
-def get_total_annotation_time_stats(model_obj, users=[]):
-	annotations = get_annotations(model_obj, users)
+def get_total_annotation_time_stats(model_obj, annotations):
 	user_dict = {}
 	for annotation in annotations:
 		if not annotation.user.username in user_dict.keys():
@@ -99,11 +98,10 @@ def get_total_annotation_time_stats(model_obj, users=[]):
 		user_dict[annotation.user.username]['total_annotation_time'].append(total_annotation_time)
 		user_dict[annotation.user.username]['number_of_end_of_waveform'].append(end_of_waveform)
 
-	return user_dict, annotations
+	return user_dict
 
 
-def get_annotation_time_in_events_and_regions_states_stats(model_obj, users=[]):
-	annotations = get_annotations(model_obj, users)
+def get_annotation_time_in_events_and_regions_states_stats(model_obj, annotations):
 	user_dict = {}
 	for annotation in annotations:
 		if not annotation.user.username in user_dict.keys():
@@ -131,22 +129,22 @@ def get_annotation_time_in_events_and_regions_states_stats(model_obj, users=[]):
 		user_dict[annotation.user.username]['events_state'].append(events_state_time)
 		user_dict[annotation.user.username]['regions_state'].append(regions_state_time)
 
-	return user_dict, annotations
+	return user_dict
 
 
-def get_all_actions_use_times(model_obj, users=[]):
-	annotations = get_annotations(model_obj, users)
+def get_all_actions_use_times(model_obj, annotations):
 	user_dict = {}
 	for annotation in annotations:
 		if not annotation.user.username in user_dict.keys():
 			user_dict[annotation.user.username] = {}
 	for user in user_dict.keys():
 		for action in ALL_ACTIONS:
-			user_dict[user][action] = np.zeros(len(annotations))
+			user_dict[user][action] = np.zeros(len(annotations) / len(user_dict.keys()))
 		user_dict[user]['annotation_counter'] = 0
 	for i in xrange(len(annotations)):
-		logs = Log.objects.filter(annotation=annotations[i]).order_by('id')
-		n = user_dict[user]['annotation_counter']
+		annotation = annotations[i]
+		logs = Log.objects.filter(annotation=annotation).order_by('id')
+		n = user_dict[annotation.user.username]['annotation_counter']
 		for j in xrange(len(logs)):
 			if j != 0 and logs[j].action == 'update region limits keyboard':
 				if logs[j - 1].action != 'update region limits keyboard':
@@ -156,13 +154,13 @@ def get_all_actions_use_times(model_obj, users=[]):
 				user_dict[annotation.user.username]['select region'][n] -= 1
 			else:
 				user_dict[annotation.user.username][logs[j].action][n] += 1
-		user_dict[user]['annotation_counter'] += 1
+		user_dict[annotation.user.username]['annotation_counter'] += 1
 
-	return user_dict, annotations
+	return user_dict
 
 
-def get_number_of_extra_actions(model_obj, users=[]):
-	user_dict, annotations = get_all_actions_use_times(model_obj, users)
+def get_number_of_extra_actions(model_obj, annotations):
+	user_dict = get_all_actions_use_times(model_obj, annotations)
 	for user in user_dict.keys():
 		user_dict[user]['number_of_regions'] = []
 		user_dict[user]['number_of_regions_multiclass'] = []
@@ -222,11 +220,10 @@ def get_number_of_extra_actions(model_obj, users=[]):
 				extra_limits_update + extra_shortcut_f + extra_toggles + extra_prom_updates + \
 				extra_selects + deletes + backs + solves + finishes + errors + tips_controls)
 
-	return user_dict, annotations
+	return user_dict
 
 
-def get_number_of_overlaps(model_obj, users=[]):
-	annotations = get_annotations(model_obj, users)
+def get_number_of_overlaps(model_obj, annotations):
 	user_dict = {}
 	for annotation in annotations:
 		if not annotation.user.username in user_dict.keys():
@@ -256,4 +253,4 @@ def get_number_of_overlaps(model_obj, users=[]):
 			user_dict[annotation.user.username][
 						'number of classes per overlap'].append([])
 
-	return user_dict, annotations
+	return user_dict
