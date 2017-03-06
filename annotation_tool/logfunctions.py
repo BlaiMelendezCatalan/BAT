@@ -165,7 +165,6 @@ def get_number_of_extra_actions(model_obj, annotations):
 		user_dict[user]['number_of_regions'] = []
 		user_dict[user]['number_of_regions_multiclass'] = []
 		user_dict[user]['number_of_toggle_lines'] = []
-		user_dict[user]['total_extra_annotation_actions'] = []
 	for annotation in annotations:
 		regions = Region.objects.filter(annotation=annotation)
 		if regions:
@@ -188,37 +187,69 @@ def get_number_of_extra_actions(model_obj, annotations):
 						'number_of_toggle_lines'].append(0)
 		user_dict[annotation.user.username]['number_of_regions'].append(len(regions))
 	for user in user_dict.keys():
-		for i in xrange(len(user_dict[user]['number_of_regions'])):
-			number_of_regions = user_dict[user]['number_of_regions'][i]
-			number_of_regions_multiclass = user_dict[annotation.user.username][
-												'number_of_regions_multiclass'][i]
-			number_of_toggle_lines = user_dict[annotation.user.username][
-												'number_of_toggle_lines'][i]
-			extra_class_update = max(0, user_dict[user]['update region class mouse'][i] + \
-								 user_dict[user]['update region class keyboard'][i] - \
-								 number_of_regions)
-			extra_limits_update = max(0, user_dict[user]['update region limits mouse'][i] + \
-								  user_dict[user]['update region limits keyboard'][i] - \
-								  number_of_regions)
-			extra_shortcut_f = max(0, user_dict[user]['shortcut F'][i] - \
-							   number_of_regions)
-			extra_toggles = max(0, user_dict[user]['toggle prominence popup'][i] - \
-							number_of_regions_multiclass)
-			extra_prom_updates = max(0, user_dict[user]['update class prominence'][i] - \
-								 number_of_toggle_lines)
-			extra_selects = max(0, user_dict[user]['select region'][i] - number_of_regions)
-			deletes = user_dict[user]['click-delete region'][i] + \
-					  user_dict[user]['cross-delete region'][i]
-			backs = user_dict[user]['back to annotation'][i]
-			solves = max(0, user_dict[user]['solve overlaps'][i] - 1)
-			finishes = max(0, user_dict[user]['finish annotation'][i] + \
-							  user_dict[user]['finish annotation and load next'][i] - 1)
-			errors = user_dict[user]['error'][i]
-			tips_controls = user_dict[user]['click controls button'][i] + \
-							user_dict[user]['click tips button'][i]
-			user_dict[user]['total_extra_annotation_actions'].append(extra_class_update + \
-				extra_limits_update + extra_shortcut_f + extra_toggles + extra_prom_updates + \
-				extra_selects + deletes + backs + solves + finishes + errors + tips_controls)
+		user_dict[user]['annotation_counter'] = 0
+		user_dict[user]['extra actions'] = {}
+		user_dict[user]['extra actions']['total_extra_annotation_actions'] = []
+		user_dict[user]['extra actions']['extra class updates'] = []
+		user_dict[user]['extra actions']['extra limit updates'] = []
+		user_dict[user]['extra actions']['extra f shortcut'] = []
+		user_dict[user]['extra actions']['extra toggles'] = []
+		user_dict[user]['extra actions']['extra prom updates'] = []
+		user_dict[user]['extra actions']['extra selects'] = []
+		user_dict[user]['extra actions']['extra deletes'] = []
+		user_dict[user]['extra actions']['extra backs'] = []
+		user_dict[user]['extra actions']['extra solves'] = []
+		user_dict[user]['extra actions']['extra finishes'] = []
+		user_dict[user]['extra actions']['extra errors'] = []
+		user_dict[user]['extra actions']['extra tips controls'] = []
+		for i in xrange(len(annotations)):
+			annotation = annotations[i]
+			if annotation.user.username == user:
+				n = user_dict[annotation.user.username]['annotation_counter']
+				number_of_regions = user_dict[user]['number_of_regions'][n]
+				number_of_regions_multiclass = user_dict[annotation.user.username][
+													'number_of_regions_multiclass'][n]
+				number_of_toggle_lines = user_dict[annotation.user.username][
+													'number_of_toggle_lines'][n]
+				extra_class_update = max(0, user_dict[user]['update region class mouse'][n] + \
+									 user_dict[user]['update region class keyboard'][n] - \
+									 number_of_regions)
+				extra_limits_update = max(0, user_dict[user]['update region limits mouse'][n] + \
+									  user_dict[user]['update region limits keyboard'][n] - \
+									  number_of_regions)
+				extra_shortcut_f = max(0, user_dict[user]['shortcut F'][n] - \
+								   number_of_regions)
+				extra_toggles = max(0, user_dict[user]['toggle prominence popup'][n] - \
+								number_of_regions_multiclass)
+				extra_prom_updates = max(0, user_dict[user]['update class prominence'][n] - \
+									 number_of_toggle_lines)
+				extra_selects = max(0, user_dict[user]['select region'][n] - number_of_regions)
+				deletes = user_dict[user]['click-delete region'][n] + \
+						  user_dict[user]['cross-delete region'][n]
+				backs = user_dict[user]['back to annotation'][n]
+				solves = max(0, user_dict[user]['solve overlaps'][n] - 1)
+				finishes = max(0, user_dict[user]['finish annotation'][n] + \
+								  user_dict[user]['finish annotation and load next'][n] - 1)
+				errors = user_dict[user]['error'][n]
+				tips_controls = user_dict[user]['click controls button'][n] + \
+								user_dict[user]['click tips button'][n]
+				user_dict[user]['extra actions']['total_extra_annotation_actions'].append(
+					extra_class_update + extra_limits_update + extra_shortcut_f + extra_toggles \
+					+ extra_prom_updates + extra_selects + deletes + backs + solves + finishes + \
+					errors + tips_controls)
+				user_dict[user]['extra actions']['extra class updates'].append(extra_class_update)
+				user_dict[user]['extra actions']['extra limit updates'].append(extra_limits_update)
+				user_dict[user]['extra actions']['extra f shortcut'].append(extra_shortcut_f)
+				user_dict[user]['extra actions']['extra toggles'].append(extra_toggles)
+				user_dict[user]['extra actions']['extra prom updates'].append(extra_prom_updates)
+				user_dict[user]['extra actions']['extra selects'].append(extra_selects)
+				user_dict[user]['extra actions']['extra deletes'].append(deletes)
+				user_dict[user]['extra actions']['extra backs'].append(backs)
+				user_dict[user]['extra actions']['extra solves'].append(solves)
+				user_dict[user]['extra actions']['extra finishes'].append(finishes)
+				user_dict[user]['extra actions']['extra errors'].append(errors)
+				user_dict[user]['extra actions']['extra tips controls'].append(tips_controls)
+				user_dict[annotation.user.username]['annotation_counter'] += 1
 
 	return user_dict
 
