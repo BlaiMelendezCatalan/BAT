@@ -11,8 +11,7 @@ ALL_ACTIONS = ['play', 'start', 'play mouse', 'pause mouse', 'play keyboard', 'p
 			   'update region limits mouse', 'update region limits keyboard', 'update region class mouse',
 			   'update region class keyboard', 'select region', 'shortcut F', 'add tags', 'delete tag',
 			   'create region', 'click-delete region', 'cross-delete region', 'update class prominence',
-			   'toggle prominence popup', 'back to annotation','overlaps not solved', 'prominence not assigned',
-			   'classes not assigned before solve overlaps', 'switch view', 'click tips button',
+			   'toggle prominence popup', 'back to annotation','error', 'switch view', 'click tips button',
 			   'click controls button', 'finish annotation', 'finish annotation and load next', 'seek',
 			   'end of waveform', 'adjust limits', 'avoid padding', 'prevent overlap on creation',
 			   'prevent overlap on arrow', 'untoggle prominence popup', 'solve overlaps']
@@ -117,7 +116,6 @@ def get_annotation_time_in_events_and_regions_states_stats(model_obj, users=[]):
 		logs = Log.objects.filter(annotation=annotation).order_by('id')
 		for i in xrange(len(logs)):
 			if i != 0:
-				print logs[i - 1].time, logs[i - 1].action, logs[i].time, logs[i].action
 				if logs[i].action == 'solve overlaps':
 					current_state = 'regions_state'
 					events_state_time += logs[i].time - logs[i - 1].time
