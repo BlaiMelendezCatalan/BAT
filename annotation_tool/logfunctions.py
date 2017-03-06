@@ -143,18 +143,20 @@ def get_all_actions_use_times(model_obj, users=[]):
 	for user in user_dict.keys():
 		for action in ALL_ACTIONS:
 			user_dict[user][action] = np.zeros(len(annotations))
+		user_dict[user]['annotation_counter'] = 0
 	for i in xrange(len(annotations)):
 		logs = Log.objects.filter(annotation=annotations[i]).order_by('id')
+		n = user_dict[user]['annotation_counter']
 		for j in xrange(len(logs)):
-			print logs[j].action
 			if j != 0 and logs[j].action == 'update region limits keyboard':
 				if logs[j - 1].action != 'update region limits keyboard':
-					user_dict[annotation.user.username]['update region limits keyboard'][i] += 1
+					user_dict[annotation.user.username]['update region limits keyboard'][n] += 1
 			elif logs[j].action == 'update region limits mouse':
-				user_dict[annotation.user.username][logs[j].action][i] += 1
-				user_dict[annotation.user.username]['select region'][i] -= 1
+				user_dict[annotation.user.username][logs[j].action][n] += 1
+				user_dict[annotation.user.username]['select region'][n] -= 1
 			else:
-				user_dict[annotation.user.username][logs[j].action][i] += 1	
+				user_dict[annotation.user.username][logs[j].action][n] += 1
+		user_dict[user]['annotation_counter'] += 1	
 
 	return user_dict, annotations
 
