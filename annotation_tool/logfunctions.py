@@ -22,6 +22,12 @@ ANNOTATION_ACTIONS = ['update region limits mouse', 'update region limits keyboa
 			   'create region', 'click-delete region', 'cross-delete region', 'update class prominence',
 			   'toggle prominence popup', 'back to annotation', 'finish annotation', 'finish annotation and load next',
 			   'solve overlaps']
+PLAYBACK_ACTIONS = ['play', 'play mouse', 'pause mouse', 'play keyboard', 'pause keyboard', 'shortcut B', 'shortcut S',
+					'toggle prominence popup']
+REGION_ACTIONS = ['update region limits mouse', 'update region limits keyboard', 'update region class mouse',
+				  'update region class keyboard', 'select region', 'shortcut F', 'add tags', 'delete tag',
+				  'update class prominence']
+OTHER_ACTIONS = []
 
 
 def get_annotations(model_obj, users=[]):
@@ -70,7 +76,7 @@ def get_total_annotation_time_stats(model_obj, annotations):
 		is_playing = True
 		logs = Log.objects.filter(annotation=annotation).order_by('id')
 		for i in xrange(len(logs)):
-			if i != 0:
+			if i != 0 and logs[i].time - logs[i - 1].time < 16:
 				total_time += max(0, logs[i].time - logs[i - 1].time)
 				if logs[i].action == 'start':
 					continue
@@ -168,6 +174,8 @@ def get_number_of_extra_actions(model_obj, annotations):
 	for annotation in annotations:
 		regions = Region.objects.filter(annotation=annotation)
 		if regions:
+			events = Event.objects.filter(annotation=annotation)
+			user_dict[annotation.user.username]['number_of_regions'].append(len(events))
 			number_of_regions_multiclass = 0
 			number_of_toggle_lines = 0
 			for region in regions:
@@ -180,12 +188,12 @@ def get_number_of_extra_actions(model_obj, annotations):
 			user_dict[annotation.user.username][
 						'number_of_toggle_lines'].append(number_of_toggle_lines)
 		else:
-			regions = Event.objects.filter(annotation=annotation)
+			events = Event.objects.filter(annotation=annotation)
 			user_dict[annotation.user.username][
 						'number_of_regions_multiclass'].append(0)
 			user_dict[annotation.user.username][
 						'number_of_toggle_lines'].append(0)
-		user_dict[annotation.user.username]['number_of_regions'].append(len(regions))
+			user_dict[annotation.user.username]['number_of_regions'].append(len(events))
 	for user in user_dict.keys():
 		user_dict[user]['annotation_counter'] = 0
 		user_dict[user]['extra actions'] = {}
@@ -226,16 +234,16 @@ def get_number_of_extra_actions(model_obj, annotations):
 				extra_selects = max(0, user_dict[user]['select region'][n] - number_of_regions)
 				deletes = user_dict[user]['click-delete region'][n] + \
 						  user_dict[user]['cross-delete region'][n]
-				backs = user_dict[user]['back to annotation'][n]
-				solves = max(0, user_dict[user]['solve overlaps'][n] - 1)
-				finishes = max(0, user_dict[user]['finish annotation'][n] + \
+				extra_backs = user_dict[user]['back to annotation'][n]
+				extra_solves = max(0, user_dict[user]['solve overlaps'][n] - 1)
+				extra_finishes = max(0, user_dict[user]['finish annotation'][n] + \
 								  user_dict[user]['finish annotation and load next'][n] - 1)
 				errors = user_dict[user]['error'][n]
 				tips_controls = user_dict[user]['click controls button'][n] + \
 								user_dict[user]['click tips button'][n]
 				user_dict[user]['extra actions']['total_extra_annotation_actions'].append(
 					extra_class_update + extra_limits_update + extra_shortcut_f + extra_toggles \
-					+ extra_prom_updates + extra_selects + deletes + backs + solves + finishes + \
+					+ extra_prom_updates + extra_selects + deletes + extra_backs + extra_solves + extra_finishes + \
 					errors + tips_controls)
 				user_dict[user]['extra actions']['extra class updates'].append(extra_class_update)
 				user_dict[user]['extra actions']['extra limit updates'].append(extra_limits_update)
@@ -243,12 +251,12 @@ def get_number_of_extra_actions(model_obj, annotations):
 				user_dict[user]['extra actions']['extra toggles'].append(extra_toggles)
 				user_dict[user]['extra actions']['extra prom updates'].append(extra_prom_updates)
 				user_dict[user]['extra actions']['extra selects'].append(extra_selects)
-				user_dict[user]['extra actions']['extra deletes'].append(deletes)
-				user_dict[user]['extra actions']['extra backs'].append(backs)
-				user_dict[user]['extra actions']['extra solves'].append(solves)
-				user_dict[user]['extra actions']['extra finishes'].append(finishes)
-				user_dict[user]['extra actions']['extra errors'].append(errors)
-				user_dict[user]['extra actions']['extra tips controls'].append(tips_controls)
+				user_dict[user]['extra actions']['deletes'].append(deletes)
+				user_dict[user]['extra actions']['extra backs'].append(extra_backs)
+				user_dict[user]['extra actions']['extra solves'].append(extra_solves)
+				user_dict[user]['extra actions']['extra finishes'].append(extra_finishes)
+				user_dict[user]['extra actions']['errors'].append(errors)
+				user_dict[user]['extra actions']['tips controls'].append(tips_controls)
 				user_dict[annotation.user.username]['annotation_counter'] += 1
 
 	return user_dict
@@ -285,3 +293,16 @@ def get_number_of_overlaps(model_obj, annotations):
 						'number of classes per overlap'].append([])
 
 	return user_dict
+
+
+def get_actions_graph_data(user_dict, annotations):
+	playback_actions = 0
+	region_actions = 0
+	extra_region_actions = 0
+	other_actions = 0
+	extra_other_actions = 0
+	for i in xrange(len(annotations)):
+		for user in user_dict.keys():
+			for action in REGION_ACTIONS:
+				user_dict[user][action]
+
