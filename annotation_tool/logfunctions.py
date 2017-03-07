@@ -119,7 +119,7 @@ def get_annotation_time_in_events_and_regions_states_stats(model_obj, annotation
 		regions_state_time = 0
 		logs = Log.objects.filter(annotation=annotation).order_by('id')
 		for i in xrange(len(logs)):
-			if i != 0:
+			if i != 0 and logs[i].time - logs[i - 1].time < 16:
 				if logs[i].action == 'solve overlaps':
 					current_state = 'regions_state'
 					events_state_time += logs[i].time - logs[i - 1].time
