@@ -1224,17 +1224,19 @@
         });
 
         for (var key in newRegions) {
-          var newRegion = handler.addRegion(
-            handler.getMainWavesurfer(),
-            newRegions[key]['classes'].sort().join(' '),
-            newRegions[key]['tags'],
-            -1,
-            newRegions[key]['start'],
-            newRegions[key]['end'],
-            newRegions[key]['color'],
-            false
-          );
-          createNewRegion(newRegion)
+          if (newRegions[key]['start'] != newRegions[key]['end']) {
+            var newRegion = handler.addRegion(
+              handler.getMainWavesurfer(),
+              newRegions[key]['classes'].sort().join(' '),
+              newRegions[key]['tags'],
+              -1,
+              newRegions[key]['start'],
+              newRegions[key]['end'],
+              newRegions[key]['color'],
+              false
+            );
+            createNewRegion(newRegion)
+          }
         }
         handler.rearrangeLabels();
         insertLog("solve overlaps", getTime(), Object.keys(newRegions).length.toString())
