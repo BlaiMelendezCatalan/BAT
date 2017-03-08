@@ -236,19 +236,19 @@ def save_ground_truth_to_csv(project):
     path_csv = path + project.name.replace(' ', '_') + '.csv'
     with open(path_csv, 'ab') as csvfile:
         gtwriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-        gtwriter.writerow(['wav', 'annotator', 'start', 'end', 'classes', 'prominences'])
+        gtwriter.writerow(['annotator', 'wav', 'start', 'end', 'classes', 'prominences'])
+    annotations = Annotation.objects.filter(segment__wav__project=project)
+    users = list(set(annotations.values_list('user__username', flat=True)))
     wavs = Wav.objects.filter(project=project)
-    for wav in wavs:
-        segments = Segment.objects.filter(wav=wav).order_by('start_time')
-        annotations = Annotation.objects.filter(segment__in=segments)
-        users = list(set(annotations.values_list('user__username', flat=True)))
-        for user in users:
+    for user in users:
+        for wav in wavs:
+            segments = Segment.objects.filter(wav=wav).order_by('start_time')
             for segment in segments:
                 annotation = annotations.filter(segment=segment, user__username=user)
                 if annotation:
                     regions = Region.objects.filter(annotation=annotation).order_by('start_time')
                     if regions:
-                        for region in regions:
+                        for region in regions: #Check if region.start != region.end
                             class_prominences = ClassProminence.objects.filter(
                                                     region=region).order_by('class_obj__name')
                             classes = []
@@ -257,8 +257,8 @@ def save_ground_truth_to_csv(project):
                                 classes.append(cp.class_obj.name)
                                 prominences.append(cp.prominence)
                             row = []
-                            row.append(wav.name.replace('.wav', ''))
                             row.append(user)
+                            row.append(wav.name.replace('.wav', ''))
                             row.append(segment.start_time + region.start_time)
                             row.append(segment.start_time + region.end_time)
                             row.append('/'.join(classes))
@@ -270,8 +270,8 @@ def save_ground_truth_to_csv(project):
                         events = Event.objects.filter(annotation=annotation).order_by('start_time')
                         for event in events:
                             row = []
-                            row.append(wav.name.replace('.wav', ''))
                             row.append(user)
+                            row.append(wav.name.replace('.wav', ''))
                             row.append(segment.start_time + event.start_time)
                             row.append(segment.start_time + event.end_time)
                             row.append(event.event_class.name)
