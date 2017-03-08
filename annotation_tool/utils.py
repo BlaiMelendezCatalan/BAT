@@ -230,45 +230,52 @@ def merge_segment_annotations(segment): # MODIFY!!!
 def save_ground_truth_to_csv(project):
     path = BASE_DIR + '/ground_truth/'
     path += project.name.replace(' ', '_') + '/'
-    path_csv = path + project.name.replace(' ', '_') + '.csv'
     if os.path.exists(path):
         shutil.rmtree(path)
     os.makedirs(path)
+    path_csv = path + project.name.replace(' ', '_') + '.csv'
+    with open(path_csv, 'ab') as csvfile:
+        gtwriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        gtwriter.writerow(['wav', 'annotator', 'start', 'end', 'classes', 'prominences'])
     wavs = Wav.objects.filter(project=project)
     for wav in wavs:
         segments = Segment.objects.filter(wav=wav).order_by('start_time')
-        for segment in segments:
-            annotations = Annotation.objects.filter(segment=segment)
-            for annotation in annotations:
-                regions = Region.objects.filter(annotation=annotation).order_by('start_time')
-                if regions:
-                    for region in regions:
-                        class_prominences = ClassProminence.objects.filter(
-                                                region=region).order_by('class_obj__name')
-                        classes = []
-                        prominences = []
-                        for cp in class_prominences:
-                            classes.append(cp.class_obj.name)
-                            prominences.append(cp.prominence)
-                        row = []
-                        row.append(wav.name.replace('.wav', ''))
-                        row.append(annotation.user.username)
-                        row.append(segment.start_time + region.start_time)
-                        row.append(segment.start_time + region.end_time)
-                        row.append('/'.join(classes))
-                        row.append('/'.join(str(x) for x in prominences))
-                        with open(path_csv, 'ab') as csvfile:
-                            gtwriter = csv.writer(csvfile, delimiter=' ', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-                            gtwriter.writerow(row)
-                else:
-                    events = Event.objects.filter(annotation=annotation).order_by('start_time')
-                    for event in events:
-                        row = []
-                        row.append(wav.name.replace('.wav', ''))
-                        row.append(annotation.user.username)
-                        row.append(segment.start_time + event.start_time)
-                        row.append(segment.start_time + event.end_time)
-                        row.append(event.event_class.name)
-                        with open(path_csv, 'ab') as csvfile:
-                            gtwriter = csv.writer(csvfile, delimiter=' ', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-                            gtwriter.writerow(row)
+        annotations = Annotation.objects.filter(segment__in=segments)
+        users = list(set(annotations.values_list('user__username', flat=True)))
+        for user in users:
+            for segment in segments:
+                annotation = annotations.filter(segment=segment, user__username=user)
+                if annotation:
+                    regions = Region.objects.filter(annotation=annotation).order_by('start_time')
+                    if regions:
+                        for region in regions:
+                            class_prominences = ClassProminence.objects.filter(
+                                                    region=region).order_by('class_obj__name')
+                            classes = []
+                            prominences = []
+                            for cp in class_prominences:
+                                classes.append(cp.class_obj.name)
+                                prominences.append(cp.prominence)
+                            row = []
+                            row.append(wav.name.replace('.wav', ''))
+                            row.append(user)
+                            row.append(segment.start_time + region.start_time)
+                            row.append(segment.start_time + region.end_time)
+                            row.append('/'.join(classes))
+                            row.append('/'.join(str(x) for x in prominences))
+                            with open(path_csv, 'ab') as csvfile:
+                                gtwriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+                                gtwriter.writerow(row)
+                    else:
+                        events = Event.objects.filter(annotation=annotation).order_by('start_time')
+                        for event in events:
+                            row = []
+                            row.append(wav.name.replace('.wav', ''))
+                            row.append(user)
+                            row.append(segment.start_time + event.start_time)
+                            row.append(segment.start_time + event.end_time)
+                            row.append(event.event_class.name)
+                            row.append('None')
+                            with open(path_csv, 'ab') as csvfile:
+                                gtwriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+                                gtwriter.writerow(row)
