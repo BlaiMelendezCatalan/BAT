@@ -204,12 +204,12 @@ def get_number_of_extra_actions(model_obj, annotations):
 		user_dict[user]['extra actions']['extra toggles'] = []
 		user_dict[user]['extra actions']['extra prom updates'] = []
 		user_dict[user]['extra actions']['extra selects'] = []
-		user_dict[user]['extra actions']['extra deletes'] = []
+		user_dict[user]['extra actions']['deletes'] = []
 		user_dict[user]['extra actions']['extra backs'] = []
 		user_dict[user]['extra actions']['extra solves'] = []
 		user_dict[user]['extra actions']['extra finishes'] = []
-		user_dict[user]['extra actions']['extra errors'] = []
-		user_dict[user]['extra actions']['extra tips controls'] = []
+		user_dict[user]['extra actions']['errors'] = []
+		user_dict[user]['extra actions']['tips controls'] = []
 		for i in xrange(len(annotations)):
 			annotation = annotations[i]
 			if annotation.user.username == user:
