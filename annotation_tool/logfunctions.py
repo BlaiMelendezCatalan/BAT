@@ -63,6 +63,7 @@ def get_total_annotation_time_stats(model_obj, annotations):
 	for annotation in annotations:
 		if not annotation.user.username in user_dict.keys():
 			user_dict[annotation.user.username] = {}
+			user_dict[annotation.user.username]['annotation_name'] = []
 			user_dict[annotation.user.username]['total_time'] = []
 			user_dict[annotation.user.username]['total_playback_time'] = []
 			user_dict[annotation.user.username]['total_annotation_time'] = []
@@ -99,6 +100,7 @@ def get_total_annotation_time_stats(model_obj, annotations):
 					if logs[i].action in ANNOTATION_ACTIONS and logs[i - 1].action in ANNOTATION_ACTIONS:
 						total_annotation_time += max(0, logs[i].time - logs[i - 1].time)
 
+		user_dict[annotation.user.username]['annotation_name'].append(annotation.name.split('_')[1])
 		user_dict[annotation.user.username]['total_time'].append(total_time)
 		user_dict[annotation.user.username]['total_playback_time'].append(total_playback_time)
 		user_dict[annotation.user.username]['total_annotation_time'].append(total_annotation_time)
