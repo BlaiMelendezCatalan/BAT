@@ -41,7 +41,7 @@ class Wav(models.Model):
     file = models.FileField(
         upload_to=get_wav_file_path,
         max_length=500)
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=1000)
     upload_date = models.DateTimeField('upload date')
 
     def __str__(self):
@@ -62,7 +62,7 @@ class Segment(models.Model):
     wav = models.ForeignKey('Wav', on_delete=models.CASCADE)
     start_time = models.FloatField()
     end_time = models.FloatField()
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=1000)
     priority = models.FloatField(default=2.0)
     reliable = models.BooleanField(default=False)
 
