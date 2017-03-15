@@ -82,7 +82,7 @@ class Annotation(models.Model):
     )
     segment = models.ForeignKey('Segment', on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=1000)
     annotation_date = models.DateTimeField('annotation date')
     status = models.CharField(max_length=10, default=UNFINISHED, choices=STATUS_CHOICES)
 
