@@ -1,6 +1,8 @@
 FROM bitnami/minideb:jessie
 
-RUN install_packages python python-pip gcc python-dev libblas-dev liblapack-dev libatlas-base-dev gfortran g++ libpq-dev libffi6 libffi-dev
+RUN install_packages python gcc python-dev libblas-dev liblapack-dev libatlas-base-dev gfortran g++ libpq-dev libffi6 libffi-dev wget ca-certificates
+RUN wget https://bootstrap.pypa.io/get-pip.py --secure-protocol=auto
+RUN python get-pip.py
 
 ENV PYTHONUNBUFFERED 1
 

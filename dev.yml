@@ -29,6 +29,6 @@ services:
       - .:/app
       - ../shared:/app/shared
     ports:
-      - "8000:8000"
+      - "8003:8000"
     links:
       - postgres
