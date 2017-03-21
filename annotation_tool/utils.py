@@ -167,10 +167,13 @@ def create_tmp_file(segment):
     padding = round((segment.end_time - segment.start_time) / 20., 2)
     last_segment = Segment.objects.filter(wav=segment.wav).order_by('start_time')
     last_segment = last_segment.reverse()[0]
-    if segment.start_time != 0 and segment != last_segment:
-        start = int(ceil(sample_rate * (segment.start_time - padding)))
-        end = int(floor(sample_rate * (segment.end_time + padding)))
-        wav = wav_file[1]
+    if segment.start_time == 0:
+        start = 0
+        end = int(floor(sample_rate * (segment.end_time + 2 * padding)))
+        wav = np.memmap('/tmp/wav.array', dtype='int16',
+                        mode='w+', shape=(int(round(sample_rate * padding)) + len(wav_file[1]),))
+        wav[:] = 0
+        wav[int(round(sample_rate * padding)):] = wav_file[1]
     elif segment == last_segment:
         start = int(ceil(sample_rate * (segment.start_time - padding)))
         end = int(floor(sample_rate * (segment.end_time + 2 * padding)))
@@ -179,12 +182,9 @@ def create_tmp_file(segment):
         wav[:] = 0
         wav[:-1 * int(round(sample_rate * padding))] = wav_file[1]
     else:
-        start = 0
-        end = int(floor(sample_rate * (segment.end_time + 2 * padding)))
-        wav = np.memmap('/tmp/wav.array', dtype='int16',
-                        mode='w+', shape=(int(round(sample_rate * padding)) + len(wav_file[1]),))
-        wav[:] = 0
-        wav[int(round(sample_rate * padding)):] = wav_file[1]
+        start = int(ceil(sample_rate * (segment.start_time - padding)))
+        end = int(floor(sample_rate * (segment.end_time + padding)))
+        wav = wav_file[1]
     write(
         output_file,
         sample_rate,
