@@ -650,6 +650,7 @@
         {% endfor %}
       {% endif %}
       setCurrentRegion(-1);
+      handler.checkOverlaps()
     }
 
     function getDuration() {
@@ -1134,6 +1135,7 @@
             }
             switchToEventMode();
             handler.rearrangeLabels();
+            handler.checkOverlaps();
             insertLog("back to annotation", getTime(), Object.keys(event_dict).length.toString())
             console.log("back to annotation")
           }
