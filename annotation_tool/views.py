@@ -398,7 +398,7 @@ class NewAnnotationView(LoginRequiredMixin, GenericAPIView):
 
         # create tmp file
         utils.delete_tmp_files()
-        context['tmp_segment_path'], context['padding'] = utils.create_tmp_file(segment)
+        context['tmp_segment_path'], context['padding'], context['dtype'] = utils.create_tmp_file(segment)
 
         context['base_template'] = 'annotation_tool/base.html' if request.user.is_superuser else \
             'annotation_tool/base_normal.html'

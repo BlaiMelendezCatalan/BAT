@@ -49,7 +49,7 @@ def get_wav_duration(wav):
 
 
 def create_segments(wav, duration, segments_length):
-    if int(segments_length) != -1:
+    if int(segments_length) != -1 and duration > segments_length:
         number_of_segments = duration / float(segments_length)
         if number_of_segments % 1 > .5:
             number_of_segments = int(np.ceil(number_of_segments))
@@ -163,6 +163,7 @@ def create_tmp_file(segment):
     input_file = os.path.join(MEDIA_ROOT, segment.wav.file.name)
     output_file = 'tmp/' + input_file.split('/')[-1]
     wav_file = read(input_file, 'r')
+    dtype = type(wav_file[1][0])
     sample_rate = wav_file[0]
     padding = round((segment.end_time - segment.start_time) / 20., 2)
     last_segment = Segment.objects.filter(wav=segment.wav).order_by('start_time')
@@ -170,21 +171,21 @@ def create_tmp_file(segment):
     if segment.start_time == 0 and segment == last_segment:
         start = 0
         end = int(floor(sample_rate * (segment.end_time + 2 * padding)))
-        wav = np.memmap('/tmp/wav.array', dtype='int16',
+        wav = np.memmap('/tmp/wav.array', dtype=dtype,
                         mode='w+', shape=(int(2 * round(sample_rate * padding)) + len(wav_file[1]),))
         wav[:] = 0
         wav[int(round(sample_rate * padding)):-1 * int(round(sample_rate * padding))] = wav_file[1]
     elif segment.start_time == 0:
         start = 0
         end = int(floor(sample_rate * (segment.end_time + 2 * padding)))
-        wav = np.memmap('/tmp/wav.array', dtype='int16',
+        wav = np.memmap('/tmp/wav.array', dtype=dtype,
                         mode='w+', shape=(int(round(sample_rate * padding)) + len(wav_file[1]),))
         wav[:] = 0
         wav[int(round(sample_rate * padding)):] = wav_file[1]
     elif segment == last_segment:
         start = int(ceil(sample_rate * (segment.start_time - padding)))
         end = int(floor(sample_rate * (segment.end_time + 2 * padding)))
-        wav = np.memmap('/tmp/wav.array', dtype='int16',
+        wav = np.memmap('/tmp/wav.array', dtype=dtype,
                         mode='w+', shape=(int(round(sample_rate * padding)) + len(wav_file[1]),))
         wav[:] = 0
         wav[:-1 * int(round(sample_rate * padding))] = wav_file[1]
@@ -197,7 +198,7 @@ def create_tmp_file(segment):
         sample_rate,
         wav[start:end])
 
-    return output_file, padding
+    return output_file, padding, dtype
 
 
 def merge_segment_annotations(segment): # MODIFY!!!
