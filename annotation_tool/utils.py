@@ -198,7 +198,7 @@ def create_tmp_file(segment):
         sample_rate,
         wav[start:end])
 
-    return output_file, padding, dtype
+    return output_file, padding
 
 
 def merge_segment_annotations(segment): # MODIFY!!!
@@ -250,6 +250,9 @@ def save_ground_truth_to_csv(project):
     wavs = Wav.objects.filter(project=project)
     for user in users:
         for wav in wavs:
+            input_file = os.path.join(MEDIA_ROOT, wav.file.name)
+            wav_file = read(input_file, 'r')
+            dtype = type(wav_file[1][0])
             segments = Segment.objects.filter(wav=wav).order_by('start_time')
             for segment in segments:
                 annotation = annotations.filter(segment=segment, user__username=user)
@@ -264,13 +267,22 @@ def save_ground_truth_to_csv(project):
                             for cp in class_prominences:
                                 classes.append(cp.class_obj.name)
                                 prominences.append(cp.prominence)
+                            if None in prominences and len(prominences) > 1:
+                                raise ValueError("Unassigned prominence in annotation %d of user %s" % (annotation.id, user))
                             row = []
                             row.append(user)
                             row.append(wav.name.replace('.wav', ''))
-                            row.append(segment.start_time + region.start_time)
-                            row.append(segment.start_time + region.end_time)
+                            start_time = segment.start_time + region.start_time
+                            row.append(start_time)
+                            end_time = segment.start_time + region.end_time
+                            row.append(end_time)
                             row.append('/'.join(classes))
-                            row.append('/'.join(str(x) for x in prominences))
+                            rms = computeRMS(wav_file[0], wav_file[1], start_time, end_time, dtype)
+                            if len(prominences) > 1:
+                                max_prom = sum(prominences)
+                                row.append('/'.join(str(x * rms / max_prom) for x in prominences))
+                            else:
+                                row.append(str(rms))
                             with open(path_csv, 'ab') as csvfile:
                                 gtwriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
                                 gtwriter.writerow(row)
@@ -280,10 +292,24 @@ def save_ground_truth_to_csv(project):
                             row = []
                             row.append(user)
                             row.append(wav.name.replace('.wav', ''))
-                            row.append(segment.start_time + event.start_time)
-                            row.append(segment.start_time + event.end_time)
+                            start_time = segment.start_time + event.start_time
+                            row.append(start_time)
+                            end_time = segment.start_time + event.end_time
+                            row.append(end_time)
+                            rms = computeRMS(wav_file[0], wav_file[1], start_time, end_time, dtype)
                             row.append(event.event_class.name)
-                            row.append('None')
+                            row.append(str(rms))
                             with open(path_csv, 'ab') as csvfile:
                                 gtwriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
                                 gtwriter.writerow(row)
+
+
+def computeRMS(sr, wav_file, start_time, end_time, dtype):
+    excerpt = np.array(wav_file[int(round(start_time*sr)):int(round(end_time*sr))])
+    if dtype == np.int16:
+        excerpt = excerpt / float(-np.iinfo(np.int16).min)
+    elif dtype == np.int32:
+        excerpt = excerpt / float(-np.iinfo(np.int32).min)
+    elif dtype == np.uint8:
+        excerpt = excerpt / float(np.iinfo(np.uint8).max)
+    return np.sqrt(np.mean(np.square(excerpt)))

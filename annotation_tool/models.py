@@ -140,11 +140,11 @@ class ClassProminence(models.Model):
     LOUD = 4
     VERY_LOUD = 5
     PROMINENCE_CHOICES = (
-        (VERY_LOW, 'Very low'),
-        (LOW, 'Low'),
-        (MID, 'Mid'),
-        (LOUD, 'Loud'),
-        (VERY_LOUD, 'Very loud')
+        (VERY_LOW, ''),
+        (LOW, ''),
+        (MID, ''),
+        (LOUD, ''),
+        (VERY_LOUD, 'Most salient')
     )
     region = models.ForeignKey(Region, related_name='classes')
     class_obj = models.ForeignKey(Class)

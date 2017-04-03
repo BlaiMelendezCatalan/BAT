@@ -779,12 +779,24 @@
         $(newItem).find('.circle').on('click', function () {
           var className = $(this).closest('.class-prominence-item').find('.prominence-label').text(),
               prominence = $(this).data('id');
-          updateClassProminence(region.attributes.region_id, className, prominence);
-          region.attributes.classProminences[className] = prominence;
+          prominences = []
+          for (var j in classes) {
+            if (classes[j] == className) {
+              prominences.push(prominence)
+            }
+            else {
+              prominences.push(region.attributes.classProminences[classes[j]])
+            }
+          }
+          if (prominences.includes(5) || prominences.includes(0)) {
+            updateClassProminence(region.attributes.region_id, className, prominence);
+            region.attributes.classProminences[className] = prominence;
+            console.log("entered")
 
-          // mark circle as active
-          $(this).closest('.prominence-circles').find('.circle').removeClass('active');
-          $(this).addClass('active');
+            // mark circle as active
+            $(this).closest('.prominence-circles').find('.circle').removeClass('active');
+            $(this).addClass('active');
+          }
         });
       }
 
