@@ -61,18 +61,18 @@ Install and run BAT locally or on a server:
 First steps with BAT:
 --------------
 
-1. As the admin you can create projects. Porjects are usually named after the type of events that we want to annotate (instrument sounds, chords, everyday life sounds, etc.). To create one, go to the projects page and click "Add Project". Name it and choose whether or not events overlap for your particular annotation task.
+1. As the admin you can create projects. Porjects are usually named after the type of events that we want to annotate (instrument sounds, chords, everyday life sounds, etc.). To create one, go to the "projects page" and click "Add Project". Name it and choose whether or not events overlap for your particular annotation task.
 
-2. Once the project is created you need to create the ontology, i.e., the classes, that you are going to use for the annotation. To do this, go to the classes page.
+2. Once the project is created you need to create the ontology, i.e., the classes, that you are going to use for the annotation. To do this, go to the "classes page". 
 
-3. The third step is to upload the audio data that you want to annotate. BAT works with segments, so you will have to enter a value in the segment length field. If you write -1, the whole duration of the audio file will be used as the segment length. Right now BAT accepts only wav files. 
+3. The third step is to upload the audio data that you want to annotate in the "upload data page". BAT works with segments, so you will have to enter a value in the segment length field. If you write -1, the whole duration of the audio file will be used as the segment length. Right now BAT accepts only wav files. 
 
 4. Your project is ready. Create an annotator account and start annotating!
 
 Annotation process:
 --------------
 
-1. To annotate, create an annotator user, log in, go to the new anotation page, and select a project. You will be automatically redirected to the annotation page.
+1. To annotate, create an annotator user, log in, go to the "new anotation page", and select a project. You will be automatically redirected to the "annotation page".
 
 2. The annotation has two phases: the event identification and the salience assigning pahses.
 
