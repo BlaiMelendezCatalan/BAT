@@ -72,7 +72,7 @@ First steps with BAT:
 Annotation process:
 --------------
 
-1. To annotate, log in as an annotator, go to the new anotation page, and select a project. You will be automatically redirected to the annotation page.
+1. To annotate, create an annotator user, log in, go to the new anotation page, and select a project. You will be automatically redirected to the annotation page.
 
 2. The annotation has two phases: the event identification and the salience assigning pahses.
 
