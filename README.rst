@@ -20,7 +20,9 @@ Install and run BAT locally or on a server:
 
 .. _`the official documentation guide`: https://docs.docker.com/engine/installation/linux/ubuntulinux/
 
+
 2. Clone the **master** branch of this repository.
+
 
 3. Create file named **.env** in the project root (near the **dev.yml** file) with the following text:
 
@@ -70,4 +72,12 @@ First steps with BAT:
 Annotation process:
 --------------
 
-1. 
+1. To annotate, log in as an annotator, go to the new anotation page, and select a project. You will be automatically redirected to the annotation page.
+
+2. The annotation has two phases: the event identification and the salience assigning pahses.
+
+3. In the event identification you create regions containing events that are of interest to the project's task by clicking and dragging over the waveform. Assign a class to these regions using the labels under the waveform or the keyboard shortcuts. Remember that you can also add tags to these regions.
+
+4. If your project allows overlaps, some of the created regions might overlap. To finish the annotation you need to solve these overlaps, which means assigning how salient is each of the overlapping classes: first, click on the "solve overlaps" button. You will se that new regions, click on the label of those with more than one class to assign their salience.
+
+5. Annotation is finished! Click on either "finish annotation" or "finish annotation and load next"
