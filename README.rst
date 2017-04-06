@@ -34,7 +34,7 @@ Install and run the project on the local computer
 
     $ docker-compose -f dev.yml run django python manage.py createsuperuser
 
-7. Run the tool locally or on the server (you can use **-d** to run server in background-mode).
+7. Run the tool locally or on a server.
 
 ::
 
@@ -42,4 +42,4 @@ Install and run the project on the local computer
 
 
 
-8. Open **http://localhost:XXXX/annotation_tool/** or **http://<your_server>:XXXX/annotation_tool/** in your browser (XXXX is the port defined in dev.yml -> django -> ports -> XXXX:8000)
+8. Open **http://localhost:8003/annotation_tool/** or **http://<your_server>:8003/annotation_tool/** in your browser. You can change the port in dev.yml.
