@@ -1,43 +1,45 @@
-audio_annotation_tool
+BAT - BMAT Annotation Tool
 ==========
 
 Install and run the project on the local computer
 --------------
 
-1. Install the docker and the docker-compose. For the docker install you can use `the official documentation guide`_.
+1. Install docker and docker-compose. For the details on docker installation you can use `the official documentation guide`_.
 
 .. _`the official documentation guide`: https://docs.docker.com/engine/installation/linux/ubuntulinux/
 
-2. Clone the **dev** branch of the repository
+2. Clone the **master** branch of this repository.
 
-3. Create file with name **.env** in project root (near **dev.yml** file) with text
+3. Create file named **.env** in the project root (near the **dev.yml** file) with the following text:
 
 ::
 
     DJANGO_SETTINGS_MODULE=config.settings.local
 
-4. Stop the postgresql service on your computer (if it exist)
+4. Stop the postgresql service on your computer (if it exist).
 
 ::
 
     $ sudo service postgresql stop
 
-5. Build the project with command
+5. Build the project.
 
 ::
 
     $ docker-compose -f dev.yml build
-
-6. After build, run the server with command (you can use **-d** param for run server in background-mode)
-
-::
-
-    $ docker-compose -f dev.yml up
-
-7. Now you can add admin user with command
+    
+6. Now you can add an admin user.
 
 ::
 
     $ docker-compose -f dev.yml run django python manage.py createsuperuser
 
-8. Open http://127.0.0.1:8000 in browser
+7. Run the tool locally or on the server (you can use **-d** to run server in background-mode).
+
+::
+
+    $ docker-compose -f dev.yml up
+
+
+
+8. Open **http://localhost:XXXX/annotation_tool/** or **http://<your_server>:XXXX/annotation_tool/** in your browser (XXXX is the port defined in dev.yml -> django -> ports -> XXXX:8000)
