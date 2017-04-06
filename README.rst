@@ -4,6 +4,8 @@ BAT - BMAT Annotation Tool
 Description:
 --------------
 
+BAT is an open-source, web-based tool for the manual annotation of events in audio recordings developed at 'BMAT (Barcelona Music and Audio Technologies': www.bmat.com. (1) It provides an easy way to annotate the salience of simultaneous sound sources; (2) it allows to define multiple ontologies to adapt to multiple tasks; and (3) offers the possibility to cross-annotate audio data. Additionally, it is easy to install and deploy on servers.
+
 Install and run BAT locally or on a server:
 --------------
 
