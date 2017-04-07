@@ -255,24 +255,25 @@ def save_ground_truth_to_csv(project):
                 if annotation:
                     regions = Region.objects.filter(annotation=annotation).order_by('start_time')
                     if regions:
-                        for region in regions: #Check if region.start != region.end
-                            class_prominences = ClassProminence.objects.filter(
-                                                    region=region).order_by('class_obj__name')
-                            classes = []
-                            prominences = []
-                            for cp in class_prominences:
-                                classes.append(cp.class_obj.name)
-                                prominences.append(cp.prominence)
-                            row = []
-                            row.append(user)
-                            row.append(wav.name.replace('.wav', ''))
-                            row.append(segment.start_time + region.start_time)
-                            row.append(segment.start_time + region.end_time)
-                            row.append('/'.join(classes))
-                            row.append('/'.join(str(x) for x in prominences))
-                            with open(path_csv, 'ab') as csvfile:
-                                gtwriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-                                gtwriter.writerow(row)
+                        for region in regions:
+                            if region.start_time != region.end_time:
+                                class_prominences = ClassProminence.objects.filter(
+                                                        region=region).order_by('class_obj__name')
+                                classes = []
+                                prominences = []
+                                for cp in class_prominences:
+                                    classes.append(cp.class_obj.name)
+                                    prominences.append(cp.prominence)
+                                row = []
+                                row.append(user)
+                                row.append(wav.name.replace('.wav', ''))
+                                row.append(segment.start_time + region.start_time)
+                                row.append(segment.start_time + region.end_time)
+                                row.append('/'.join(classes))
+                                row.append('/'.join(str(x) for x in prominences))
+                                with open(path_csv, 'ab') as csvfile:
+                                    gtwriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+                                    gtwriter.writerow(row)
                     else:
                         events = Event.objects.filter(annotation=annotation).order_by('start_time')
                         for event in events:
