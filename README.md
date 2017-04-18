@@ -22,31 +22,26 @@ Install and run BAT locally or on a server:
 
 3. Create file named **.env** in the project root (near the **dev.yml** file) with the following text:
 
-::
 
     DJANGO_SETTINGS_MODULE=config.settings.local
 
 4. Stop the postgresql service on your computer (if it exist).
 
-::
 
     $ sudo service postgresql stop
 
 5. Build BAT.
 
-::
 
     $ docker-compose -f dev.yml build
     
 6. Now you can add an admin user.
 
-::
 
     $ docker-compose -f dev.yml run django python manage.py createsuperuser
 
 7. Run BAT locally or on a server.
 
-::
 
     $ docker-compose -f dev.yml up
 
