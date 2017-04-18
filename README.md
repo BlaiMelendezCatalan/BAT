@@ -22,25 +22,23 @@ Install and run BAT locally or on a server:
 
 3. Create file named **.env** in the project root (near the **dev.yml** file) with the following text:
 
-<addr> DJANGO_SETTINGS_MODULE=config.settings.local
+<addr> DJANGO_SETTINGS_MODULE=config.settings.local</addr> 
 
 4. Stop the postgresql service on your computer (if it exist).
 
-<addr> $ sudo service postgresql stop
+<addr> $ sudo service postgresql stop</addr> 
 
 5. Build BAT.
 
-<addr> $ docker-compose -f dev.yml build
+<addr> $ docker-compose -f dev.yml build</addr> 
     
 6. Now you can add an admin user.
 
-<addr> $ docker-compose -f dev.yml run django python manage.py createsuperuser
+<addr> $ docker-compose -f dev.yml run django python manage.py createsuperuser</addr> 
 
 7. Run BAT locally or on a server.
 
-<addr> $ docker-compose -f dev.yml up
-
-
+<addr> $ docker-compose -f dev.yml up</addr> 
 
 8. Open **http://localhost:8003/annotation_tool/** or **http://<your_server>:8003/annotation_tool/** in your browser. You can change the port in dev.yml.
 
