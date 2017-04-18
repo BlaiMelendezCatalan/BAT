@@ -6,10 +6,10 @@ Description:
 
 BAT is an open-source, web-based tool for the manual annotation of events in audio recordings developed at [BMAT](http://www.bmat.com)
 
-(1) It provides an easy way to annotate the salience of simultaneous sound sources.
-(2) It allows to define multiple ontologies to adapt to multiple tasks.
-(3) It offers the possibility to cross-annotate audio data. 
-(4) It is easy to install and deploy on servers.
+1. It provides an easy way to annotate the salience of simultaneous sound sources.
+2. It allows to define multiple ontologies to adapt to multiple tasks.
+3. It offers the possibility to cross-annotate audio data. 
+4. It is easy to install and deploy on servers.
 
 Install and run BAT locally or on a server:
 --------------
@@ -22,28 +22,23 @@ Install and run BAT locally or on a server:
 
 3. Create file named **.env** in the project root (near the **dev.yml** file) with the following text:
 
-
-    DJANGO_SETTINGS_MODULE=config.settings.local
+<addr> DJANGO_SETTINGS_MODULE=config.settings.local
 
 4. Stop the postgresql service on your computer (if it exist).
 
-
-    $ sudo service postgresql stop
+<addr> $ sudo service postgresql stop
 
 5. Build BAT.
 
-
-    $ docker-compose -f dev.yml build
+<addr> $ docker-compose -f dev.yml build
     
 6. Now you can add an admin user.
 
-
-    $ docker-compose -f dev.yml run django python manage.py createsuperuser
+<addr> $ docker-compose -f dev.yml run django python manage.py createsuperuser
 
 7. Run BAT locally or on a server.
 
-
-    $ docker-compose -f dev.yml up
+<addr> $ docker-compose -f dev.yml up
 
 
 
