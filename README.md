@@ -6,6 +6,9 @@ Description:
 
 BAT is an open-source, web-based tool for the manual annotation of events in audio recordings developed at [BMAT](http://www.bmat.com)
 
+I think you should use an
+`<addr>` element here instead.
+
 1. It provides an easy way to annotate the salience of simultaneous sound sources.
 2. It allows to define multiple ontologies to adapt to multiple tasks.
 3. It offers the possibility to cross-annotate audio data. 
