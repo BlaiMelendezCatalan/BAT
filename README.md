@@ -4,9 +4,7 @@ BAT - BMAT Annotation Tool
 Description:
 --------------
 
-BAT is an open-source, web-based tool for the manual annotation of events in audio recordings developed at `BMAT (Barcelona Music and Audio Techonologies)`_.
-
-.. _`BMAT (Barcelona Music and Audio Techonologies)`: https://www.bmat.com/
+BAT is an open-source, web-based tool for the manual annotation of events in audio recordings developed at [BMAT](http://www.bmat.com)
 
 (1) It provides an easy way to annotate the salience of simultaneous sound sources.
 (2) It allows to define multiple ontologies to adapt to multiple tasks.
@@ -16,9 +14,7 @@ BAT is an open-source, web-based tool for the manual annotation of events in aud
 Install and run BAT locally or on a server:
 --------------
 
-1. Install docker and docker-compose. For the details on docker installation you can use `the official documentation guide`_.
-
-.. _`the official documentation guide`: https://docs.docker.com/engine/installation/linux/ubuntulinux/
+1. Install docker and docker-compose. For the details on docker installation you can use [the official documentation guide](https://docs.docker.com/engine/installation/linux/ubuntulinux/)
 
 
 2. Clone the **master** branch of this repository.
