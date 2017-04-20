@@ -279,9 +279,10 @@ def save_ground_truth_to_csv(project):
                             row.append('/'.join(classes))
                             rms = computeRMS(wav_file[0], wav_file[1], start_time, end_time, dtype)
                             if len(prominences) > 1:
-                                max_prom = sum(prominences)
-                                row.append('/'.join(str(x * rms / max_prom) for x in prominences))
+                                row.append('/'.join([str(x) for x in prominences]))
+                                row.append(str(rms))
                             else:
+                                row.append(5)
                                 row.append(str(rms))
                             with open(path_csv, 'ab') as csvfile:
                                 gtwriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
@@ -298,6 +299,7 @@ def save_ground_truth_to_csv(project):
                             row.append(end_time)
                             rms = computeRMS(wav_file[0], wav_file[1], start_time, end_time, dtype)
                             row.append(event.event_class.name)
+                            row.append(5)
                             row.append(str(rms))
                             with open(path_csv, 'ab') as csvfile:
                                 gtwriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
