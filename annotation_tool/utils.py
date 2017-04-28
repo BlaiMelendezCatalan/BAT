@@ -87,6 +87,15 @@ def create_class(name):
     c.save()
 
 
+#def upload_files(tmp_file_dir): # NOT WORKING (26-04-2017)
+    #for path, dir, fnames in os.listdir(tmp_file_dir):
+        #for fname in fnames:
+            #f = File(open(path + fname), fname)
+            #w = U.create_wav(project=project, file=f, name=f.name, upload_date=timezone.now())
+            #duration = U.get_wav_duration(w)
+            #U.create_segments(wav=w, duration=duration, segments_length=30)
+
+
 def set_user_permissions(user):
     annotation_content_type = ContentType.objects.get_for_model(Annotation)
     event_content_type = ContentType.objects.get_for_model(Event)
