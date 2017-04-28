@@ -11,6 +11,8 @@ BAT is an open-source, web-based tool for the manual annotation of events in aud
 3. It offers the possibility to cross-annotate audio data. 
 4. It is easy to install and deploy on servers.
 
+![alt text](https://github.com/BlaiMelendezCatalan/BAT/blob/master/other/gif.gif "Annotation process")
+
 Install and run BAT locally or on a server:
 --------------
 
