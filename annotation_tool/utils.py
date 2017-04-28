@@ -253,7 +253,7 @@ def save_ground_truth_to_csv(project, silence_threshold=0.0001):
     path_csv = path + project.name.replace(' ', '_') + '.csv'
     with open(path_csv, 'ab') as csvfile:
         gtwriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-        gtwriter.writerow(['annotator', 'wav', 'start', 'end', 'classes', 'prominences'])
+        gtwriter.writerow(['annotator', 'wav', 'start', 'end', 'classes', 'prominences', 'energy'])
     annotations = Annotation.objects.filter(segment__wav__project=project)
     users = list(set(annotations.values_list('user__username', flat=True)))
     wavs = Wav.objects.filter(project=project)
@@ -312,7 +312,7 @@ def save_ground_truth_to_csv(project, silence_threshold=0.0001):
                                 row.append('/'.join([str(x) for x in prominences]))
                                 row.append(str(rms))
                             else:
-                                row.append(5)
+                                row.append("5")
                                 row.append(str(rms))
                             with open(path_csv, 'ab') as csvfile:
                                 gtwriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
@@ -365,7 +365,7 @@ def save_ground_truth_to_csv(project, silence_threshold=0.0001):
                             row.append(end_time)
                             rms = computeRMS(wav_file[0], wav_file[1], start_time, end_time, dtype)
                             row.append(event.event_class.name)
-                            row.append(5)
+                            row.append("5")
                             row.append(str(rms))
                             with open(path_csv, 'ab') as csvfile:
                                 gtwriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
