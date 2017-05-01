@@ -88,12 +88,12 @@ def create_class(name):
 
 
 #def upload_files(tmp_file_dir): # NOT WORKING (26-04-2017)
-    #for path, dir, fnames in os.listdir(tmp_file_dir):
-        #for fname in fnames:
-            #f = File(open(path + fname), fname)
-            #w = U.create_wav(project=project, file=f, name=f.name, upload_date=timezone.now())
-            #duration = U.get_wav_duration(w)
-            #U.create_segments(wav=w, duration=duration, segments_length=30)
+#    for path, dir, fnames in os.listdir(tmp_file_dir):
+#        for fname in fnames:
+#            f = File(open(path + fname), fname)
+#            w = U.create_wav(project=project, file=f, name=f.name, upload_date=timezone.now())
+#            duration = U.get_wav_duration(w)
+#            U.create_segments(wav=w, duration=duration, segments_length=30)
 
 
 def set_user_permissions(user):
@@ -111,7 +111,7 @@ def set_user_permissions(user):
         user.user_permissions.add(p)
 
 
-def pick_segment_to_annotate(project_name, user_id): # MODIFY!!!
+def pick_segment_to_annotate(project_name, user_id):
     segments = Segment.objects.filter(wav__project__name=project_name)
     for segment in segments:
         annotations = Annotation.objects.filter(segment__id=segment.id)
@@ -126,45 +126,11 @@ def update_annotation_status(annotation, new_status=Annotation.UNFINISHED):
     if old_status != new_status:
         annotation.status = new_status
         annotation.save()
-        #modify_segment_priority(annotation.segment)
-
-
-def modify_segment_priority(segment): # MODIFY!!!
-    segment.priority = 1
-    segment.save()
-    #annotations = Annotation.objects.filter(segment=segment, status="finished")
-    #project = segment.get_project()
-    #if len(annotations) > 1:
-        #agreement = compute_interannotation_agreement(annotations, project.overlap)
-        #if agreement >= 0.8:
-            #segment.reliable = True
-            #segment.save()
-            #generate_ground_truth()
-
-
-
-#def compute_interannotation_agreement(annotations, overlap):
-
-
-def normalize_prominence(region):
-    class_prominences = ClassProminence.objects.filter(region=region)
-    classes = []
-    prominences = np.array([])
-    for cp in class_prominences:
-        classes.append(cp.class_obj.name)
-        prominences = np.append(prominences, cp.prominence)
-    prominences = prominences / float(sum(prominences))
-    dict = {}
-    for c, p in zip(classes, prominences):
-        dict[c] = p
-
-    return dict
-
 
 
 def delete_tmp_files():
     if os.path.exists(BASE_DIR + '/tmp/'):
-        shutil.rmtree(BASE_DIR + '/tmp/')
+        shutil.rmtree(BASE_DIdelete_tmp_filesR + '/tmp/')
 
 
 def create_tmp_file(segment):
@@ -208,40 +174,6 @@ def create_tmp_file(segment):
         wav[start:end])
 
     return output_file, padding
-
-
-def merge_segment_annotations(segment): # MODIFY!!!
-    annotations = Annotation.objects.filter(segment=segment)
-    # Get the set of boundaries of all events
-    boundaries = [0.0, segment.end_time - segment.start_time]
-    classes = list(Class.objects.values_list("name",
-                                             flat=True))  # Depending on how we handle overlappings, this should probably include class mixtures.
-    segment_events = []
-    for annotation in annotations:
-        events = Event.objects.filter(annotation=annotation)
-        segment_events.append(events)
-        for event in events:
-            boundaries.append(event.start_time)
-            boundaries.append(event.end_time)
-    boundaries = list(set(boundaries))
-    for i in xrange(len(boundaries) - 1):
-        class_score = np.zeros(len(classes))
-        for event in segment_events:
-            if event.start_time <= boundaries[i] and event.end_time >= boundaries[i + 1]:
-                class_score[classes.index(event.event_class)] += 1
-        if max(class_score) != 0:
-            class_name = classes[np.argmax(class_score)]
-            region = Region(segment=segment,
-                            class_name=class_name,
-                            start_time=boundaries[i],
-                            end_time=boundaries[i + 1])
-            region.save()
-        else:
-            region = Region(segment=segment,
-                            class_name="unknown",
-                            start_time=boundaries[i],
-                            end_time=boundaries[i + 1])
-            region.save()
 
 
 def save_ground_truth_to_csv(project, silence_threshold=0.0001):
