@@ -323,10 +323,8 @@
 
           if ('click_remove' in region.attributes) {
             insertLog("click-delete region", getTime(), region.attributes.class)
-            console.log("click delete")
           } else if (!('delete' in region.attributes)) {
             insertLog("cross-delete region", getTime(), region.attributes.class)
-            console.log("cross delete")
           }
 
           if (!('delete' in region.attributes)) {
@@ -373,7 +371,6 @@
             loadRegions(wavesurfer);
             wavesurfer.play();
             insertLog("play", getTime(), '0.0');
-            console.log("play")
             that.labels[0].rearrange();
           }
           var timeline = Object.create(WaveSurfer.Timeline);
@@ -389,14 +386,12 @@
         wavesurfer.on('seek', function (value) {
           if (isMainWavesurfer) {
             insertLog("seek", getTime(), value.toString())
-            console.log("seek")
           }
         });
 
         wavesurfer.on('finish', function () {
           if (isMainWavesurfer) {
             insertLog("end of waveform", getTime())
-            console.log("end of waveform")
           }
         });
       },
@@ -503,12 +498,10 @@
     var ALLOW_OVERLAPS = {% if project.overlap %}true{% else %}false{% endif %};
     var CLASS_DICT = {{ class_dict|safe }};
     var currentRegionId = -1;
-    var OVERLAP_REGION_COLOR = 'rgba(220, 220, 220, 0.8)';
     var WAVESURFER_HEIGHT = 128;
     var REGIONS_STATE = false;
     var START_TIME = Date.now();
     insertLog('start', 0.0)
-    console.log("start")
     var handler = new wavesurferHandler.create();
     handler.checkOverlaps()
 
@@ -522,10 +515,8 @@
       time = wavesurfer.getCurrentTime();
       if (handler.isPlaying()){
         insertLog("play mouse", getTime(), time.toString());
-        console.log("play mouse")
       } else {
         insertLog("pause mouse", getTime(), time.toString());
-        console.log("pause mouse")
       }
     });
 
@@ -619,7 +610,6 @@
       }
       setClassForRegion(region, data.className, data.classColor);
       insertLog("update region class mouse", getTime(), data.className)
-      console.log("update region class mouse")
     });
 
     function loadRegions(wavesurfer) {
@@ -694,7 +684,6 @@
       }
       if (overlap == true) {
         insertLog("prevent overlap", getTime());
-        console.log("prevent overlap")
       }
 
       return [new_start, new_end]
@@ -720,7 +709,6 @@
               "update class prominence",
               getTime(),
               className + ' ' + prominence.toString());
-          console.log("update class prominence")
         }
       });
     }
@@ -735,11 +723,9 @@
       if (classes.length == 1) {
         popup.removeClass('active');
         insertLog("untoggle prominence popup", getTime(), region.attributes.class)
-        console.log("untoggle prominence popup")
         return;
       } else {
         insertLog("toggle prominence popup", getTime(), region.attributes.class)
-        console.log("toggle prominence popup")
       }
       var offsetLeft1 = offset.left;
       var offsetLeft2 = offset.left - popup.width() + region.element.clientWidth;
@@ -790,7 +776,6 @@
           if (prominences.includes(5) || prominences.includes(0)) {
             updateClassProminence(region.attributes.region_id, className, prominence);
             region.attributes.classProminences[className] = prominence;
-            console.log("entered")
 
             // mark circle as active
             $(this).closest('.prominence-circles').find('.circle').removeClass('active');
@@ -840,7 +825,6 @@
           updateEvent(region);
           redrawTagsForRegion(region);
           insertLog("delete tag", getTime(), tagName)
-          console.log("delete tag")
         }
       }
     }
@@ -928,7 +912,6 @@
           }
         }
         insertLog("select region", getTime(), region.attributes.class)
-        console.log("select region")
       }
     }
 
@@ -951,25 +934,21 @@
     function avoidPadding(region) {
       if (region.start > getDuration() - {{ padding }}) {
         insertLog("avoid padding", getTime())
-        console.log("avoid padding")
         return -1;
       } else if (region.end > getDuration() - {{ padding }}) {
         region.update({
           end: getDuration() - {{ padding }}
         });
         insertLog("avoid padding", getTime())
-        console.log("avoid padding")
       }
       if (region.end < {{ padding }}) {
         insertLog("avoid padding", getTime())
-        console.log("avoid padding")
         return -1;
       } else if (region.start < {{ padding }}) {
         region.update({
           start: {{ padding }}
         });
         insertLog("avoid padding", getTime())
-        console.log("avoid padding")
       }
     }
 
@@ -1003,12 +982,10 @@
       if (min_distance['start'][0] < {{ padding }} / 10.) {
         new_start = min_distance['start'][1];
         insertLog("adjust limits", getTime())
-        console.log("adjust limits")
       }
       if (min_distance['end'][0] < {{ padding }} / 10.) {
         new_end = min_distance['end'][1];
         insertLog("adjust limits", getTime())
-        console.log("adjust limits")
       }
 
       return [new_start, new_end];
@@ -1032,7 +1009,6 @@
           region.attributes['tags'] = []
         }
         insertLog("create region", getTime())
-        console.log("create region")
       }
 
       function onRegionUpdateEnd(wavesurfer, region) {
@@ -1094,7 +1070,6 @@
               insertLog("update region limits mouse",
                         getTime(),
                         times[0].toString() + ' ' + times[1].toString())
-              console.log("update region limits mouse")
             }
           });
         }
@@ -1112,7 +1087,6 @@
           updateEvent(region);
           redrawTagsForRegion(region);
           insertLog("add tags", getTime(), region.attributes.tags.join(' '))
-          console.log("add tags")
         }
       });
 
@@ -1148,7 +1122,6 @@
             handler.rearrangeLabels();
             handler.checkOverlaps();
             insertLog("back to annotation", getTime(), Object.keys(event_dict).length.toString())
-            console.log("back to annotation")
           }
         });
       });
@@ -1169,7 +1142,6 @@
           modalWindow.find('.modal-body').html('Please, assign a class to all regions before starting to solve the overlaps.');
           modalWindow.modal('show');
           insertLog("error", getTime(), "classes not assigned before solve overlaps")
-          console.log("error: classes not assigned before solve overlaps")
           return;
         }
 
@@ -1253,7 +1225,6 @@
         }
         handler.rearrangeLabels();
         insertLog("solve overlaps", getTime(), Object.keys(newRegions).length.toString())
-        console.log("solve overlaps")
       }
 
       function checkClassProminenceIsFilled() {
@@ -1312,7 +1283,6 @@
           modalWindow.find('.modal-body').text('Please, solve all the overlaps first');
           modalWindow.modal('show');
           insertLog("error", getTime(), "overlaps not solved")
-          console.log("error: overlaps not solved")
           return;
         }
         if (!checkClassProminenceIsFilled()) {
@@ -1320,7 +1290,6 @@
           modalWindow.find('.modal-body').text('Please, assign a prominence value to all regions with more than one class first');
           modalWindow.modal('show');
           insertLog("error", getTime(), "prominence not assigned")
-          console.log("error: prominence not assigned")
           return;
         }
 
@@ -1349,13 +1318,11 @@
                 modalWindow.modal('show');
               }
               insertLog("finish annotation and load next", getTime())
-              console.log("finish annotation and load next")
             } else {
               modalWindow.find('.modal-title').text('Success!');
               modalWindow.find('.modal-body').html(text);
               modalWindow.modal('show');
               insertLog("finish annotation", getTime())
-              console.log("finish annotation")
             }
           }
         });
@@ -1376,35 +1343,30 @@
         var newUrl = parsedUrl.scheme + '://' + parsedUrl.host + port + parsedUrl.path + '?' + $.param(params)
         window.location = newUrl;
         insertLog("switch view", getTime(), wavesurfer.params.visualization)
-        console.log("switch view")
       });
 
       $('#tips-button1').on('click', function () {
         $('#tips-button1').hide()
         $('#tips-button2').show()
         insertLog("click tips button", getTime())
-        console.log("click tips 1 button")
       });
 
       $('#tips-button2').on('click', function () {
         $('#tips-button1').show()
         $('#tips-button2').hide()
         insertLog("click tips button", getTime())
-        console.log("click tips 2 button")
       });
 
       $('#controls-button1').on('click', function () {
         $('#controls-button1').hide()
         $('#controls-button2').show()
         insertLog("click controls button", getTime())
-        console.log("click controls 1 button")
       });
 
       $('#controls-button2').on('click', function () {
         $('#controls-button1').show()
         $('#controls-button2').hide()
         insertLog("click controls button", getTime())
-        console.log("click controls 2 button")
       });
     {% endif %}
 
