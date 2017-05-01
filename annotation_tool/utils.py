@@ -130,7 +130,7 @@ def update_annotation_status(annotation, new_status=Annotation.UNFINISHED):
 
 def delete_tmp_files():
     if os.path.exists(BASE_DIR + '/tmp/'):
-        shutil.rmtree(BASE_DIdelete_tmp_filesR + '/tmp/')
+        shutil.rmtree(BASE_DIR + '/tmp/')
 
 
 def create_tmp_file(segment):
