@@ -196,7 +196,7 @@ def save_ground_truth_to_csv(project, silence_threshold=0.0001):
             dtype = type(wav_file[1][0])
             segments = Segment.objects.filter(wav=wav).order_by('start_time')
             for segment in segments:
-                annotation = annotations.filter(segment=segment, user__username=user)
+                annotation = annotations.filter(segment=segment, user__username=user)[0]
                 if annotation:
                     regions = Region.objects.filter(annotation=annotation).order_by('start_time')
                     if regions:
