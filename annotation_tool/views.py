@@ -333,7 +333,7 @@ class UploadFileView(SuperuserRequiredMixin, GenericAPIView):
             project = models.Project.objects.get(pk=project_id)
             for f in files:
                 w = utils.create_wav(project=project, file=f, name=f.name, upload_date=timezone.now())
-                duration = utils.get_wav_duration(w)
+                duration = utils.get_wav_duration(w) 
                 utils.create_segments(wav=w, duration=duration, segments_length=segments_length)
             return HttpResponseRedirect('./')
         else:
