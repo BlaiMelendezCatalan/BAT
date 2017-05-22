@@ -196,18 +196,15 @@ def save_ground_truth_to_csv(project, silence_threshold=0.0001):
             dtype = type(wav_file[1][0])
             segments = Segment.objects.filter(wav=wav).order_by('start_time')
             for segment in segments:
-                annotation = annotations.filter(segment=segment, user__username=user)
+                annotation = annotations.filter(segment=segment, status="finished", user__username=user)
                 if annotation:
                     annotation = annotation[0]
                     regions = Region.objects.filter(annotation=annotation).order_by('start_time')
                     if regions:
-                        last_region_end_time = 0
+                        last_region_end_time = segment.start_time
                         for region in regions:
                             # Check for zero-duration regions
                             if abs(region.start_time - region.end_time) < 0.001:
-                                break
-                            if region.end_time - region.start_time < 0:
-                                print "inverted"
                                 break
                             start_time = segment.start_time + region.start_time
                             end_time = segment.start_time + region.end_time
@@ -272,17 +269,12 @@ def save_ground_truth_to_csv(project, silence_threshold=0.0001):
                                     gtwriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
                                     gtwriter.writerow(row)
                     else:
-                        last_event_end_time = 0
+                        last_event_end_time = segment.start_time
                         events = Event.objects.filter(annotation=annotation).order_by('start_time')
                         for event in events:
                             # Check for zero-duration events
-                            if event.start_time == event.end_time:
-                                break
                             if abs(event.start_time - event.end_time) < 0.001:
                                 print "mini-event", annotation.id
-                                break
-                            if event.end_time - event.start_time < 0:
-                                print "inverted"
                                 break
                             if event.event_class == None:
                                 print "None class event in annotation %d" % annotation.id
