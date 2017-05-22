@@ -49,7 +49,7 @@ def get_wav_duration(wav):
 
 
 def create_segments(wav, duration, segments_length):
-    if int(segments_length) != -1 and duration > segments_length:
+    if float(segments_length) != -1 and float(duration) > float(segments_length):
         number_of_segments = duration / float(segments_length)
         if number_of_segments % 1 > .5:
             number_of_segments = int(np.ceil(number_of_segments))
@@ -204,12 +204,15 @@ def save_ground_truth_to_csv(project, silence_threshold=0.0001):
                         last_region_end_time = 0
                         for region in regions:
                             # Check for zero-duration regions
-                            if region.start_time == region.end_time:
+                            if abs(region.start_time - region.end_time) < 0.001:
+                                break
+                            if region.end_time - region.start_time < 0:
+                                print "inverted"
                                 break
                             start_time = segment.start_time + region.start_time
                             end_time = segment.start_time + region.end_time
                             # Check for non-annotated audio regions
-                            if last_region_end_time != start_time:
+                            if abs(last_region_end_time - start_time) > 0.001:
                                 rms = computeRMS(wav_file[0], wav_file[1], last_region_end_time, start_time, dtype)
                                 row = []
                                 row.append(user)
@@ -252,7 +255,7 @@ def save_ground_truth_to_csv(project, silence_threshold=0.0001):
                                 gtwriter.writerow(row)
                             last_region_end_time = end_time
                             # Check for non-annotated audio at the end of segment
-                            if region == regions.reverse()[0] and end_time != segment.end_time:
+                            if region == regions.reverse()[0] and segment.end_time - end_time > 0.001:
                                 rms = computeRMS(wav_file[0], wav_file[1], end_time, segment.end_time, dtype)
                                 row = []
                                 row.append(user)
@@ -275,10 +278,18 @@ def save_ground_truth_to_csv(project, silence_threshold=0.0001):
                             # Check for zero-duration events
                             if event.start_time == event.end_time:
                                 break
+                            if abs(event.start_time - event.end_time) < 0.001:
+                                print "mini-event", annotation.id
+                                break
+                            if event.end_time - event.start_time < 0:
+                                print "inverted"
+                                break
+                            if event.event_class == None:
+                                print "None class event in annotation %d" % annotation.id
                             start_time = segment.start_time + event.start_time
                             end_time = segment.start_time + event.end_time
                             # Check for non-annotated audio regions
-                            if last_event_end_time != start_time:
+                            if abs(last_event_end_time - start_time) > 0.001:
                                 rms = computeRMS(wav_file[0], wav_file[1], last_event_end_time, start_time, dtype)
                                 row = []
                                 row.append(user)
@@ -300,15 +311,19 @@ def save_ground_truth_to_csv(project, silence_threshold=0.0001):
                             row.append(start_time)
                             row.append(end_time)
                             rms = computeRMS(wav_file[0], wav_file[1], start_time, end_time, dtype)
-                            row.append(event.event_class.name)
-                            row.append("5")
+                            if event.event_class != None:
+                                row.append(event.event_class.name)
+                                row.append("5")
+                            else:
+                                row.append('Unknown')
+                                row.append("-")
                             row.append(str(rms))
                             with open(path_csv, 'ab') as csvfile:
                                 gtwriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
                                 gtwriter.writerow(row)
                             last_event_end_time = end_time
                             # Check for non-annotated audio at the end of segment
-                            if event == events.reverse()[0] and end_time != segment.end_time:
+                            if event == events.reverse()[0] and segment.end_time - end_time > 0.001:
                                 rms = computeRMS(wav_file[0], wav_file[1], end_time, segment.end_time, dtype)
                                 row = []
                                 row.append(user)
