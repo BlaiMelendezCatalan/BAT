@@ -185,7 +185,7 @@ def save_ground_truth_to_csv(project, silence_threshold=0.0001):
     path_csv = path + project.name.replace(' ', '_') + '.csv'
     with open(path_csv, 'ab') as csvfile:
         gtwriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-        gtwriter.writerow(['annotator', 'wav', 'start', 'end', 'classes', 'prominences', 'energy'])
+        gtwriter.writerow(['annotator', 'wav', 'start', 'end', 'classes', 'saliences', 'energy'])
     annotations = Annotation.objects.filter(segment__wav__project=project)
     users = list(set(annotations.values_list('user__username', flat=True)))
     wavs = Wav.objects.filter(project=project)
@@ -196,8 +196,9 @@ def save_ground_truth_to_csv(project, silence_threshold=0.0001):
             dtype = type(wav_file[1][0])
             segments = Segment.objects.filter(wav=wav).order_by('start_time')
             for segment in segments:
-                annotation = annotations.filter(segment=segment, user__username=user)[0]
+                annotation = annotations.filter(segment=segment, user__username=user)
                 if annotation:
+                    annotation = annotation[0]
                     regions = Region.objects.filter(annotation=annotation).order_by('start_time')
                     if regions:
                         last_region_end_time = 0
@@ -271,6 +272,9 @@ def save_ground_truth_to_csv(project, silence_threshold=0.0001):
                         last_event_end_time = 0
                         events = Event.objects.filter(annotation=annotation).order_by('start_time')
                         for event in events:
+                            # Check for zero-duration events
+                            if event.start_time == event.end_time:
+                                break
                             start_time = segment.start_time + event.start_time
                             end_time = segment.start_time + event.end_time
                             # Check for non-annotated audio regions
