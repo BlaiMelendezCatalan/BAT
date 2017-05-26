@@ -615,16 +615,19 @@ def remove_regions(request):
 
     event_dict = {}
     for i, event in enumerate(events):
-        event_dict[i] = {}
-        event_dict[i]['event_id'] = event.id
-        event_dict[i]['event_class'] = event.event_class.name
-        event_dict[i]['start_time'] = float(event.start_time + data['padding'])
-        event_dict[i]['end_time'] = float(event.end_time + data['padding'])
-        event_dict[i]['color'] = event.color
-        event_tags = []
-        for tag in event.tags.all():
-            event_tags.append(tag.name)
-        event_dict[i]['tags'] = event_tags
+        if event.event_class != None:
+            event_dict[i] = {}
+            event_dict[i]['event_id'] = event.id
+            event_dict[i]['event_class'] = event.event_class.name
+            event_dict[i]['start_time'] = float(event.start_time + data['padding'])
+            event_dict[i]['end_time'] = float(event.end_time + data['padding'])
+            event_dict[i]['color'] = event.color
+            event_tags = []
+            for tag in event.tags.all():
+                event_tags.append(tag.name)
+            event_dict[i]['tags'] = event_tags
+        else:
+            event.delete()
 
     return JsonResponse(event_dict)
 
