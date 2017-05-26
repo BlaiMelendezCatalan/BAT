@@ -1105,7 +1105,7 @@
           },
           success: function (event_dict) {
             handler.clearRegionsOnBack()
-            for (var i = 0; i < Object.keys(event_dict).length; i++) {
+            for (var i in event_dict) {
               region = handler.addRegion(
                 handler.getMainWavesurfer(),
                 event_dict[i]['event_class'],
