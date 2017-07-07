@@ -991,384 +991,382 @@
       return [new_start, new_end];
     }
 
-    {% if not request.user.is_superuser %}
-      // WaveSurfer callbacks
-      function onRegionCreated(region) {
-        setCurrentRegion(-1);
-        disableDrag(region)
-        resetHTML()
+    // WaveSurfer callbacks
+    function onRegionCreated(region) {
+      setCurrentRegion(-1);
+      disableDrag(region)
+      resetHTML()
 
-        if ('loaded' in region.attributes) {
-          delete region.attributes['loaded']
-        } else if ('created_overlap' in region.attributes) {
-          delete region.attributes['created_overlap']
-        } else if ('back_to_annotation' in region.attributes) {
-          delete region.attributes['back_to_annotation']
-        } else {
-          region.attributes['class'] = ""
-          region.attributes['tags'] = []
-        }
-        insertLog("create region", getTime())
+      if ('loaded' in region.attributes) {
+        delete region.attributes['loaded']
+      } else if ('created_overlap' in region.attributes) {
+        delete region.attributes['created_overlap']
+      } else if ('back_to_annotation' in region.attributes) {
+        delete region.attributes['back_to_annotation']
+      } else {
+        region.attributes['class'] = ""
+        region.attributes['tags'] = []
       }
+      insertLog("create region", getTime())
+    }
 
-      function onRegionUpdateEnd(wavesurfer, region) {
-        if (REGIONS_STATE) {
-          return;
-        }
-        if (region.end - region.start < {{ padding }} / 10.) {
-          region.attributes['delete'] = true;
-          region.remove();
-          return;
-        }
-        if (avoidPadding(region) == -1) {
-          region.attributes['delete'] = true;
-          region.remove();
-          return;
-        }
-        var times;
-        if (ALLOW_OVERLAPS) {
-          times = adjustLimits(region)
+    function onRegionUpdateEnd(wavesurfer, region) {
+      if (REGIONS_STATE) {
+        return;
+      }
+      if (region.end - region.start < {{ padding }} / 10.) {
+        region.attributes['delete'] = true;
+        region.remove();
+        return;
+      }
+      if (avoidPadding(region) == -1) {
+        region.attributes['delete'] = true;
+        region.remove();
+        return;
+      }
+      var times;
+      if (ALLOW_OVERLAPS) {
+        times = adjustLimits(region)
+        region.update({
+          start: times[0],
+          end: times[1]
+        });
+        handler.checkOverlaps();
+      } else {
+        times = preventOverlapsOnCreation(region);
+        if (times[0] != -1) {
           region.update({
             start: times[0],
             end: times[1]
           });
-          handler.checkOverlaps();
         } else {
-          times = preventOverlapsOnCreation(region);
-          if (times[0] != -1) {
-            region.update({
-              start: times[0],
-              end: times[1]
-            });
-          } else {
-            region.attributes['delete'] = false;
-            region.remove();
-          }
-        }
-        if (times[0] != -1) {
-          var region_data = {
-            start_time: times[0],
-            end_time: times[1],
-            padding: {{ padding }},
-            annotation: '{{ annotation.id }}'
-          };
-          if ('event_id' in region.attributes) {
-            region_data['event_id'] = region.attributes['event_id']
-          }
-          $.ajax({
-            type: "POST",
-            url: '../update_end_event/',
-            dataType: 'json',
-            data: {
-              region_data: JSON.stringify(region_data),
-              csrfmiddlewaretoken: '{{csrf_token}}'
-            },
-            success: function (data) {
-              region.attributes['event_id'] = data.event_id;
-              updateEvent(region);
-              setCurrentRegion(region.id);
-              insertLog("update region limits mouse",
-                        getTime(),
-                        times[0].toString() + ' ' + times[1].toString())
-            }
-          });
+          region.attributes['delete'] = false;
+          region.remove();
         }
       }
-
-      $("#tag_button").click(function () {
-        var region = handler.findRegionById(currentRegionId),
-            tokens = $('#tags-input').tokenfield('getTokens'),
-            tags = [];
-        for (var i in tokens) {
-          tags.push(tokens[i].value);
-        }
-        if (region != null && tags.length) {
-          region.attributes.tags = getUniqueItems(tags.concat(region.attributes.tags));
-          updateEvent(region);
-          redrawTagsForRegion(region);
-          insertLog("add tags", getTime(), region.attributes.tags.join(' '))
-        }
-      });
-
-      $('#back-annotations-button').on('click', function () {
-        back_data = {
-          annotation: '{{ annotation.id }}',
-          padding: {{ padding }}
+      if (times[0] != -1) {
+        var region_data = {
+          start_time: times[0],
+          end_time: times[1],
+          padding: {{ padding }},
+          annotation: '{{ annotation.id }}'
+        };
+        if ('event_id' in region.attributes) {
+          region_data['event_id'] = region.attributes['event_id']
         }
         $.ajax({
           type: "POST",
-          url: '../remove_regions/',
+          url: '../update_end_event/',
           dataType: 'json',
           data: {
-            back_data: JSON.stringify(back_data),
+            region_data: JSON.stringify(region_data),
             csrfmiddlewaretoken: '{{csrf_token}}'
           },
-          success: function (event_dict) {
-            handler.clearRegionsOnBack()
-            for (var i in event_dict) {
-              region = handler.addRegion(
-                handler.getMainWavesurfer(),
-                event_dict[i]['event_class'],
-                event_dict[i]['tags'],
-                event_dict[i]['event_id'],
-                event_dict[i]['start_time'],
-                event_dict[i]['end_time'],
-                event_dict[i]['color'],
-                true
-              );
-              region.attributes['back_to_annotation'] = true;
-            }
-            switchToEventMode();
-            handler.rearrangeLabels();
-            handler.checkOverlaps();
-            insertLog("back to annotation", getTime(), Object.keys(event_dict).length.toString())
+          success: function (data) {
+            region.attributes['event_id'] = data.event_id;
+            updateEvent(region);
+            setCurrentRegion(region.id);
+            insertLog("update region limits mouse",
+                      getTime(),
+                      times[0].toString() + ' ' + times[1].toString())
           }
         });
-      });
+      }
+    }
 
-      $('#solve-overlaps-button').on('click', function () {
-        var allRegions = handler.getAllRegions();
+    $("#tag_button").click(function () {
+      var region = handler.findRegionById(currentRegionId),
+          tokens = $('#tags-input').tokenfield('getTokens'),
+          tags = [];
+      for (var i in tokens) {
+        tags.push(tokens[i].value);
+      }
+      if (region != null && tags.length) {
+        region.attributes.tags = getUniqueItems(tags.concat(region.attributes.tags));
+        updateEvent(region);
+        redrawTagsForRegion(region);
+        insertLog("add tags", getTime(), region.attributes.tags.join(' '))
+      }
+    });
 
-        var regionsWithoutClass = 0;
-        allRegions.forEach(function (region) {
-          if (typeof region.attributes.class == 'undefined' || region.attributes.class == 'None' || region.attributes.class == '') {
-            regionsWithoutClass += 1;
-          }
-        });
-
-        if (regionsWithoutClass) {
-          var modalWindow = $('#modal-window');
-          modalWindow.find('.modal-title').text('Wait a moment...');
-          modalWindow.find('.modal-body').html('Please, assign a class to all regions before starting to solve the overlaps.');
-          modalWindow.modal('show');
-          insertLog("error", getTime(), "classes not assigned before solve overlaps")
-          return;
-        }
-
-        $('body').removeClass('loaded');
-
-        solveOverlaps(allRegions);
-
-        switchToRegionMode();
-
-        
-      });
-
-      function solveOverlaps(allRegions) {
-        var newRegions = {};
-        if (typeof allRegions == 'object') {
-          allRegions = $.map(allRegions, function (item) {
-            return item;
-          });
-        }
-
-        var region_borders = [];
-        allRegions.forEach(function (region) {
-          if (typeof region.deleted != 'undefined') {
-            return;
-          }
-          if (!region_borders.includes(region.start)) {
-            region_borders.push(region.start)
-          }
-          if (!region_borders.includes(region.end)) {
-            region_borders.push(region.end)
-          }
-        });
-
-        region_borders.sort(function(a, b){
-          return a - b;
-        });
-
-        for (var i = 0; i < region_borders.length - 1; i++) {
-          var createRegion = false;
-          var classes = []
-          var tags = []
-          var color = 'rgba(0, 0, 0, 0.5)'
-          allRegions.forEach(function (region) {
-            if (region_borders[i] >= region.start && region_borders[i + 1] <= region.end) {
-              classes.push(region.attributes.class)
-              var region_tags = typeof region.attributes.tags != 'undefined' ? region.attributes.tags : [];
-              tags = tags.concat(region_tags)
-              color = sumColor(color, region.color)
-              createRegion = true
-            }
-          });
-          if (createRegion) {
-            newRegions[i] = {}
-            newRegions[i]['classes'] = getUniqueItems(classes)
-            newRegions[i]['tags'] = getUniqueItems(tags)
-            newRegions[i]['start'] = region_borders[i]
-            newRegions[i]['end'] = region_borders[i + 1]
-            newRegions[i]['color'] = color;
-          }
-        }
-
-        allRegions.forEach(function (region) {
-          region.attributes['delete'] = false
-          region.remove()
-        });
-
-        for (var key in newRegions) {
-          if (newRegions[key]['start'] != newRegions[key]['end']) {
-            var newRegion = handler.addRegion(
+    $('#back-annotations-button').on('click', function () {
+      back_data = {
+        annotation: '{{ annotation.id }}',
+        padding: {{ padding }}
+      }
+      $.ajax({
+        type: "POST",
+        url: '../remove_regions/',
+        dataType: 'json',
+        data: {
+          back_data: JSON.stringify(back_data),
+          csrfmiddlewaretoken: '{{csrf_token}}'
+        },
+        success: function (event_dict) {
+          handler.clearRegionsOnBack()
+          for (var i in event_dict) {
+            region = handler.addRegion(
               handler.getMainWavesurfer(),
-              newRegions[key]['classes'].sort().join(' '),
-              newRegions[key]['tags'],
-              -1,
-              newRegions[key]['start'],
-              newRegions[key]['end'],
-              newRegions[key]['color'],
-              false
+              event_dict[i]['event_class'],
+              event_dict[i]['tags'],
+              event_dict[i]['event_id'],
+              event_dict[i]['start_time'],
+              event_dict[i]['end_time'],
+              event_dict[i]['color'],
+              true
             );
-            createNewRegion(newRegion)
+            region.attributes['back_to_annotation'] = true;
           }
+          switchToEventMode();
+          handler.rearrangeLabels();
+          handler.checkOverlaps();
+          insertLog("back to annotation", getTime(), Object.keys(event_dict).length.toString())
         }
-        handler.rearrangeLabels();
-        insertLog("solve overlaps", getTime(), Object.keys(newRegions).length.toString())
+      });
+    });
+
+    $('#solve-overlaps-button').on('click', function () {
+      var allRegions = handler.getAllRegions();
+
+      var regionsWithoutClass = 0;
+      allRegions.forEach(function (region) {
+        if (typeof region.attributes.class == 'undefined' || region.attributes.class == 'None' || region.attributes.class == '') {
+          regionsWithoutClass += 1;
+        }
+      });
+
+      if (regionsWithoutClass) {
+        var modalWindow = $('#modal-window');
+        modalWindow.find('.modal-title').text('Wait a moment...');
+        modalWindow.find('.modal-body').html('Please, assign a class to all regions before starting to solve the overlaps.');
+        modalWindow.modal('show');
+        insertLog("error", getTime(), "classes not assigned before solve overlaps")
+        return;
       }
 
-      function checkClassProminenceIsFilled() {
-        if (!REGIONS_STATE) {
-          return true;
+      $('body').removeClass('loaded');
+
+      solveOverlaps(allRegions);
+
+      switchToRegionMode();
+
+      
+    });
+
+    function solveOverlaps(allRegions) {
+      var newRegions = {};
+      if (typeof allRegions == 'object') {
+        allRegions = $.map(allRegions, function (item) {
+          return item;
+        });
+      }
+
+      var region_borders = [];
+      allRegions.forEach(function (region) {
+        if (typeof region.deleted != 'undefined') {
+          return;
         }
-        var wavesurfer = handler.getMainWavesurfer();
-        for (var i in wavesurfer.regions.list) {
-          var region = wavesurfer.regions.list[i],
-              region_classes = region.attributes.class.split(' ');
-          // only regions with multi classes
-          if (region_classes.length < 2) {
-            continue;
-          }
-          for (var j in region_classes) {
-            var className = region_classes[j];
-            if (region.attributes.classProminences[className] == '0') {
-              return false;
-            }
-          }
+        if (!region_borders.includes(region.start)) {
+          region_borders.push(region.start)
         }
+        if (!region_borders.includes(region.end)) {
+          region_borders.push(region.end)
+        }
+      });
+
+      region_borders.sort(function(a, b){
+        return a - b;
+      });
+
+      for (var i = 0; i < region_borders.length - 1; i++) {
+        var createRegion = false;
+        var classes = []
+        var tags = []
+        var color = 'rgba(0, 0, 0, 0.5)'
+        allRegions.forEach(function (region) {
+          if (region_borders[i] >= region.start && region_borders[i + 1] <= region.end) {
+            classes.push(region.attributes.class)
+            var region_tags = typeof region.attributes.tags != 'undefined' ? region.attributes.tags : [];
+            tags = tags.concat(region_tags)
+            color = sumColor(color, region.color)
+            createRegion = true
+          }
+        });
+        if (createRegion) {
+          newRegions[i] = {}
+          newRegions[i]['classes'] = getUniqueItems(classes)
+          newRegions[i]['tags'] = getUniqueItems(tags)
+          newRegions[i]['start'] = region_borders[i]
+          newRegions[i]['end'] = region_borders[i + 1]
+          newRegions[i]['color'] = color;
+        }
+      }
+
+      allRegions.forEach(function (region) {
+        region.attributes['delete'] = false
+        region.remove()
+      });
+
+      for (var key in newRegions) {
+        if (newRegions[key]['start'] != newRegions[key]['end']) {
+          var newRegion = handler.addRegion(
+            handler.getMainWavesurfer(),
+            newRegions[key]['classes'].sort().join(' '),
+            newRegions[key]['tags'],
+            -1,
+            newRegions[key]['start'],
+            newRegions[key]['end'],
+            newRegions[key]['color'],
+            false
+          );
+          createNewRegion(newRegion)
+        }
+      }
+      handler.rearrangeLabels();
+      insertLog("solve overlaps", getTime(), Object.keys(newRegions).length.toString())
+    }
+
+    function checkClassProminenceIsFilled() {
+      if (!REGIONS_STATE) {
         return true;
       }
-
-      function sumColor(color, current_color) {
-        if (color == current_color) {
-          return color;
+      var wavesurfer = handler.getMainWavesurfer();
+      for (var i in wavesurfer.regions.list) {
+        var region = wavesurfer.regions.list[i],
+            region_classes = region.attributes.class.split(' ');
+        // only regions with multi classes
+        if (region_classes.length < 2) {
+          continue;
         }
-        var rgba = color.split('(')[1]
-        rgba = rgba.substring(0, rgba.length - 1)
-        var [r, g, b, a] = rgba.split(', ')
-        var current_rgba = current_color.split('(')[1]
-        current_rgba = current_rgba.substring(0, current_rgba.length - 1)
-        var [cr, cg, cb, ca] = current_rgba.split(', ')
-        rr = parseInt(r) + parseInt(cr)
-        rg = parseInt(g) + parseInt(cg)
-        rb = parseInt(b) + parseInt(cb)
-        if (rr > 255 || rg > 255 || rb > 255) {
-          max = Math.max(rr, rg, rb)
-          if (max > 0) {
-            rr = Math.round(rr / max) * 128
-            rg = Math.round(rg / max) * 128
-            rb = Math.round(rb / max) * 128
+        for (var j in region_classes) {
+          var className = region_classes[j];
+          if (region.attributes.classProminences[className] == '0') {
+            return false;
           }
         }
-        result_color = 'rgba(' + rr.toString() + ', ' + rg.toString() + ', ' + rb.toString() + ', ' + a.toString() + ')'
+      }
+      return true;
+    }
 
-        return result_color;
+    function sumColor(color, current_color) {
+      if (color == current_color) {
+        return color;
+      }
+      var rgba = color.split('(')[1]
+      rgba = rgba.substring(0, rgba.length - 1)
+      var [r, g, b, a] = rgba.split(', ')
+      var current_rgba = current_color.split('(')[1]
+      current_rgba = current_rgba.substring(0, current_rgba.length - 1)
+      var [cr, cg, cb, ca] = current_rgba.split(', ')
+      rr = parseInt(r) + parseInt(cr)
+      rg = parseInt(g) + parseInt(cg)
+      rb = parseInt(b) + parseInt(cb)
+      if (rr > 255 || rg > 255 || rb > 255) {
+        max = Math.max(rr, rg, rb)
+        if (max > 0) {
+          rr = Math.round(rr / max) * 128
+          rg = Math.round(rg / max) * 128
+          rb = Math.round(rb / max) * 128
+        }
+      }
+      result_color = 'rgba(' + rr.toString() + ', ' + rg.toString() + ', ' + rb.toString() + ', ' + a.toString() + ')'
+
+      return result_color;
+    }
+
+
+    $(".finish-annotation-button").click(function() {
+      var modalWindow = $('#modal-window');
+      if (ALLOW_OVERLAPS && handler.checkOverlaps()) {
+        modalWindow.find('.modal-title').text('Wait a moment...');
+        modalWindow.find('.modal-body').text('Please, solve all the overlaps first');
+        modalWindow.modal('show');
+        insertLog("error", getTime(), "overlaps not solved")
+        return;
+      }
+      if (!checkClassProminenceIsFilled()) {
+        modalWindow.find('.modal-title').text('Wait a moment...');
+        modalWindow.find('.modal-body').text('Please, assign a prominence value to all regions with more than one class first');
+        modalWindow.modal('show');
+        insertLog("error", getTime(), "prominence not assigned")
+        return;
       }
 
-
-      $(".finish-annotation-button").click(function() {
-        var modalWindow = $('#modal-window');
-        if (ALLOW_OVERLAPS && handler.checkOverlaps()) {
-          modalWindow.find('.modal-title').text('Wait a moment...');
-          modalWindow.find('.modal-body').text('Please, solve all the overlaps first');
-          modalWindow.modal('show');
-          insertLog("error", getTime(), "overlaps not solved")
-          return;
-        }
-        if (!checkClassProminenceIsFilled()) {
-          modalWindow.find('.modal-title').text('Wait a moment...');
-          modalWindow.find('.modal-body').text('Please, assign a prominence value to all regions with more than one class first');
-          modalWindow.modal('show');
-          insertLog("error", getTime(), "prominence not assigned")
-          return;
-        }
-
-        var loadNextAnnotation = $(this).data('load-next');
+      var loadNextAnnotation = $(this).data('load-next');
 
 
-        $.ajax({
-          type: "POST",
-          url: '{% url 'finish_annotation' id=annotation.id %}',
-          dataType: 'json',
-          beforeSend: function (xhr) {
-            xhr.setRequestHeader("X-CSRFToken", '{{ csrf_token }}');
-          },
-          data: {'load next': loadNextAnnotation},
-          success: function (response) {
-            var modalWindow = $('#modal-window'),
-                text = 'Annotation is finished.';
-            if (loadNextAnnotation == '1') {
-              // if have next annotation url - redirect
-              if (response.next_annotation_url != '') {
-                location.href = response.next_annotation_url;
-              } else {
-                text += '<p><b>There are no more segments to annotate for this project.</b></p>';
-                modalWindow.find('.modal-title').text('Success!');
-                modalWindow.find('.modal-body').html(text);
-                modalWindow.modal('show');
-              }
-              insertLog("finish annotation and load next", getTime())
+      $.ajax({
+        type: "POST",
+        url: '{% url 'finish_annotation' id=annotation.id %}',
+        dataType: 'json',
+        beforeSend: function (xhr) {
+          xhr.setRequestHeader("X-CSRFToken", '{{ csrf_token }}');
+        },
+        data: {'load next': loadNextAnnotation},
+        success: function (response) {
+          var modalWindow = $('#modal-window'),
+              text = 'Annotation is finished.';
+          if (loadNextAnnotation == '1') {
+            // if have next annotation url - redirect
+            if (response.next_annotation_url != '') {
+              location.href = response.next_annotation_url;
             } else {
+              text += '<p><b>There are no more segments to annotate for this project.</b></p>';
               modalWindow.find('.modal-title').text('Success!');
               modalWindow.find('.modal-body').html(text);
               modalWindow.modal('show');
-              insertLog("finish annotation", getTime())
             }
+            insertLog("finish annotation and load next", getTime())
+          } else {
+            modalWindow.find('.modal-title').text('Success!');
+            modalWindow.find('.modal-body').html(text);
+            modalWindow.modal('show');
+            insertLog("finish annotation", getTime())
           }
-        });
-      });
-
-      $('#tags-input').tokenfield();
-
-      $('#switch-view').on('click', function () {
-        var parsedUrl = url.parse(location.href),
-            params = parsedUrl.get,
-            port = parsedUrl.port == undefined ? '': (':' + parsedUrl.port);
-        var wavesurfer = handler.getMainWavesurfer();
-        if ('visualization' in params) {
-          delete params['visualization'];
-        } else {
-          params['visualization'] = 1;
         }
-        var newUrl = parsedUrl.scheme + '://' + parsedUrl.host + port + parsedUrl.path + '?' + $.param(params)
-        window.location = newUrl;
-        insertLog("switch view", getTime(), wavesurfer.params.visualization)
       });
+    });
 
-      $('#tips-button1').on('click', function () {
-        $('#tips-button1').hide()
-        $('#tips-button2').show()
-        insertLog("click tips button", getTime())
-      });
+    $('#tags-input').tokenfield();
 
-      $('#tips-button2').on('click', function () {
-        $('#tips-button1').show()
-        $('#tips-button2').hide()
-        insertLog("click tips button", getTime())
-      });
+    $('#switch-view').on('click', function () {
+      var parsedUrl = url.parse(location.href),
+          params = parsedUrl.get,
+          port = parsedUrl.port == undefined ? '': (':' + parsedUrl.port);
+      var wavesurfer = handler.getMainWavesurfer();
+      if ('visualization' in params) {
+        delete params['visualization'];
+      } else {
+        params['visualization'] = 1;
+      }
+      var newUrl = parsedUrl.scheme + '://' + parsedUrl.host + port + parsedUrl.path + '?' + $.param(params)
+      window.location = newUrl;
+      insertLog("switch view", getTime(), wavesurfer.params.visualization)
+    });
 
-      $('#controls-button1').on('click', function () {
-        $('#controls-button1').hide()
-        $('#controls-button2').show()
-        insertLog("click controls button", getTime())
-      });
+    $('#tips-button1').on('click', function () {
+      $('#tips-button1').hide()
+      $('#tips-button2').show()
+      insertLog("click tips button", getTime())
+    });
 
-      $('#controls-button2').on('click', function () {
-        $('#controls-button1').show()
-        $('#controls-button2').hide()
-        insertLog("click controls button", getTime())
-      });
-    {% endif %}
+    $('#tips-button2').on('click', function () {
+      $('#tips-button1').show()
+      $('#tips-button2').hide()
+      insertLog("click tips button", getTime())
+    });
+
+    $('#controls-button1').on('click', function () {
+      $('#controls-button1').hide()
+      $('#controls-button2').show()
+      insertLog("click controls button", getTime())
+    });
+
+    $('#controls-button2').on('click', function () {
+      $('#controls-button1').show()
+      $('#controls-button2').hide()
+      insertLog("click controls button", getTime())
+    });
 
   </script>
 
