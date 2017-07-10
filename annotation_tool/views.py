@@ -21,7 +21,7 @@ from annotation_tool import models
 from annotation_tool.mixins import SuperuserRequiredMixin
 
 from annotation_tool.serializers import ProjectSerializer, ClassSerializer, UploadDataSerializer, LoginSerializer, \
-    UserRegistrationSerializer, RegionSerializer, ClassProminenceSerializer
+    UserRegistrationSerializer#, RegionSerializer, ClassProminenceSerializer
 import utils
 from django.contrib.auth import authenticate, login, logout
 
@@ -232,24 +232,16 @@ class ClassesView(SuperuserRequiredMixin, GenericAPIView):
     def get(self, request, *args, **kwargs):
         return Response({'query_data': self.get_queryset(),
                          'serializer': self.get_serializer(),
-                         'tags_names': ','.join(models.Tag.get_tag_names()),
                          'errors': None})
 
     def post(self, request, *args, **kwargs):
-        # add opacity for color
         data = request.data.copy()
-        opacity = '0.5'
-        data['color'] = re.sub(r'rgb\((\d{1,3}),(\d{1,3}),(\d{1,3})\)',
-                               r'rgba(\1, \2, \3, %s)' % opacity,
-                               data['color'])
-
         serializer = self.get_serializer(data=data)
         if serializer.is_valid():
             serializer.save()
             return HttpResponseRedirect('./')
         return Response({'query_data': self.get_queryset(),
                          'serializer': serializer,
-                         'tags_names': ','.join(models.Tag.get_tag_names()),
                          'errors': serializer.errors})
 
 
@@ -389,9 +381,10 @@ class NewAnnotationView(LoginRequiredMixin, GenericAPIView):
         except models.Annotation.DoesNotExist:
             return HttpResponseRedirect(reverse('new_annotation'))
 
-        context['classes'] = models.Class.objects.filter(project=project).values_list('name',
-                                                                                      'color',
-                                                                                      'shortcut')
+        context['classes'] = models.ClassInstance.objects.filter(
+                                                project=project).values_list('class_obj__name',
+                                                                             'color',
+                                                                             'shortcut')
         context['prominence_choices'] = models.ClassProminence.PROMINENCE_CHOICES
         context['class_dict'] = json.dumps(list(context['classes']), cls=DjangoJSONEncoder)
         context['project'] = project
@@ -449,57 +442,57 @@ class MyAnnotationsView(LoginRequiredMixin, GenericAPIView):
         return Response(context)
 
 
-class RegionsView(LoginRequiredMixin, ListCreateAPIView):
-    queryset = models.Region.objects.all()
-    serializer_class = RegionSerializer
+#class RegionsView(LoginRequiredMixin, ListCreateAPIView):
+#    queryset = models.Region.objects.all()
+#    serializer_class = RegionSerializer
+#
+#    def create(self, request, *args, **kwargs):
+#        serializer = self.get_serializer(data=request.data)
+#        serializer.is_valid(raise_exception=True)
+#
+#        # check exists regions with same time
+#        data = serializer.validated_data
+#        models.Region.objects.filter(
+#            annotation=data['annotation']).filter(Q(start_time=data['start_time'])
+#                                                  | Q(end_time=data['end_time'])).delete()
+#
+#        self.perform_create(serializer)
+#        headers = self.get_success_headers(serializer.data)
+#        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+#
+#
+#    def delete(self, request, *args, **kwargs):
+#        queryset = self.get_queryset()
+#        try:
+#            annotation_id = request.data['annotation_id']
+#            annotation = models.Annotation.objects.get(id=annotation_id)
+#        except KeyError, models.Annotation.DoesNotExist:
+#            return Response(status=status.HTTP_400_BAD_REQUEST)
+#        regions = queryset.filter(annotation=annotation)
+#        models.ClassProminence.objects.filter(region__in=regions).delete()
+#        regions.delete()
+#
+#        utils.update_annotation_status(annotation,
+#                                       new_status=models.Annotation.UNFINISHED)
+#        return Response(status=status.HTTP_204_NO_CONTENT)
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
 
-        # check exists regions with same time
-        data = serializer.validated_data
-        models.Region.objects.filter(
-            annotation=data['annotation']).filter(Q(start_time=data['start_time'])
-                                                  | Q(end_time=data['end_time'])).delete()
-
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-
-
-    def delete(self, request, *args, **kwargs):
-        queryset = self.get_queryset()
-        try:
-            annotation_id = request.data['annotation_id']
-            annotation = models.Annotation.objects.get(id=annotation_id)
-        except KeyError, models.Annotation.DoesNotExist:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-        regions = queryset.filter(annotation=annotation)
-        models.ClassProminence.objects.filter(region__in=regions).delete()
-        regions.delete()
-
-        utils.update_annotation_status(annotation,
-                                       new_status=models.Annotation.UNFINISHED)
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-class ClassProminenceView(LoginRequiredMixin, GenericAPIView):
-    queryset = models.ClassProminence.objects.all()
-    serializer_class = ClassProminenceSerializer
-
-    def post(self, request, *args, **kwargs):
-        try:
-            region = models.Region.objects.get(id=request.data['region_id'])
-            class_obj = models.Class.objects.get(name=request.data['class_name'],
-                                                 project=region.get_project())
-            prominence = request.data['prominence']
-        except (models.Region.DoesNotExist, models.ClassProminence.DoesNotExist):
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-        models.ClassProminence.objects.update_or_create(region=region,
-                                                        class_obj=class_obj,
-                                                        defaults={'prominence': prominence})
-        return Response(status=status.HTTP_201_CREATED)
+#class ClassProminenceView(LoginRequiredMixin, GenericAPIView):
+#    queryset = models.ClassProminence.objects.all()
+#    serializer_class = ClassProminenceSerializer
+#
+#    def post(self, request, *args, **kwargs):
+#        try:
+#            region = models.Region.objects.get(id=request.data['region_id'])
+#            class_obj = models.Class.objects.get(name=request.data['class_name'],
+#                                                 project=region.get_project())
+#            prominence = request.data['prominence']
+#        except (models.Region.DoesNotExist, models.ClassProminence.DoesNotExist):
+#            return Response(status=status.HTTP_400_BAD_REQUEST)
+#        models.ClassProminence.objects.update_or_create(region=region,
+#                                                        class_obj=class_obj,
+#                                                        defaults={'prominence': prominence})
+#        return Response(status=status.HTTP_201_CREATED)
 
 
 class LogoutView(LoginRequiredMixin, APIView):
@@ -552,8 +545,7 @@ def update_event(request):
             event.tags.add(tag)
 
     if region_data['event_class']:
-        event_class = models.Class.objects.get(name=region_data['event_class'],
-                                               project=event.get_project())
+        event_class = models.Class.objects.get(name=region_data['event_class'])
         event.event_class = event_class
         event.color = region_data['color']
 
@@ -596,8 +588,7 @@ def create_region(request):
     region.save()
 
     for class_name in region_data['classes'].split():
-        class_obj = models.Class.objects.get(name=class_name,
-                                               project=annotation.get_project())
+        class_obj = models.Class.objects.get(name=class_name)
         class_prominence = models.ClassProminence(region=region,
                                                class_obj=class_obj)
         class_prominence.save()
@@ -636,8 +627,7 @@ def update_class_prominence(request):
     prom_dict = json.loads(request.POST.get('prom_dict'))
     try:
         region = models.Region.objects.get(id=prom_dict['region_id'])
-        class_obj = models.Class.objects.get(name=prom_dict['class_name'],
-                                             project=region.get_project())
+        class_obj = models.Class.objects.get(name=prom_dict['class_name'])
         prominence = prom_dict['prominence']
     except (models.Region.DoesNotExist, models.ClassProminence.DoesNotExist):
         return Response(status=status.HTTP_400_BAD_REQUEST)
