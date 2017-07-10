@@ -66,20 +66,12 @@
       <tr>
         <th>ID</th>
         <th>Class name</th>
-        <th>Project</th>
-        <th>Tags</th>
-        <th>Color</th>
-        <th>Shortcut</th>
         <th></th>
       </tr>
       {% for class in query_data %}
         <tr>
           <td>{{ class.id }}</td>
           <td>{{ class.name }}</td>
-          <td>{{ class.project }}</td>
-          <td>{% for tag in class.tags.all %}{{ tag.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
-          <td>{{ class.color }}</td>
-          <td>{{ class.shortcut }}</td>
           <td>
             <button data-delete-url="{% url 'class' class.id %}" class="btn btn-danger delete-item"
                     data-toggle="modal" data-target="#delete-modal">Delete
