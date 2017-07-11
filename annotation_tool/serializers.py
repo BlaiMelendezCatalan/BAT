@@ -25,9 +25,9 @@ class ProjectSerializer(serializers.Serializer):
         for i, class_name in enumerate(sorted(validated_data['classes'])):
             c = models.Class.objects.get(name=class_name)
             print colors[i]
-            rgba_color = "rgba(%.2f, %.2f, %.2f, 0.5)" % (255 * colors[i][0],
-                                                          255 * colors[i][1],
-                                                          255 * colors[i][2])
+            rgba_color = "rgba(%d, %d, %d, 0.5)" % (255 * colors[i][0],
+                                                    255 * colors[i][1],
+                                                    255 * colors[i][2])
             print rgba_color
             ci = models.ClassInstance.objects.create(project=project,
                                                      class_obj=c,

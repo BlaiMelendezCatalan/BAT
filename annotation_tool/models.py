@@ -28,7 +28,7 @@ class Class(models.Model):
 
 class ClassInstance(models.Model):
     project = models.ForeignKey('Project', on_delete=models.CASCADE)
-    class_obj = models.ForeignKey(Class)
+    class_obj = models.ForeignKey('Class', on_delete=models.CASCADE)
     shortcut = models.PositiveSmallIntegerField()
     color = models.CharField(max_length=50)
 
@@ -151,7 +151,7 @@ class ClassProminence(models.Model):
         (VERY_LOUD, 'Most salient')
     )
     region = models.ForeignKey(Region, related_name='classes')
-    class_obj = models.ForeignKey(Class)
+    class_obj = models.ForeignKey('Class')
     prominence = models.PositiveSmallIntegerField(choices=PROMINENCE_CHOICES, blank=True, null=True)
 
     def __str__(self):
