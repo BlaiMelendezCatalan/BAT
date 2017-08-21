@@ -384,7 +384,7 @@ class NewAnnotationView(LoginRequiredMixin, GenericAPIView):
         context['classes'] = models.ClassInstance.objects.filter(
                                                 project=project).values_list('class_obj__name',
                                                                              'color',
-                                                                             'shortcut')
+                                                                             'shortcut').order_by('class_obj__name')
         context['prominence_choices'] = models.ClassProminence.PROMINENCE_CHOICES
         context['class_dict'] = json.dumps(list(context['classes']), cls=DjangoJSONEncoder)
         context['project'] = project
