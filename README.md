@@ -67,3 +67,8 @@ Annotation process:
 4. If your project allows overlaps, some of the created regions might overlap. To finish the annotation you need to solve these overlaps, which means assigning how salient is each of the overlapping classes: first, click on the "solve overlaps" button. You will se that new regions, click on the label of those with more than one class to assign their salience.
 
 5. Annotation is finished! Click on either "finish annotation" or "finish annotation and load next"
+
+Third party software:
+--------------
+
+1. From the CrowdCurio project (https://github.com/CrowdCurio/audio-annotator): extended versions of wavesurfer.js and regions.js plugins.
