@@ -1,37 +1,34 @@
 version: '2'
 
 volumes:
-  postgres_data: {}
-  postgres_backup: {}
-  staticfiles: {}
+  postgres_data_dev: {}
+  postgres_backup_dev: {}
 
 services:
   postgres:
     build: ./compose/postgres
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - postgres_backup:/backups
-    env_file: .env
+      - postgres_data_dev:/var/lib/postgresql/data
+      - postgres_backup_dev:/backups
+    environment:
+      - POSTGRES_USER=musicspeach_annotation
+    ports:
+      - "5432:5432"
 
   django:
     build:
       context: .
-      dockerfile: ./compose/django/Dockerfile
-    user: django
+      dockerfile: ./compose/django/Dockerfile-dev
+    command: /start-dev.sh
     depends_on:
       - postgres
-    command: /gunicorn.sh
+    environment:
+      - POSTGRES_USER=musicspeach_annotation
+      - USE_DOCKER=yes
     volumes:
+      - .:/app
       - ../shared:/app/shared
-      - staticfiles:/app/staticfiles
-    env_file: .env
-
-  nginx:
-    build: ./compose/nginx
-    depends_on:
-      - django
-    volumes:
-      - staticfiles:/app/static:ro
-
     ports:
-      - "0.0.0.0:80:80"
+      - "8003:8000"
+    links:
+      - postgres
