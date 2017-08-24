@@ -91,7 +91,7 @@ MANAGERS = ADMINS
 # ------------------------------------------------------------------------------
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#databases
 DATABASES = {
-    'default': env.db('DATABASE_URL', default='postgres:///musicspeach_annotation'),
+    'default': env.db('DATABASE_URL', default='postgres:///bat_database'),
 }
 DATABASES['default']['ATOMIC_REQUESTS'] = True
 
