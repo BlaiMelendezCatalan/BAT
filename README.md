@@ -44,7 +44,7 @@ Install and run BAT locally or on a server:
 
 8. Open http://localhost:8003/annotation_tool/ http://localhost:8003/annotation_tool/ or **http://<your_server>:8003/annotation_tool/** in your browser. You can change the port in dev.yml.
 
-9. To close it open a new terminal, go to the directory of the repository and type:
+9. To close BAT, open a new terminal, go to the directory of the repository and type:
 
 `$ (sudo) docker-compose down`
 
