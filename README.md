@@ -13,7 +13,7 @@ BAT is an open-source, web-based tool for the manual annotation of events in aud
 
 ![alt text](https://github.com/BlaiMelendezCatalan/BAT/blob/master/other/gif.gif "Annotation process")
 
-Install and run BAT locally or on a server: (THIS IS OUTDATED)
+Install and run BAT locally or on a server:
 --------------
 
 1. Install docker and docker-compose. For the details on docker installation you can use [the official documentation guide](https://docs.docker.com/engine/installation/linux/ubuntulinux/)
@@ -32,17 +32,21 @@ Install and run BAT locally or on a server: (THIS IS OUTDATED)
 
 5. Build BAT.
 
-`$ docker-compose -f dev.yml build`
+`$ (sudo) docker-compose build`
     
 6. Now you can add an admin user.
 
-`$ docker-compose -f dev.yml run django python manage.py createsuperuser`
+`$ (sudo) docker-compose run django python manage.py createsuperuser`
 
 7. Run BAT locally or on a server.
 
-`$ docker-compose -f dev.yml up`
+`$ (sudo) docker-compose up`
 
 8. Open http://localhost:8003/annotation_tool/ http://localhost:8003/annotation_tool/ or **http://<your_server>:8003/annotation_tool/** in your browser. You can change the port in dev.yml.
+
+9. To close it open a new terminal, go to the directory of the repository and type:
+
+`$ (sudo) docker-compose down`
 
 First steps with BAT:
 --------------
