@@ -11,7 +11,7 @@ services:
       - postgres_data_dev:/var/lib/postgresql/data
       - postgres_backup_dev:/backups
     environment:
-      - POSTGRES_USER=musicspeach_annotation
+      - POSTGRES_USER=bat_admin
     ports:
       - "5432:5432"
 
@@ -23,7 +23,7 @@ services:
     depends_on:
       - postgres
     environment:
-      - POSTGRES_USER=musicspeach_annotation
+      - POSTGRES_USER=bat_admin
       - USE_DOCKER=yes
     volumes:
       - .:/app
