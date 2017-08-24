@@ -18,18 +18,22 @@ class Project(models.Model):
 
 
 class Class(models.Model):
-    project = models.ForeignKey('Project', on_delete=models.CASCADE)
-    name = models.CharField(max_length=50)
-    tags = models.ManyToManyField('Tag', blank=True)  # if none -> free tag
-    color = models.CharField(max_length=50)
-    shortcut = models.PositiveSmallIntegerField()
+    name = models.CharField(max_length=50, unique=True)
 
     class Meta:
-        unique_together = (('project', 'name'), ('project', 'color'), ('project', 'shortcut'))
-        ordering = ('shortcut',)
+        ordering = ('name',)
 
     def __str__(self):
         return str(self.name)
+
+class ClassInstance(models.Model):
+    project = models.ForeignKey('Project', on_delete=models.CASCADE)
+    class_obj = models.ForeignKey('Class', on_delete=models.CASCADE)
+    shortcut = models.PositiveSmallIntegerField()
+    color = models.CharField(max_length=50)
+
+    class Meta:
+        unique_together = ("project", "class_obj")
 
 
 def get_wav_file_path(self, filename):
@@ -147,7 +151,7 @@ class ClassProminence(models.Model):
         (VERY_LOUD, 'Most salient')
     )
     region = models.ForeignKey(Region, related_name='classes')
-    class_obj = models.ForeignKey(Class)
+    class_obj = models.ForeignKey('Class')
     prominence = models.PositiveSmallIntegerField(choices=PROMINENCE_CHOICES, blank=True, null=True)
 
     def __str__(self):
