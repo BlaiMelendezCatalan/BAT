@@ -25,8 +25,11 @@ Install and run BAT locally or on a server:
 3. Create file named **.env** in the project root (near the **docker-compose.yml** file) with the following text:
 
 `DJANGO_SETTINGS_MODULE=config.settings.local`
+
 `POSTGRES_PASSWORD=change_this_password`
+
 `POSTGRES_USER=change_this_user`
+
 `DJANGO_SECRET_KEY=insert_a_long_string_with_ascii_chars`
 
 4. Stop the postgresql service on your computer (if it exist).
