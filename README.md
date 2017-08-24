@@ -13,7 +13,7 @@ BAT is an open-source, web-based tool for the manual annotation of events in aud
 
 ![alt text](https://github.com/BlaiMelendezCatalan/BAT/blob/master/other/gif.gif "Annotation process")
 
-Install and run BAT locally or on a server:
+Install and run BAT locally or on a server: (THIS IS OUTDATED)
 --------------
 
 1. Install docker and docker-compose. For the details on docker installation you can use [the official documentation guide](https://docs.docker.com/engine/installation/linux/ubuntulinux/)

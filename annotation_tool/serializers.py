@@ -3,16 +3,16 @@ from django.db.models import Q
 from rest_framework import serializers
 from django.utils import timezone
 import colorsys
-
+from aiorest_ws.utils.fields import to_choices_dict, flatten_choices_dict
 from annotation_tool import models
 
 
 class ProjectSerializer(serializers.Serializer):
     project_name = serializers.CharField(label='Project name', max_length=50)
     overlap = serializers.BooleanField(label='Allow class overlap in this project', default=False)
-    class_names = list(models.Class.objects.values_list("name", flat=True).order_by("name"))
-    classes = serializers.MultipleChoiceField(choices=class_names)
+    classes = serializers.MultipleChoiceField(choices=[])
 
+    # Creation of the project and the required ClassInstance objects
     def create(self, validated_data):
         project = models.Project(name=validated_data['project_name'],
                                  overlap=validated_data['overlap'],
@@ -24,17 +24,29 @@ class ProjectSerializer(serializers.Serializer):
             colors.append(colorsys.hsv_to_rgb(i / float(n_colors), 1, 1))
         for i, class_name in enumerate(sorted(validated_data['classes'])):
             c = models.Class.objects.get(name=class_name)
-            print colors[i]
             rgba_color = "rgba(%d, %d, %d, 0.5)" % (255 * colors[i][0],
-                                                    255 * colors[i][1],
-                                                    255 * colors[i][2])
-            print rgba_color
+                                                          255 * colors[i][1],
+                                                          255 * colors[i][2])
             ci = models.ClassInstance.objects.create(project=project,
                                                      class_obj=c,
                                                      shortcut=i + 1,
                                                      color=rgba_color)
             ci.save()
+
         return project
+
+    # All the names of Class objects are loaded to the classes field
+    # http://programtalk.com/python-examples/aiorest_ws.utils.fields.flatten_choices_dict/
+    def __init__(self, *args, **kwargs):
+        classes = models.Class.objects.all()
+        class_dict = dict([(c.name, c.id) for c in classes])
+        self.fields['classes'].grouped_choices = to_choices_dict(class_dict)
+        self.fields['classes'].choices = flatten_choices_dict(self.fields['classes'].grouped_choices)   
+        self.fields['classes'].choice_strings_to_values = {
+            key: key for key in self.fields['classes'].choices.keys()
+        } 
+        self.fields['classes'].allow_blank = kwargs.pop('allow_blank', False)
+        super(ProjectSerializer, self).__init__(*args, **kwargs)
 
 
 class TagSerializer(serializers.Serializer):
