@@ -54,6 +54,16 @@ Install and run BAT locally or on a server:
 
 `$ (sudo) docker-compose down`
 
+10. To access the database using the DJANGO shell: (to close it use 9.)
+
+`$ (sudo) docker-compose run django python manage.py shell`
+
+11. To log into the postgresql database:
+
+`$ (sudo) docker ps -a` (indentify which is the postgresql container)
+
+`$ (sudo) docker exec -i <container ID> psql -U bat_admin -p 5432`
+
 First steps with BAT:
 --------------
 
