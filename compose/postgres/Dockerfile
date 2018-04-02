@@ -1,4 +1,4 @@
-FROM lariat/alpine-postgres
+FROM postgres:9.4
 
 # add backup scripts
 ADD backup.sh /usr/local/bin/backup
