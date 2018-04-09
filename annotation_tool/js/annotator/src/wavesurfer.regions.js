@@ -440,6 +440,9 @@ WaveSurfer.Region = {
          }*/
         if (e.target.classList.contains('fa-times-circle') || e.target.classList.contains('wavesurfer-handle')) {
           e.stopPropagation();
+          if (e.target.classList.contains('fa-times-circle')) {
+            my.wavesurfer.fireEvent('region-removed', my, e);
+          }
         }
         startTime = my.wavesurfer.drawer.handleEvent(e) * duration;
 

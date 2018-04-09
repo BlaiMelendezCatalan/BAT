@@ -106,11 +106,6 @@ function glueSelectedRegionLimits(region, pressCtrl, pressShift, overlaps) {
       }
     }
   }
-  insertLog(
-      "shortcut F",
-      getTime(),
-      pressCtrl.toString() + ' ' + pressShift.toString());
-  console.log("shortcut F")
 }
 
 function setClassForRegion(region, class_name, color) {
@@ -152,22 +147,11 @@ document.onkeydown = function (e) {
   for (var i = 0; i < CLASS_DICT.length; i++) {
     if (CLASS_DICT[i][2] == key && !pressCtrl) {
       setClassForRegion(region, CLASS_DICT[i][0], CLASS_DICT[i][1])
-      insertLog("update region class keyboard", getTime(), CLASS_DICT[i][0])
-      console.log("update region class keyboard")
     }
   }
 
   if (key == " ") {
     handler.playPause();
-    wavesurfer = handler.getMainWavesurfer();
-    time = wavesurfer.getCurrentTime();
-    if (handler.isPlaying()){
-      insertLog("play keyboard", getTime(), time.toString());
-      console.log("play keyboard")
-    } else {
-      insertLog("pause keyboard", getTime(), time.toString());
-      console.log("pause keyboard")
-    }
   } else if (key == "ArrowLeft" && pressCtrl && !pressShift) {
     times = preventOverlapsOnArrow(region, increment = -1. / 100)
     region.update({start: times[0]});
@@ -180,12 +164,8 @@ document.onkeydown = function (e) {
     region.update({end: times[1]});
   } else if (key == 'b' && region != null) {
     handler.seekTo(region.start / getDuration());
-    insertLog("shortcut B", getTime());
-    console.log("shortcut B")
   } else if (key == 's') {
     handler.seekTo(0.0);
-    insertLog("shortcut S", getTime());
-    console.log("shortcut S")
   } else if (key == 'f' || key == 'F') {
     glueSelectedRegionLimits(region, pressCtrl, pressShift, ALLOW_OVERLAPS);
   }
@@ -194,7 +174,6 @@ document.onkeydown = function (e) {
   }
 }
 
-
 document.onkeyup = function (e) {
   var key = e.key;
   var wavesurfer = handler.getMainWavesurfer();
@@ -202,10 +181,6 @@ document.onkeyup = function (e) {
     if (currentRegionId != -1) {
       region = wavesurfer.regions.list[currentRegionId];
       updateEvent(region);
-      insertLog("update region limits keyboard",
-                getTime(),
-                region.start.toString() + ' ' + region.end.toString());
-      console.log("update region limits keyboard")
     }
   }
 }

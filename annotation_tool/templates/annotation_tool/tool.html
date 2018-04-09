@@ -25,53 +25,21 @@
   <div class="container">
     <div class="row">
       <div class="col-xs-6">
-        <button id="tips-button1" type="button" class="btn btn-default" data-toggle="collapse" data-target="#tips-container">Annotation tips</button>
-        <button id="tips-button2" type="button" class="btn btn-default" data-toggle="collapse" data-target="#tips-container">Annotation tips</button>
-        <div class="collapse in" id="tips-container">
-          <h5>Read and get used to the controls. Annotation will be much easier.</h5>
-        </div>
-      </div>
-      <div class="col-xs-6">
-        <button id="controls-button1" type="button" class="btn btn-default" data-toggle="collapse" data-target="#controls-container">Controls</button>
-        <button id="controls-button2" type="button" class="btn btn-default" data-toggle="collapse" data-target="#controls-container">Controls</button>
-        <div class="collapse" id="controls-container">
-          <h5 class="common-control"><strong>Space bar</strong>: play / pause audio.
-          </h5>
-          <h5 class="only-pre-solve-overlaps">
-              <strong>Create new region</strong>: <strong>click</strong> and <strong>drag</strong> on the waveform.
-          </h5>
-          <h5 class="common-control">
-            <strong>Select region</strong>: <strong>double-click</strong> on <strong>region</strong> or <strong>click</strong> on <strong>region's label</strong>.</h5>
-          <h5 class="only-pre-solve-overlaps"><strong>Delete region</strong>: <strong>ctrl+Click</strong> on it or <strong>click</strong> on <strong>region's X button</strong>.</h5>
-          <h5 class="only-pre-solve-overlaps"><strong>Set class</strong>: <strong>click</strong> on <strong>label</strong> or use the <strong>shortcut</strong>.</h5>
-          <h5 class="only-without-overlap"><strong>Regions cannot overlap</strong>. Use this to <strong>easily concatenate regions.</strong></h5>
-          <h5 class="only-pre-solve-overlaps"><strong>'f' key</strong>: <strong>glue</strong> the selected region limits to the closer borders. <strong>f + Ctrl (+ Shift)</strong> glue them only to the <strong>left (right) limit</strong>.</h5>
-          <h5 class="only-pre-solve-overlaps"><strong>Adjusting limits</strong>: <strong>ctrl (+ Shift) + Left/Right Arrows</strong> precisely adjusts <strong>left (right) region limits</strong>.</h5>
-          <h5 class="common-control"><strong>'s' key</strong>: set the <strong>player</strong> at the <strong>beginning</strong> of the audio.
-          </h5>
-          <h5 class="common-control"><strong>'b' key</strong>: set the <strong>player</strong> at the <strong>beginning</strong> of the <strong>selected region</strong>.</h5>
-        </div>
-      </div>
-    </div>
-    <div class="row">
-      <div class="col-xs-6">
         <button id="switch-view" class="btn btn-success">Switch view</button>
       </div>
       <div class="col-xs-6">
-        {% if not request.is_superuser %}
-          <div class="row control-form">
-            <div class="col-md-12">
-              <div style="float: right;">
-                {% if project.overlap %}
-                  <button id="solve-overlaps-button" class="btn btn-warning">Solve overlaps</button>
-                  <button id="back-annotations-button" class="btn btn-warning">Back to annotation</button>
-                {% endif %}
-                <button data-load-next="0" class="btn btn-primary finish-annotation-button">Finish annotation</button>
-                <button data-load-next="1" class="btn btn-primary finish-annotation-button">Finish annotation and load next</button>
-              </div>
+        <div class="row control-form">
+          <div class="col-md-12">
+            <div style="float: right;">
+              {% if project.overlap %}
+                <button id="solve-overlaps-button" class="btn btn-warning">Solve overlaps</button>
+                <button id="back-annotations-button" class="btn btn-warning">Back to annotation</button>
+              {% endif %}
+              <button data-load-next="0" class="btn btn-primary finish-annotation-button">Finish annotation</button>
+              <button data-load-next="1" class="btn btn-primary finish-annotation-button">Finish annotation and load next</button>
             </div>
           </div>
-        {% endif %}
+        </div>
       </div>
     </div>
 
@@ -98,12 +66,10 @@
     <div class="row control-form tags-input-container">
       <div class="col-md-1" id="tags-panel-header">Tags</div>
       <div class="col-md-6">
-        {% if not request.user.is_superuser %}
-          <div class="col-md-8">
-            <input type="text" class="form-control" id="tags-input" value="">
-          </div>
-          <div class="col-md-3"><button class="btn" id="tag_button">Add tags</button></div>
-        {% endif %}
+        <div class="col-md-8">
+          <input type="text" class="form-control" id="tags-input" value="">
+        </div>
+        <div class="col-md-3"><button class="btn" id="tag_button">Add tags</button></div>
       </div>
     </div>
     <div class="row control-form">
@@ -145,13 +111,6 @@
       </div>
     </div>
   </div>
-  {% if request.user.is_superuser %}
-    <style>
-      .wavesurfer-region .fa-times-circle {
-        display: none;
-      }
-    </style>
-  {% endif %}
   {% if regions %}
     <style>
       .delete-tag-button {
@@ -159,6 +118,7 @@
       }
     </style>
   {% endif %}
+
   <script type="text/javascript">
 
     wavesurferHandler = {
@@ -178,6 +138,11 @@
           });
         });
         return regions;
+      },
+
+      removeRegion: function(region, update_db) {
+        region.attributes['update_db'] = update_db
+        region.remove();
       },
 
       // Create color map for spectrogram
@@ -300,7 +265,13 @@
             that = this;
 
         wavesurfer.on('region-created', function (region) {
+          // In case region was created by dragging. It is not possible to set it before.
+          // Set to false because it is added in onRegionUpdateEnd.
+          if (!('update_db' in region.attributes)) {
+            region.attributes['update_db'] = false
+          }
           onRegionCreated(region);
+          delete region.attributes['update_db'];
         });
 
         wavesurfer.on('region-update-end', function (region, event, eventType) {
@@ -317,17 +288,17 @@
         });
 
         wavesurfer.on('region-removed', function (region) {
+          if (!('event_id' in region.attributes)) {
+            return;
+          }
+          if (!('update_db' in region.attributes)) {
+            region.attributes['update_db'] = true;
+          }
           setCurrentRegion(-1);
           resetHTML();
-          var region_data = {event_id: region.attributes['event_id']};
 
-          if ('click_remove' in region.attributes) {
-            insertLog("click-delete region", getTime(), region.attributes.class)
-          } else if (!('delete' in region.attributes)) {
-            insertLog("cross-delete region", getTime(), region.attributes.class)
-          }
-
-          if (!('delete' in region.attributes)) {
+          if (region.attributes['update_db']) {
+            var region_data = {event_id: region.attributes['event_id']};
             $.ajax({
               type: "POST",
               url: '{% url 'remove_event' %}',
@@ -341,9 +312,8 @@
                 handler.rearrangeLabels();
               }
             });
-          } else {
-            delete region.attributes['delete'];
           }
+          delete region.attributes['update_db'];
         });
 
         wavesurfer.on('region-dblclick', function (region, event) {
@@ -354,23 +324,17 @@
           if (event.button == 0 && event.ctrlKey == true && !REGIONS_STATE) {
             event.stopPropagation();
             event.preventDefault();
-            region.attributes['click_remove'] = true
-            region.remove();
+            that.removeRegion(region, true)
           }
         });
 
         wavesurfer.on('ready', function () {
-          {% if request.user.is_superuser %}
-            wavesurfer.initRegions()
-            wavesurfer.disableDragSelection({})
-          {% else %}
-            wavesurfer.enableDragSelection({})
-          {% endif %}
+          wavesurfer.initRegions()
+          wavesurfer.enableDragSelection({})
 
           if (isMainWavesurfer) {
             loadRegions(wavesurfer);
             wavesurfer.play();
-            insertLog("play", getTime(), '0.0');
             that.labels[0].rearrange();
           }
           var timeline = Object.create(WaveSurfer.Timeline);
@@ -381,18 +345,6 @@
             primaryLabelInterval: 1,
             secondaryLabelInterval: 1
           });
-        });
-
-        wavesurfer.on('seek', function (value) {
-          if (isMainWavesurfer) {
-            insertLog("seek", getTime(), value.toString())
-          }
-        });
-
-        wavesurfer.on('finish', function () {
-          if (isMainWavesurfer) {
-            insertLog("end of waveform", getTime())
-          }
         });
       },
 
@@ -410,29 +362,24 @@
         return this.getMainWavesurfer().isPlaying();
       },
 
-      addRegion: function(wavesurfer, classes, tags, id, start_time, end_time, color, loaded) {
+      addRegion: function(wavesurfer, type, classes, tags, id, start_time, end_time, color, update_db) {
         var attrs = {
           'class': classes,
           'tags': tags,
-          'region_id': id,
-          'event_id': id
+          'update_db': update_db
         };
-
-        if (loaded) {
-          attrs['loaded'] = true;
+        if (type == 'event') {
+          attrs['event_id'] = id
         } else {
-          attrs['created_overlap'] = true;
+          attrs['region_id'] = id
         }
+
         var region = wavesurfer.addRegion({
           attributes: attrs,
           start: start_time,
           end: end_time,
           color: color,
-          drag: false,
-          annotation: classes,
-          {% if request.user.is_superuser %}
-            resize: false
-          {% endif %}
+          annotation: classes
         });
 
         return region;
@@ -473,11 +420,11 @@
       },
 
       clearRegionsOnBack: function () {
+        that = this;
         this.container.forEach(function (wavesurfer) {
           Object.keys(wavesurfer.regions.list).forEach(function (id) {
             region = wavesurfer.regions.list[id];
-            region.attributes['delete'] = false;
-            region.remove();
+            handler.removeRegion(region, true)
           });
         });
       },
@@ -500,69 +447,12 @@
     var currentRegionId = -1;
     var WAVESURFER_HEIGHT = 128;
     var REGIONS_STATE = false;
-    var START_TIME = Date.now();
-    insertLog('start', 0.0)
     var handler = new wavesurferHandler.create();
     handler.checkOverlaps()
 
-    $('#add-wavesurfer-button').on('click', function () {
-      handler.addWavesurfer();
-    });
-
     $('#play-pause-main-button').on('click', function () {
       handler.playPause();
-      wavesurfer = handler.getMainWavesurfer();
-      time = wavesurfer.getCurrentTime();
-      if (handler.isPlaying()){
-        insertLog("play mouse", getTime(), time.toString());
-      } else {
-        insertLog("pause mouse", getTime(), time.toString());
-      }
     });
-
-    function getTime() {
-      return (Date.now() - START_TIME) / 1000.;
-    }
-
-    function insertLog(action, time, value="") {
-      log_data = {'action': action,
-                  'time': time,
-                  'value': value,
-                  'annotation': '{{ annotation.id }}'}
-      $.ajax({
-        type: "POST",
-        url: '../insert_log/',
-        dataType: 'json',
-        data: {
-          log_data: JSON.stringify(log_data),
-          csrfmiddlewaretoken: '{{csrf_token}}'
-        },
-        success: function (response) {
-        }
-      });
-
-    }
-
-    function renderNumbersForControlPanel() {
-      if (ALLOW_OVERLAPS) {
-        $('.only-without-overlap').remove();
-      }
-      var index = 0,
-          numbers = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮'];
-      $('#controls-container h5').each(function () {
-        $(this).prepend('<span class="number">' + numbers[index++] + '</span>&nbsp;');
-      });
-    }
-    renderNumbersForControlPanel();
-
-    function renderNumbersForTipsPanel() {
-      var index = 0,
-          numbers = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫', '⑬', '⑭', '⑮'];
-      $('#tips-container h5').each(function () {
-        $(this).prepend('<span class="number">' + numbers[index++] + '</span>&nbsp;');
-      });
-    }
-    renderNumbersForTipsPanel();
 
     function switchToRegionMode() {
       REGIONS_STATE = true;
@@ -609,7 +499,6 @@
         return null;
       }
       setClassForRegion(region, data.className, data.classColor);
-      insertLog("update region class mouse", getTime(), data.className)
     });
 
     function loadRegions(wavesurfer) {
@@ -620,7 +509,7 @@
           {% for tag in region.tags.all %}
             tags.push('{{ tag.name }}')
           {% endfor %}
-          var region = handler.addRegion(wavesurfer, '{{ region.classes.all|join:" " }}', tags, {{ region.id }}, {{ region.start_time }} + {{ padding }}, {{ region.end_time }} + {{ padding }}, '{{ region.color }}', true);
+          var region = handler.addRegion(wavesurfer, 'region', '{{ region.classes.all|join:" " }}', tags, {{ region.id }}, {{ region.start_time }} + {{ padding }}, {{ region.end_time }} + {{ padding }}, '{{ region.color }}', false);
           {% if region.classes.count > 1 %}
             region.attributes.classProminences = {};
             {% for class_prominence in region.classes.all %}
@@ -635,7 +524,7 @@
           {% for tag in event.tags.all %}
             tags.push('{{ tag.name }}')
           {% endfor %}
-          handler.addRegion(wavesurfer, '{{ event.event_class|default_if_none:'' }}', tags, {{ event.id }}, {{ event.start_time }} + {{ padding }}, {{ event.end_time }} + {{ padding }}, '{{ event.color }}', true);
+          handler.addRegion(wavesurfer, 'event', '{{ event.event_class|default_if_none:'' }}', tags, {{ event.id }}, {{ event.start_time }} + {{ padding }}, {{ event.end_time }} + {{ padding }}, '{{ event.color }}', false);
         {% endfor %}
       {% endif %}
       setCurrentRegion(-1);
@@ -646,11 +535,10 @@
       return handler.getMainWavesurfer().getDuration();
     }
 
-    function preventOverlapsOnCreation(region) {
+    function preventOverlaps(region) {
       var new_start = region.start,
           new_end = region.end,
-          wavesurfer = handler.getMainWavesurfer(),
-          overlap = false;
+          wavesurfer = handler.getMainWavesurfer();
       if (new_end > getDuration()) {
         new_end = getDuration()
       }
@@ -659,17 +547,17 @@
         if (id == region.id) {
           continue;
         }
-        var temp_region = wavesurfer.regions.list[id],
-            offset = $(temp_region.element)[0].offsetLeft;
+        var temp_region = wavesurfer.regions.list[id]
+            //offset = $(temp_region.element)[0].offsetLeft;
 
         if (region.start <= temp_region.end && region.end >= temp_region.start) {
           overlap = true;
           if (region.start >= temp_region.start && region.end <= temp_region.end) {
-            new_start = -1;
-            break;
+            handler.removeRegion(region, false);
+            return false;
           } else if (region.start <= temp_region.start && region.end >= temp_region.end) {
-            new_start = -1;
-            break;
+            handler.removeRegion(region, false);
+            return false;
           } else if (region.start <= temp_region.start && region.end <= temp_region.end) {
             number_of_partial_overlaps += 1;
             new_end = temp_region.start;
@@ -680,13 +568,14 @@
         }
       };
       if (number_of_partial_overlaps >= 2) {
-        new_start = -1;
+        handler.removeRegion(region, false);
+        return false;
       }
-      if (overlap == true) {
-        insertLog("prevent overlap", getTime());
-      }
-
-      return [new_start, new_end]
+      region.update({
+        start: new_start,
+        end: new_end
+      });
+      return true;
     }
 
 
@@ -704,12 +593,6 @@
           prom_dict: JSON.stringify(prom_dict),
           csrfmiddlewaretoken: '{{csrf_token}}'
         },
-        success: function (response) {
-          insertLog(
-              "update class prominence",
-              getTime(),
-              className + ' ' + prominence.toString());
-        }
       });
     }
 
@@ -722,10 +605,7 @@
       var popup = $('#class-prominence-container');
       if (classes.length == 1) {
         popup.removeClass('active');
-        insertLog("untoggle prominence popup", getTime(), region.attributes.class)
         return;
-      } else {
-        insertLog("toggle prominence popup", getTime(), region.attributes.class)
       }
       var offsetLeft1 = offset.left;
       var offsetLeft2 = offset.left - popup.width() + region.element.clientWidth;
@@ -824,7 +704,6 @@
           region.attributes.tags.splice(position, 1);
           updateEvent(region);
           redrawTagsForRegion(region);
-          insertLog("delete tag", getTime(), tagName)
         }
       }
     }
@@ -858,38 +737,6 @@
       }
     }
 
-    function createNewRegion(region) {
-      if (typeof region.deleted != 'undefined') {
-        return;
-      }
-      var region_data = {
-        color: region.color,
-        start_time: region.start,
-        end_time: region.end,
-        tags: region.attributes.tags,
-        classes: region.attributes.class,
-        padding: {{ padding }},
-        annotation: '{{ annotation.id }}',
-      };
-      $.ajax({
-        type: "POST",
-        url: '../create_region/',
-        dataType: 'json',
-        data: {
-          region_data: JSON.stringify(region_data),
-          csrfmiddlewaretoken: '{{csrf_token}}'
-        },
-        success: function (data) {
-          region.attributes.region_id = data.region_id
-          region.attributes.classProminences = {}
-          var classes = typeof region.attributes.class != 'undefined' ? region.attributes.class.split(' ') : [];
-          for (var i = 0; i < classes.length; i++){
-            region.attributes.classProminences[classes[i]] = 0
-          }
-        }
-      });
-    }
-
     function setCurrentRegion(id) {
       changePopup = false;
       if (currentRegionId != id){
@@ -911,7 +758,6 @@
             toggleProminencePopup(classes, region, $(region.element).offset());
           }
         }
-        insertLog("select region", getTime(), region.attributes.class)
       }
     }
 
@@ -933,23 +779,23 @@
 
     function avoidPadding(region) {
       if (region.start > getDuration() - {{ padding }}) {
-        insertLog("avoid padding", getTime())
-        return -1;
+        handler.removeRegion(region, false);
+        return false;
       } else if (region.end > getDuration() - {{ padding }}) {
         region.update({
           end: getDuration() - {{ padding }}
         });
-        insertLog("avoid padding", getTime())
       }
       if (region.end < {{ padding }}) {
-        insertLog("avoid padding", getTime())
-        return -1;
+        handler.removeRegion(region, false);
+        return false;
       } else if (region.start < {{ padding }}) {
         region.update({
           start: {{ padding }}
         });
-        insertLog("avoid padding", getTime())
       }
+
+      return true;
     }
 
     function adjustLimits(region) {
@@ -981,33 +827,60 @@
       });
       if (min_distance['start'][0] < {{ padding }} / 10.) {
         new_start = min_distance['start'][1];
-        insertLog("adjust limits", getTime())
+        region.update({
+          start: new_start
+        });
       }
       if (min_distance['end'][0] < {{ padding }} / 10.) {
         new_end = min_distance['end'][1];
-        insertLog("adjust limits", getTime())
+        region.update({
+          end: new_end
+        });
       }
-
-      return [new_start, new_end];
     }
 
     // WaveSurfer callbacks
     function onRegionCreated(region) {
       setCurrentRegion(-1);
-      disableDrag(region)
-      resetHTML()
-
-      if ('loaded' in region.attributes) {
-        delete region.attributes['loaded']
-      } else if ('created_overlap' in region.attributes) {
-        delete region.attributes['created_overlap']
-      } else if ('back_to_annotation' in region.attributes) {
-        delete region.attributes['back_to_annotation']
-      } else {
+      disableDrag(region);
+      resetHTML();
+      if (!('class' in region.attributes)){
         region.attributes['class'] = ""
+      }
+      if (!('tags' in region.attributes)){
         region.attributes['tags'] = []
       }
-      insertLog("create region", getTime())
+      if (region.attributes['update_db']) {
+        if (typeof region.deleted != 'undefined') {
+          return;
+        }
+        var region_data = {
+          color: region.color,
+          start_time: region.start,
+          end_time: region.end,
+          tags: region.attributes['tags'],
+          classes: region.attributes['class'],
+          padding: {{ padding }},
+          annotation: '{{ annotation.id }}',
+        };
+        $.ajax({
+          type: "POST",
+          url: '../create_region/',
+          dataType: 'json',
+          data: {
+            region_data: JSON.stringify(region_data),
+            csrfmiddlewaretoken: '{{csrf_token}}'
+          },
+          success: function (data) {
+            region.attributes.region_id = data.region_id
+            region.attributes.classProminences = {}
+            var classes = typeof region.attributes.class != 'undefined' ? region.attributes.class.split(' ') : [];
+            for (var i = 0; i < classes.length; i++){
+              region.attributes.classProminences[classes[i]] = 0
+            }
+          }
+        });
+      }
     }
 
     function onRegionUpdateEnd(wavesurfer, region) {
@@ -1015,63 +888,49 @@
         return;
       }
       if (region.end - region.start < {{ padding }} / 10.) {
-        region.attributes['delete'] = true;
-        region.remove();
+        handler.removeRegion(region, false);
         return;
       }
-      if (avoidPadding(region) == -1) {
-        region.attributes['delete'] = true;
-        region.remove();
+      if (!(avoidPadding(region))) {
         return;
       }
-      var times;
       if (ALLOW_OVERLAPS) {
-        times = adjustLimits(region)
-        region.update({
-          start: times[0],
-          end: times[1]
-        });
-        handler.checkOverlaps();
+        adjustLimits(region)
       } else {
-        times = preventOverlapsOnCreation(region);
-        if (times[0] != -1) {
-          region.update({
-            start: times[0],
-            end: times[1]
-          });
-        } else {
-          region.attributes['delete'] = false;
-          region.remove();
+        if (!(preventOverlaps(region))) {
+          return;
         }
       }
-      if (times[0] != -1) {
-        var region_data = {
-          start_time: times[0],
-          end_time: times[1],
-          padding: {{ padding }},
-          annotation: '{{ annotation.id }}'
-        };
-        if ('event_id' in region.attributes) {
-          region_data['event_id'] = region.attributes['event_id']
-        }
-        $.ajax({
-          type: "POST",
-          url: '../update_end_event/',
-          dataType: 'json',
-          data: {
-            region_data: JSON.stringify(region_data),
-            csrfmiddlewaretoken: '{{csrf_token}}'
-          },
-          success: function (data) {
-            region.attributes['event_id'] = data.event_id;
-            updateEvent(region);
-            setCurrentRegion(region.id);
-            insertLog("update region limits mouse",
-                      getTime(),
-                      times[0].toString() + ' ' + times[1].toString())
+      var region_data = {
+        start_time: region.start,
+        end_time: region.end,
+        padding: {{ padding }},
+        annotation: '{{ annotation.id }}'
+      };
+      if ('event_id' in region.attributes) {
+        region_data['event_id'] = region.attributes['event_id']
+      }
+      $.ajax({
+        type: "POST",
+        url: '../update_end_event/',
+        dataType: 'json',
+        data: {
+          region_data: JSON.stringify(region_data),
+          csrfmiddlewaretoken: '{{csrf_token}}'
+        },
+        success: function (data) {
+          region.attributes['event_id'] = data.event_id;
+          if (!('class' in region.attributes)) {
+            region.attributes['class'] = ""
           }
-        });
-      }
+          if (!('tags' in region.attributes)) {
+            region.attributes['tags'] = []
+          }
+          updateEvent(region);
+          setCurrentRegion(region.id);
+          handler.checkOverlaps();
+        }
+      });
     }
 
     $("#tag_button").click(function () {
@@ -1085,7 +944,6 @@
         region.attributes.tags = getUniqueItems(tags.concat(region.attributes.tags));
         updateEvent(region);
         redrawTagsForRegion(region);
-        insertLog("add tags", getTime(), region.attributes.tags.join(' '))
       }
     });
 
@@ -1103,24 +961,23 @@
           csrfmiddlewaretoken: '{{csrf_token}}'
         },
         success: function (event_dict) {
-          handler.clearRegionsOnBack()
+          handler.clearRegionsOnBack();
           for (var i in event_dict) {
-            region = handler.addRegion(
+            handler.addRegion(
               handler.getMainWavesurfer(),
+              'event',
               event_dict[i]['event_class'],
               event_dict[i]['tags'],
               event_dict[i]['event_id'],
               event_dict[i]['start_time'],
               event_dict[i]['end_time'],
               event_dict[i]['color'],
-              true
+              false
             );
-            region.attributes['back_to_annotation'] = true;
           }
           switchToEventMode();
           handler.rearrangeLabels();
           handler.checkOverlaps();
-          insertLog("back to annotation", getTime(), Object.keys(event_dict).length.toString())
         }
       });
     });
@@ -1140,7 +997,6 @@
         modalWindow.find('.modal-title').text('Wait a moment...');
         modalWindow.find('.modal-body').html('Please, assign a class to all regions before starting to solve the overlaps.');
         modalWindow.modal('show');
-        insertLog("error", getTime(), "classes not assigned before solve overlaps")
         return;
       }
 
@@ -1148,9 +1004,7 @@
 
       solveOverlaps(allRegions);
 
-      switchToRegionMode();
-
-      
+      switchToRegionMode();   
     });
 
     function solveOverlaps(allRegions) {
@@ -1203,27 +1057,25 @@
       }
 
       allRegions.forEach(function (region) {
-        region.attributes['delete'] = false
-        region.remove()
+        handler.removeRegion(region, false);
       });
 
-      for (var key in newRegions) {
-        if (newRegions[key]['start'] != newRegions[key]['end']) {
+      for (var i in newRegions) {
+        if (newRegions[i]['start'] != newRegions[i]['end']) {
           var newRegion = handler.addRegion(
             handler.getMainWavesurfer(),
-            newRegions[key]['classes'].sort().join(' '),
-            newRegions[key]['tags'],
+            'region',
+            newRegions[i]['classes'].sort().join(' '),
+            newRegions[i]['tags'],
             -1,
-            newRegions[key]['start'],
-            newRegions[key]['end'],
-            newRegions[key]['color'],
-            false
+            newRegions[i]['start'],
+            newRegions[i]['end'],
+            newRegions[i]['color'],
+            true
           );
-          createNewRegion(newRegion)
         }
       }
       handler.rearrangeLabels();
-      insertLog("solve overlaps", getTime(), Object.keys(newRegions).length.toString())
     }
 
     function checkClassProminenceIsFilled() {
@@ -1281,14 +1133,12 @@
         modalWindow.find('.modal-title').text('Wait a moment...');
         modalWindow.find('.modal-body').text('Please, solve all the overlaps first');
         modalWindow.modal('show');
-        insertLog("error", getTime(), "overlaps not solved")
         return;
       }
       if (!checkClassProminenceIsFilled()) {
         modalWindow.find('.modal-title').text('Wait a moment...');
         modalWindow.find('.modal-body').text('Please, assign a prominence value to all regions with more than one class first');
         modalWindow.modal('show');
-        insertLog("error", getTime(), "prominence not assigned")
         return;
       }
 
@@ -1316,12 +1166,10 @@
               modalWindow.find('.modal-body').html(text);
               modalWindow.modal('show');
             }
-            insertLog("finish annotation and load next", getTime())
           } else {
             modalWindow.find('.modal-title').text('Success!');
             modalWindow.find('.modal-body').html(text);
             modalWindow.modal('show');
-            insertLog("finish annotation", getTime())
           }
         }
       });
@@ -1341,31 +1189,6 @@
       }
       var newUrl = parsedUrl.scheme + '://' + parsedUrl.host + port + parsedUrl.path + '?' + $.param(params)
       window.location = newUrl;
-      insertLog("switch view", getTime(), wavesurfer.params.visualization)
-    });
-
-    $('#tips-button1').on('click', function () {
-      $('#tips-button1').hide()
-      $('#tips-button2').show()
-      insertLog("click tips button", getTime())
-    });
-
-    $('#tips-button2').on('click', function () {
-      $('#tips-button1').show()
-      $('#tips-button2').hide()
-      insertLog("click tips button", getTime())
-    });
-
-    $('#controls-button1').on('click', function () {
-      $('#controls-button1').hide()
-      $('#controls-button2').show()
-      insertLog("click controls button", getTime())
-    });
-
-    $('#controls-button2').on('click', function () {
-      $('#controls-button1').show()
-      $('#controls-button2').hide()
-      insertLog("click controls button", getTime())
     });
 
   </script>

@@ -29,6 +29,5 @@ urlpatterns = [
     url(r'^remove_regions/$', views.remove_regions, name='remove_regions'),
     url(r'^remove_event/$', views.remove_event, name='remove_event'),
     url(r'^update_class_prominence/$', views.update_class_prominence, name='update_class_prominence'),
-    url(r'^insert_log/$', views.insert_log, name='insert_log'),
     url(r'^logout/$', views.LogoutView.as_view(), name='logout'),
 ]

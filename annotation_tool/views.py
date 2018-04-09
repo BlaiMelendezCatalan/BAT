@@ -442,59 +442,6 @@ class MyAnnotationsView(LoginRequiredMixin, GenericAPIView):
         return Response(context)
 
 
-#class RegionsView(LoginRequiredMixin, ListCreateAPIView):
-#    queryset = models.Region.objects.all()
-#    serializer_class = RegionSerializer
-#
-#    def create(self, request, *args, **kwargs):
-#        serializer = self.get_serializer(data=request.data)
-#        serializer.is_valid(raise_exception=True)
-#
-#        # check exists regions with same time
-#        data = serializer.validated_data
-#        models.Region.objects.filter(
-#            annotation=data['annotation']).filter(Q(start_time=data['start_time'])
-#                                                  | Q(end_time=data['end_time'])).delete()
-#
-#        self.perform_create(serializer)
-#        headers = self.get_success_headers(serializer.data)
-#        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-#
-#
-#    def delete(self, request, *args, **kwargs):
-#        queryset = self.get_queryset()
-#        try:
-#            annotation_id = request.data['annotation_id']
-#            annotation = models.Annotation.objects.get(id=annotation_id)
-#        except KeyError, models.Annotation.DoesNotExist:
-#            return Response(status=status.HTTP_400_BAD_REQUEST)
-#        regions = queryset.filter(annotation=annotation)
-#        models.ClassProminence.objects.filter(region__in=regions).delete()
-#        regions.delete()
-#
-#        utils.update_annotation_status(annotation,
-#                                       new_status=models.Annotation.UNFINISHED)
-#        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-#class ClassProminenceView(LoginRequiredMixin, GenericAPIView):
-#    queryset = models.ClassProminence.objects.all()
-#    serializer_class = ClassProminenceSerializer
-#
-#    def post(self, request, *args, **kwargs):
-#        try:
-#            region = models.Region.objects.get(id=request.data['region_id'])
-#            class_obj = models.Class.objects.get(name=request.data['class_name'],
-#                                                 project=region.get_project())
-#            prominence = request.data['prominence']
-#        except (models.Region.DoesNotExist, models.ClassProminence.DoesNotExist):
-#            return Response(status=status.HTTP_400_BAD_REQUEST)
-#        models.ClassProminence.objects.update_or_create(region=region,
-#                                                        class_obj=class_obj,
-#                                                        defaults={'prominence': prominence})
-#        return Response(status=status.HTTP_201_CREATED)
-
-
 class LogoutView(LoginRequiredMixin, APIView):
     def post(self, request):
         logout(request)
@@ -634,16 +581,4 @@ def update_class_prominence(request):
     models.ClassProminence.objects.update_or_create(region=region,
                                                     class_obj=class_obj,
                                                     defaults={'prominence': prominence})
-    return JsonResponse({})
-
-
-def insert_log(request):
-    log_data = json.loads(request.POST.get('log_data'))
-    annotation = models.Annotation.objects.get(id=log_data['annotation'])
-    log = models.Log(annotation=annotation,
-                     action=log_data['action'],
-                     value=log_data['value'],
-                     time=log_data['time'])
-    log.save()
-
     return JsonResponse({})
