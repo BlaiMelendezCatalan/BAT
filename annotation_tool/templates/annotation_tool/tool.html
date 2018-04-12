@@ -9,16 +9,7 @@
 
 {% block body_block %}
 
-  <script src="{% static 'js/annotator/lib/wavesurfer.min.js' %}"></script>
-  <script src="{% static 'js/annotator/src/wavesurfer.regions.js' %}"></script>
-  <script src="{% static 'js/annotator/colormap/colormap.min.js' %}"></script>
-  <script src="{% static 'js/annotator/lib/wavesurfer.spectrogram.min.js' %}"></script>
-  <script src="{% static 'js/annotator/src/wavesurfer.drawer.extended.js' %}"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/wavesurfer.js/1.2.3/plugin/wavesurfer.timeline.min.js"></script>
-  <script src="{% static 'js/bootstrap-tokenfield.min.js' %}"></script>
-  <script type="text/javascript" src="{% static 'js/annotator/src/components.js' %}"></script>
-  <script type="text/javascript" src="{% static 'js/annotator/src/wavesurfer.labels.js' %}"></script>
-  <script type="text/javascript" src="{% static 'js/url.js' %}"></script>
+  
   <link rel="stylesheet" href="{% static 'css/annotator/font-awesome.min.css' %}">
   <link rel="stylesheet" href="{% static 'css/bootstrap-tokenfield.min.css' %}">
 
@@ -119,6 +110,16 @@
     </style>
   {% endif %}
 
+  <script src="{% static 'js/bootstrap-tokenfield.min.js' %}"></script>
+  <script src="{% static 'js/annotator/colormap/colormap.min.js' %}"></script>
+  <script src="{% static 'js/annotator/lib/wavesurfer.min.js' %}"></script>
+  <script src="{% static 'js/annotator/lib/wavesurfer.spectrogram.min.js' %}"></script>
+  <script src="{% static 'js/annotator/src/wavesurfer.drawer.extended.js' %}"></script>
+  <script src="{% static 'js/annotator/src/wavesurfer.regions.js' %}"></script>
+  <script src="{% static 'js/annotator/src/wavesurfer.timeline.js' %}"></script>
+  <script type="text/javascript" src="{% static 'js/annotator/src/wavesurfer.labels.js' %}"></script>
+  <script type="text/javascript" src="{% static 'js/url.js' %}"></script>
+
   <script type="text/javascript">
 
     wavesurferHandler = {
@@ -204,10 +205,6 @@
           container: container + ' .labels'
         });
         this.labels.push(labels);
-
-        // Create the play button and time that appear below the wavesurfer
-        var playBar = new PlayBar(wavesurfer);
-        playBar.create();
 
         this.container.push(wavesurfer);
 
@@ -1193,6 +1190,6 @@
 
   </script>
 
-  <script src="{% static 'js/annotator/hotkeys.js' %}"></script>
+  <script src="{% static 'js/annotator/src/hotkeys.js' %}"></script>
 
 {% endblock %}

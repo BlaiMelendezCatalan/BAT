@@ -435,9 +435,6 @@ WaveSurfer.Region = {
       var startTime;
 
       var onDown = function (e) {
-        /*if (my.drag) {
-         e.stopPropagation();
-         }*/
         if (e.target.classList.contains('fa-times-circle') || e.target.classList.contains('wavesurfer-handle')) {
           e.stopPropagation();
           if (e.target.classList.contains('fa-times-circle')) {
