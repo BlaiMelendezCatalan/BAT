@@ -124,20 +124,18 @@
 
     wavesurferHandler = {
       // contain all wavesurfers
-      container: [],
+      wavesurfer: null,
       labels: [],
 
-      getMainWavesurfer: function() {
-        return this.container[0];
+      getWavesurfer: function() {
+        return this.wavesurfer;
       },
 
       getAllRegions: function() {
         var regions = [];
-        this.container.forEach(function (wavesurfer) {
-          Object.keys(wavesurfer.regions.list).forEach(function (id) {
-            regions.push(wavesurfer.regions.list[id]);
-          });
-        });
+        for (var i in this.wavesurfer.regions.list) {
+          regions.push(this.wavesurfer.regions.list[i]);
+        }
         return regions;
       },
 
@@ -156,32 +154,10 @@
         });
       },
 
-      addContainerForWavesurfer: function () {
-        var mainContainer = $('#waveform'),
-            lastContainer = mainContainer.find('.container:last'),
-            lastId = lastContainer.length ? parseInt(lastContainer.data('container-id')) : 0,
-            classForNewContainer = 'container-' + (lastId + 1);
-
-        // labels
-        var labelsContainer = $('<div></div>')
-            .addClass('labels');
-
-        // container
-        var newContainer = $('<div></div>')
-          .append(labelsContainer)
-          .attr('data-container-id', lastId + 1)
-          .addClass('container ' + classForNewContainer);
-
-        mainContainer.append(newContainer);
-
-        return '.' + classForNewContainer;
-      },
-
       addWavesurfer: function () {
-        var container = this.addContainerForWavesurfer(),
-            colorMap = this.getSpectrogramColorMap(),
+        var colorMap = this.getSpectrogramColorMap(),
             wavesurfer = WaveSurfer.create({
-              container: container,
+              container: '#waveform',
               waveColor: 'violet',
               progressColor: 'purple',
               normalize: true,
@@ -192,74 +168,50 @@
               hideScrollbar: true
         });
 
-        wavesurfer.setVolume(0);
-
+        wavesurfer.setVolume(1);
         wavesurfer.params.visualization = '{{ visualization }}';
-
         wavesurfer.load("{% url 'media' tmp_segment_path %}");
 
         // Create labels (labels that appear above each region)
+        var labelsContainer = $('<div></div>')
+            .addClass('labels');
+        $('#waveform').prepend(labelsContainer)
         var labels = Object.create(WaveSurfer.Labels);
         labels.init({
           wavesurfer: wavesurfer,
-          container: container + ' .labels'
+          container: '.labels'
         });
         this.labels.push(labels);
 
-        this.container.push(wavesurfer);
+        this.wavesurfer = wavesurfer;
 
         this.bindEvents(wavesurfer);
 
         return wavesurfer;
       },
 
-      isMainWavesurfer: function (wavesurfer) {
-        return this.container.length && this.container[0] == wavesurfer;
-      },
-
       seekTo: function (position) {
-        this.container.forEach(function (wavesurfer) {
-          wavesurfer.seekTo(position);
-        });
+        this.wavesurfer.seekTo(position);
       },
 
       enableDragSelection: function () {
-        this.container.forEach(function (wavesurfer) {
-          wavesurfer.enableDragSelection({});
-        });
+        this.wavesurfer.enableDragSelection({});
       },
 
       disableDragSelection: function () {
-        this.container.forEach(function (wavesurfer) {
-          wavesurfer.disableDragSelection({});
-        });
+        this.wavesurfer.disableDragSelection({});
       },
 
-      findRegionById: function (id) {
-        for (var i in this.container) {
-          var wavesurfer = this.container[i];
-          if (wavesurfer.regions.list[id] != undefined) {
-            return wavesurfer.regions.list[id];
-          }
+      findRegionById: function (id) {        
+        if (this.wavesurfer.regions.list[id] != undefined) {
+          return this.wavesurfer.regions.list[id];
+        } else {
+          return null;
         }
-        return null;
-      },
-
-      getWavesurferByRegion: function (region) {
-        if (region != null) {
-          for (var i in this.container) {
-            var wavesurfer = this.container[i];
-            if (wavesurfer.regions.list[region.id] == region) {
-              return wavesurfer;
-            }
-          }
-        }
-        return null;
       },
 
       bindEvents: function (wavesurfer) {
-        var isMainWavesurfer = this.isMainWavesurfer(wavesurfer),
-            that = this;
+        that = this;
 
         wavesurfer.on('region-created', function (region) {
           // In case region was created by dragging. It is not possible to set it before.
@@ -329,11 +281,10 @@
           wavesurfer.initRegions()
           wavesurfer.enableDragSelection({})
 
-          if (isMainWavesurfer) {
-            loadRegions(wavesurfer);
-            wavesurfer.play();
-            that.labels[0].rearrange();
-          }
+          loadRegions(wavesurfer);
+          wavesurfer.play();
+          that.labels[0].rearrange();
+
           var timeline = Object.create(WaveSurfer.Timeline);
 
           timeline.init({
@@ -351,12 +302,11 @@
       },
 
       playPause: function () {
-        wavesurfer = this.getMainWavesurfer();
-        wavesurfer.playPause();
+        this.wavesurfer.playPause();
       },
 
       isPlaying: function () {
-        return this.getMainWavesurfer().isPlaying();
+        return this.wavesurfer.isPlaying();
       },
 
       addRegion: function(wavesurfer, type, classes, tags, id, start_time, end_time, color, update_db) {
@@ -383,57 +333,45 @@
       },
 
       checkOverlaps: function () {
-        if (REGIONS_STATE) {
+        if (REGIONS_STATE || !('regions' in this.wavesurfer)) {
           return false;
         }
         var overlapWasFound = false,
-            that = this;
-        this.container.forEach(function (wavesurfer) {
-          if (!('regions' in wavesurfer)) {
-            return false;
-          }
-          for (var i in wavesurfer.regions.list) {
-            if (overlapWasFound) {
-              break;
-            }
-            var region = wavesurfer.regions.list[i];
-            that.container.forEach(function (temp_wavesurfer) {
-              Object.keys(temp_wavesurfer.regions.list).forEach(function (id) {
-                var tmp_region = temp_wavesurfer.regions.list[id];
-                if (region != tmp_region) {
-                  if (region.start <= tmp_region.end && region.end >= tmp_region.start) {
-                    if (!(region.end == tmp_region.start && region.start < tmp_region.start) && !(region.start == tmp_region.end && region.end > tmp_region.end)) {
-                      overlapWasFound = true;
-                      return;
-                    }
-                  }
+            regionList = this.wavesurfer.regions.list
+        for (var i in regionList) {
+          if (overlapWasFound) { break; }
+          var region = regionList[i];
+          for (var j in regionList) {
+            var tmp_region = regionList[j];
+            if (region != tmp_region) {
+              if (region.start <= tmp_region.end && region.end >= tmp_region.start) {
+                if (!(region.end == tmp_region.start && region.start < tmp_region.start) && !(region.start == tmp_region.end && region.end > tmp_region.end)) {
+                  overlapWasFound = true;
+                  break;
                 }
-              });
-            });
+              }
+            }
           }
-        });
+        }
         $('#solve-overlaps-button').attr('disabled', !overlapWasFound);
         return overlapWasFound;
       },
 
       clearRegionsOnBack: function () {
-        that = this;
-        this.container.forEach(function (wavesurfer) {
-          Object.keys(wavesurfer.regions.list).forEach(function (id) {
-            region = wavesurfer.regions.list[id];
-            handler.removeRegion(region, true)
-          });
-        });
+        var regionList = this.wavesurfer.regions.list
+        for (var i in regionList) {
+            handler.removeRegion(regionList[i], true)
+        }
       },
 
       init: function () {
-        this.addWavesurfer().setVolume(1);
+        this.addWavesurfer();
       }
     };
 
-    wavesurferHandler.create = function (params) {
+    wavesurferHandler.create = function () {
       var handler = Object.create(wavesurferHandler);
-      handler.init(params);
+      handler.init();
       return handler;
     };
 
@@ -529,13 +467,13 @@
     }
 
     function getDuration() {
-      return handler.getMainWavesurfer().getDuration();
+      return handler.getWavesurfer().getDuration();
     }
 
     function preventOverlaps(region) {
       var new_start = region.start,
           new_end = region.end,
-          wavesurfer = handler.getMainWavesurfer();
+          wavesurfer = handler.getWavesurfer();
       if (new_end > getDuration()) {
         new_end = getDuration()
       }
@@ -961,7 +899,7 @@
           handler.clearRegionsOnBack();
           for (var i in event_dict) {
             handler.addRegion(
-              handler.getMainWavesurfer(),
+              handler.getWavesurfer(),
               'event',
               event_dict[i]['event_class'],
               event_dict[i]['tags'],
@@ -1060,7 +998,7 @@
       for (var i in newRegions) {
         if (newRegions[i]['start'] != newRegions[i]['end']) {
           var newRegion = handler.addRegion(
-            handler.getMainWavesurfer(),
+            handler.getWavesurfer(),
             'region',
             newRegions[i]['classes'].sort().join(' '),
             newRegions[i]['tags'],
@@ -1079,7 +1017,7 @@
       if (!REGIONS_STATE) {
         return true;
       }
-      var wavesurfer = handler.getMainWavesurfer();
+      var wavesurfer = handler.getWavesurfer();
       for (var i in wavesurfer.regions.list) {
         var region = wavesurfer.regions.list[i],
             region_classes = region.attributes.class.split(' ');
@@ -1178,7 +1116,7 @@
       var parsedUrl = url.parse(location.href),
           params = parsedUrl.get,
           port = parsedUrl.port == undefined ? '': (':' + parsedUrl.port);
-      var wavesurfer = handler.getMainWavesurfer();
+      var wavesurfer = handler.getWavesurfer();
       if ('visualization' in params) {
         delete params['visualization'];
       } else {

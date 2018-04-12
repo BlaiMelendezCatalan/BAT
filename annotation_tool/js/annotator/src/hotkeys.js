@@ -15,7 +15,7 @@ function preventOverlapsOnArrow(current_region, inc=0.0) {
     new_end = current_region.end
   }
   if (!ALLOW_OVERLAPS) {
-    var wavesurfer = handler.getMainWavesurfer();
+    var wavesurfer = handler.getWavesurfer();
     Object.keys(wavesurfer.regions.list).forEach(function (id) {
       if (current_id == id) {
         return;
@@ -46,7 +46,7 @@ function sortRegionsByOption(regions, option) {
 
 // glue the selected region limits to the closer borders
 function glueSelectedRegionLimits(region, pressCtrl, pressShift, overlaps) {
-  var wavesurfer = handler.getMainWavesurfer(),
+  var wavesurfer = handler.getWavesurfer(),
     region_list = sortRegionsByOption(wavesurfer.regions.list, "start"),
     new_start, new_end;
   if (!overlaps) {
@@ -132,7 +132,7 @@ document.onkeydown = function (e) {
 
   var region = handler.findRegionById(currentRegionId),
     key = e.key,
-    wavesurfer = handler.getWavesurferByRegion(region),
+    wavesurfer = handler.getWavesurfer(),
     n_regions = wavesurfer ? Object.keys(wavesurfer.regions.list).length : 0,
     pressCtrl = e.ctrlKey == true,
     pressShift = e.shiftKey == true,
@@ -176,7 +176,7 @@ document.onkeydown = function (e) {
 
 document.onkeyup = function (e) {
   var key = e.key;
-  var wavesurfer = handler.getMainWavesurfer();
+  var wavesurfer = handler.getWavesurfer();
   if (key == "ArrowLeft" || key == "ArrowRight") {
     if (currentRegionId != -1) {
       region = wavesurfer.regions.list[currentRegionId];
