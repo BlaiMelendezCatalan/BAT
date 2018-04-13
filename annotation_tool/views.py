@@ -52,69 +52,6 @@ class ProjectView(SuperuserRequiredMixin, DestroyAPIView):
     lookup_field = 'id'
 
 
-class WavsView(SuperuserRequiredMixin, GenericAPIView):
-    renderer_classes = [TemplateHTMLRenderer]
-    template_name = 'annotation_tool/wavs.html'
-
-    def _filters(self):
-        return {'Projects': {'route': 'project__name', 'name': 'project'}}
-
-    def get(self, request, *args, **kwargs):
-        # Define filters, extract possibles values and store selections
-        context = {'filters': self._filters()}
-        for v in context['filters'].values():
-            v['available'] = models.Wav.objects.values_list(v['route'], flat=True) \
-                .order_by(v['route']).distinct()
-        selected_values = {}
-        for v in context['filters'].values():
-            v['selected'] = request.GET.get(v['name'])
-            if v['selected']:
-                selected_values[v['route']] = v['selected']
-
-        context['query_data'] = models.Wav.objects.filter(**selected_values) \
-            .order_by('-id')
-        return Response(context)
-
-
-class WavView(SuperuserRequiredMixin, DestroyAPIView):
-    queryset = models.Wav.objects.all()
-    lookup_field = 'id'
-
-
-class SegmentsView(SuperuserRequiredMixin, GenericAPIView):
-    renderer_classes = [TemplateHTMLRenderer]
-    template_name = 'annotation_tool/segments.html'
-
-    def _filters(self):
-        return {
-            'Projects': {'route': 'wav__project__name',
-                         'name': 'project'},
-            'Wavs': {'route': 'wav__name',
-                     'name': 'wav'},
-        }
-
-    def get(self, request, *args, **kwargs):
-        # Define filters, extract possibles values and store selections
-        context = {'filters': self._filters()}
-        for v in context['filters'].values():
-            v['available'] = models.Segment.objects.values_list(v['route'], flat=True) \
-                .order_by(v['route']).distinct()
-        selected_values = {}
-        for v in context['filters'].values():
-            v['selected'] = request.GET.get(v['name'])
-            if v['selected']:
-                selected_values[v['route']] = v['selected']
-
-        context['query_data'] = models.Segment.objects.filter(**selected_values) \
-            .order_by('-id')
-        return Response(context)
-
-
-class SegmentView(SuperuserRequiredMixin, DestroyAPIView):
-    queryset = models.Segment.objects.all()
-    lookup_field = 'id'
-
-
 class AnnotationsView(SuperuserRequiredMixin, GenericAPIView):
     renderer_classes = [TemplateHTMLRenderer]
     template_name = 'annotation_tool/annotations.html'
@@ -181,46 +118,6 @@ class AnnotationFinishView(LoginRequiredMixin, GenericAPIView):
             return Response(data={'next_annotation_url': next_annotation_url}, status=status.HTTP_200_OK)
         else:
             return JsonResponse({})
-
-
-class EventsView(SuperuserRequiredMixin, GenericAPIView):
-    renderer_classes = [TemplateHTMLRenderer]
-    template_name = 'annotation_tool/events.html'
-
-    def _filters(self):
-        return {
-            'Projects': {'route': 'annotation__segment__wav__project__name',
-                         'name': 'project'},
-            'Wavs': {'route': 'annotation__segment__wav__name',
-                     'name': 'wav'},
-            'Segments': {'route': 'annotation__segment__name',
-                         'name': 'segment'},
-            'Annotations': {'route': 'annotation__name',
-                            'name': 'annotation'},
-            'Tags': {'route': 'tags__name',
-                     'name': 'tag'},
-        }
-
-    def get(self, request, *args, **kwargs):
-        # Define filters, extract possibles values and store selections
-        context = {'filters': self._filters()}
-        for v in context['filters'].values():
-            v['available'] = models.Event.objects.values_list(v['route'], flat=True) \
-                .order_by(v['route']).distinct()
-        selected_values = {}
-        for v in context['filters'].values():
-            v['selected'] = request.GET.get(v['name'], "")
-            if v['selected']:
-                selected_values[v['route']] = v['selected']
-
-        context['query_data'] = models.Event.objects.filter(**selected_values) \
-            .order_by('-id')
-        return Response(context)
-
-
-class EventView(SuperuserRequiredMixin, DestroyAPIView):
-    queryset = models.Event.objects.all()
-    lookup_field = 'id'
 
 
 class ClassesView(SuperuserRequiredMixin, GenericAPIView):
