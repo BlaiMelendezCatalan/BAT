@@ -4,8 +4,8 @@ function preventOverlapsOnArrow(current_region, inc=0.0) {
   if (inc > 0.0) {
     new_start = current_region.start;
     new_end = current_region.end + inc;
-    if (new_end > getDuration() - getPadding()) {
-      new_end = getDuration() - getPadding();
+    if (new_end > handler.getWavesurfer().getDuration() - getPadding()) {
+      new_end = handler.getWavesurfer().getDuration() - getPadding();
     }
   } else if (inc < 0.0) {
     new_start = current_region.start + inc;
@@ -58,7 +58,7 @@ function glueSelectedRegionLimits(region, pressCtrl, pressShift, overlaps) {
           }
           if (region_list.length == 1) {
             if (pressCtrl == pressShift) {
-              new_end = getDuration() - getPadding();
+              new_end = handler.getWavesurfer().getDuration() - getPadding();
             }
           } else {
             if (pressCtrl == pressShift) {
@@ -70,7 +70,7 @@ function glueSelectedRegionLimits(region, pressCtrl, pressShift, overlaps) {
             new_start = region_list[i - 1].end
           }
           if (pressShift == pressCtrl) {
-            new_end = getDuration() - getPadding();
+            new_end = handler.getWavesurfer().getDuration() - getPadding();
           }
         } else {
           if (!pressShift) {
@@ -95,7 +95,7 @@ function glueSelectedRegionLimits(region, pressCtrl, pressShift, overlaps) {
           new_start = getPadding();
         }
         if (pressCtrl == pressShift) {
-          new_end = getDuration() - getPadding();
+          new_end = handler.getWavesurfer().getDuration() - getPadding();
         }
         region.update({
           start: new_start,
@@ -163,14 +163,14 @@ document.onkeydown = function (e) {
     times = preventOverlapsOnArrow(region, increment = 1. / 100)
     region.update({end: times[1]});
   } else if (key == 'b' && region != null) {
-    handler.seekTo(region.start / getDuration());
+    handler.seekTo(region.start / handler.getWavesurfer().getDuration());
   } else if (key == 's') {
     handler.seekTo(0.0);
   } else if (key == 'f' || key == 'F') {
     glueSelectedRegionLimits(region, pressCtrl, pressShift, ALLOW_OVERLAPS);
   }
   if (ALLOW_OVERLAPS) {
-    handler.checkOverlaps();
+    checkOverlaps();
   }
 }
 

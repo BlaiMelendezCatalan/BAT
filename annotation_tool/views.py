@@ -363,8 +363,8 @@ def update_end_event(request):
     else:
         event = models.Event(
                     annotation=annotation,
-                    start_time=region_data['start_time'],
-                    end_time=region_data['end_time'])
+                    start_time=region_data['start_time'] - region_data['padding'],
+                    end_time=region_data['end_time'] - region_data['padding'])
 
     utils.update_annotation_status(annotation,
                                    new_status=models.Annotation.UNFINISHED)   
