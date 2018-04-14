@@ -148,9 +148,7 @@ WaveSurfer.Labels = {
             if (otherLabel === label) {
                 continue;
             }
-            if ((label.left() <=  otherLabel.right() && label.left() >=  otherLabel.left()) ||
-                (label.right() >=  otherLabel.left() && label.right()  <= otherLabel.right()) ||
-                (label.right() >=  otherLabel.right() && label.left()  <= otherLabel.left())) {
+            if (label.left() <=  otherLabel.right() && label.right() >=  otherLabel.left()) {
                 return label.region.element.offsetWidth < otherLabel.region.element.offsetWidth;
             }
         }
