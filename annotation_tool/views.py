@@ -99,6 +99,23 @@ class AnnotationFinishView(LoginRequiredMixin, GenericAPIView):
 
     def post(self, request, *args, **kwargs):
         annotation = self.get_object()
+        regions = models.Region.objects.filter(annotation=annotation)
+        if not regions:
+            events = models.Event.objects.filter(annotation=annotation)
+            for e in events:
+                region = models.Region(annotation=annotation,
+                                       start_time=e.start_time,
+                                       end_time=e.end_time,
+                                       color=e.color)
+                for t in e.tags.values_list('name'):
+                    tag = models.Tag.objects.get_or_create(name=t)
+                    region.tags.add(tag[0])
+                region.save()
+                cp = models.ClassProminence(region=region,
+                                            class_obj=e.event_class,
+                                            prominence=5)
+                cp.save()
+
         utils.update_annotation_status(annotation,
                                        new_status=models.Annotation.FINISHED)
 

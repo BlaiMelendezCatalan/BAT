@@ -588,6 +588,9 @@
         success: function (response) {
           var modalWindow = $('#modal-window'),
               text = 'Annotation is finished.';
+          if (!(REGIONS_STATE)) {
+            switchToRegionMode();
+          }
           if (loadNextAnnotation == '1') {
             // if have next annotation url - redirect
             if (response.next_annotation_url != '') {
