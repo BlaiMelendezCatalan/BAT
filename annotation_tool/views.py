@@ -52,69 +52,6 @@ class ProjectView(SuperuserRequiredMixin, DestroyAPIView):
     lookup_field = 'id'
 
 
-class WavsView(SuperuserRequiredMixin, GenericAPIView):
-    renderer_classes = [TemplateHTMLRenderer]
-    template_name = 'annotation_tool/wavs.html'
-
-    def _filters(self):
-        return {'Projects': {'route': 'project__name', 'name': 'project'}}
-
-    def get(self, request, *args, **kwargs):
-        # Define filters, extract possibles values and store selections
-        context = {'filters': self._filters()}
-        for v in context['filters'].values():
-            v['available'] = models.Wav.objects.values_list(v['route'], flat=True) \
-                .order_by(v['route']).distinct()
-        selected_values = {}
-        for v in context['filters'].values():
-            v['selected'] = request.GET.get(v['name'])
-            if v['selected']:
-                selected_values[v['route']] = v['selected']
-
-        context['query_data'] = models.Wav.objects.filter(**selected_values) \
-            .order_by('-id')
-        return Response(context)
-
-
-class WavView(SuperuserRequiredMixin, DestroyAPIView):
-    queryset = models.Wav.objects.all()
-    lookup_field = 'id'
-
-
-class SegmentsView(SuperuserRequiredMixin, GenericAPIView):
-    renderer_classes = [TemplateHTMLRenderer]
-    template_name = 'annotation_tool/segments.html'
-
-    def _filters(self):
-        return {
-            'Projects': {'route': 'wav__project__name',
-                         'name': 'project'},
-            'Wavs': {'route': 'wav__name',
-                     'name': 'wav'},
-        }
-
-    def get(self, request, *args, **kwargs):
-        # Define filters, extract possibles values and store selections
-        context = {'filters': self._filters()}
-        for v in context['filters'].values():
-            v['available'] = models.Segment.objects.values_list(v['route'], flat=True) \
-                .order_by(v['route']).distinct()
-        selected_values = {}
-        for v in context['filters'].values():
-            v['selected'] = request.GET.get(v['name'])
-            if v['selected']:
-                selected_values[v['route']] = v['selected']
-
-        context['query_data'] = models.Segment.objects.filter(**selected_values) \
-            .order_by('-id')
-        return Response(context)
-
-
-class SegmentView(SuperuserRequiredMixin, DestroyAPIView):
-    queryset = models.Segment.objects.all()
-    lookup_field = 'id'
-
-
 class AnnotationsView(SuperuserRequiredMixin, GenericAPIView):
     renderer_classes = [TemplateHTMLRenderer]
     template_name = 'annotation_tool/annotations.html'
@@ -162,6 +99,23 @@ class AnnotationFinishView(LoginRequiredMixin, GenericAPIView):
 
     def post(self, request, *args, **kwargs):
         annotation = self.get_object()
+        regions = models.Region.objects.filter(annotation=annotation)
+        if not regions:
+            events = models.Event.objects.filter(annotation=annotation)
+            for e in events:
+                region = models.Region(annotation=annotation,
+                                       start_time=e.start_time,
+                                       end_time=e.end_time,
+                                       color=e.color)
+                for t in e.tags.values_list('name'):
+                    tag = models.Tag.objects.get_or_create(name=t)
+                    region.tags.add(tag[0])
+                region.save()
+                cp = models.ClassProminence(region=region,
+                                            class_obj=e.event_class,
+                                            prominence=5)
+                cp.save()
+
         utils.update_annotation_status(annotation,
                                        new_status=models.Annotation.FINISHED)
 
@@ -181,46 +135,6 @@ class AnnotationFinishView(LoginRequiredMixin, GenericAPIView):
             return Response(data={'next_annotation_url': next_annotation_url}, status=status.HTTP_200_OK)
         else:
             return JsonResponse({})
-
-
-class EventsView(SuperuserRequiredMixin, GenericAPIView):
-    renderer_classes = [TemplateHTMLRenderer]
-    template_name = 'annotation_tool/events.html'
-
-    def _filters(self):
-        return {
-            'Projects': {'route': 'annotation__segment__wav__project__name',
-                         'name': 'project'},
-            'Wavs': {'route': 'annotation__segment__wav__name',
-                     'name': 'wav'},
-            'Segments': {'route': 'annotation__segment__name',
-                         'name': 'segment'},
-            'Annotations': {'route': 'annotation__name',
-                            'name': 'annotation'},
-            'Tags': {'route': 'tags__name',
-                     'name': 'tag'},
-        }
-
-    def get(self, request, *args, **kwargs):
-        # Define filters, extract possibles values and store selections
-        context = {'filters': self._filters()}
-        for v in context['filters'].values():
-            v['available'] = models.Event.objects.values_list(v['route'], flat=True) \
-                .order_by(v['route']).distinct()
-        selected_values = {}
-        for v in context['filters'].values():
-            v['selected'] = request.GET.get(v['name'], "")
-            if v['selected']:
-                selected_values[v['route']] = v['selected']
-
-        context['query_data'] = models.Event.objects.filter(**selected_values) \
-            .order_by('-id')
-        return Response(context)
-
-
-class EventView(SuperuserRequiredMixin, DestroyAPIView):
-    queryset = models.Event.objects.all()
-    lookup_field = 'id'
 
 
 class ClassesView(SuperuserRequiredMixin, GenericAPIView):
@@ -442,59 +356,6 @@ class MyAnnotationsView(LoginRequiredMixin, GenericAPIView):
         return Response(context)
 
 
-#class RegionsView(LoginRequiredMixin, ListCreateAPIView):
-#    queryset = models.Region.objects.all()
-#    serializer_class = RegionSerializer
-#
-#    def create(self, request, *args, **kwargs):
-#        serializer = self.get_serializer(data=request.data)
-#        serializer.is_valid(raise_exception=True)
-#
-#        # check exists regions with same time
-#        data = serializer.validated_data
-#        models.Region.objects.filter(
-#            annotation=data['annotation']).filter(Q(start_time=data['start_time'])
-#                                                  | Q(end_time=data['end_time'])).delete()
-#
-#        self.perform_create(serializer)
-#        headers = self.get_success_headers(serializer.data)
-#        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-#
-#
-#    def delete(self, request, *args, **kwargs):
-#        queryset = self.get_queryset()
-#        try:
-#            annotation_id = request.data['annotation_id']
-#            annotation = models.Annotation.objects.get(id=annotation_id)
-#        except KeyError, models.Annotation.DoesNotExist:
-#            return Response(status=status.HTTP_400_BAD_REQUEST)
-#        regions = queryset.filter(annotation=annotation)
-#        models.ClassProminence.objects.filter(region__in=regions).delete()
-#        regions.delete()
-#
-#        utils.update_annotation_status(annotation,
-#                                       new_status=models.Annotation.UNFINISHED)
-#        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-#class ClassProminenceView(LoginRequiredMixin, GenericAPIView):
-#    queryset = models.ClassProminence.objects.all()
-#    serializer_class = ClassProminenceSerializer
-#
-#    def post(self, request, *args, **kwargs):
-#        try:
-#            region = models.Region.objects.get(id=request.data['region_id'])
-#            class_obj = models.Class.objects.get(name=request.data['class_name'],
-#                                                 project=region.get_project())
-#            prominence = request.data['prominence']
-#        except (models.Region.DoesNotExist, models.ClassProminence.DoesNotExist):
-#            return Response(status=status.HTTP_400_BAD_REQUEST)
-#        models.ClassProminence.objects.update_or_create(region=region,
-#                                                        class_obj=class_obj,
-#                                                        defaults={'prominence': prominence})
-#        return Response(status=status.HTTP_201_CREATED)
-
-
 class LogoutView(LoginRequiredMixin, APIView):
     def post(self, request):
         logout(request)
@@ -519,8 +380,8 @@ def update_end_event(request):
     else:
         event = models.Event(
                     annotation=annotation,
-                    start_time=region_data['start_time'],
-                    end_time=region_data['end_time'])
+                    start_time=region_data['start_time'] - region_data['padding'],
+                    end_time=region_data['end_time'] - region_data['padding'])
 
     utils.update_annotation_status(annotation,
                                    new_status=models.Annotation.UNFINISHED)   
@@ -634,16 +495,4 @@ def update_class_prominence(request):
     models.ClassProminence.objects.update_or_create(region=region,
                                                     class_obj=class_obj,
                                                     defaults={'prominence': prominence})
-    return JsonResponse({})
-
-
-def insert_log(request):
-    log_data = json.loads(request.POST.get('log_data'))
-    annotation = models.Annotation.objects.get(id=log_data['annotation'])
-    log = models.Log(annotation=annotation,
-                     action=log_data['action'],
-                     value=log_data['value'],
-                     time=log_data['time'])
-    log.save()
-
     return JsonResponse({})
