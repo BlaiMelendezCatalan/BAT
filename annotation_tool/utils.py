@@ -187,93 +187,8 @@ def create_tmp_file(segment):
     return output_file, padding
 
 
-def save_ground_truth_to_csv(project, wavs=None, users=None, silence_threshold=0.0001):
-    path = BASE_DIR + '/ground_truth/'
-    path += project.name.replace(' ', '_') + '/'
-    if os.path.exists(path):
-        shutil.rmtree(path)
-    os.makedirs(path)
-    path_csv = path + project.name.replace(' ', '_') + '.csv'
-    with open(path_csv, 'ab') as csvfile:
-        gtwriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-        gtwriter.writerow(['annotator', 'wav', 'start', 'end', 'classes', 'saliences', 'energy'])
-    annotations = Annotation.objects.filter(segment__wav__project=project)
-    if users == None:
-        users = list(set(annotations.values_list('user__username', flat=True)))
-    if wavs == None:
-        wavs = Wav.objects.filter(project=project)
-    for user in users:
-        for wav in wavs:
-            input_file = os.path.join(MEDIA_ROOT, wav.file.name)
-            wav_file = read(input_file, 'r')
-            dtype = type(wav_file[1][0])
-            segments = Segment.objects.filter(wav=wav).order_by('start_time')
-            for segment in segments:
-                annotation = annotations.filter(segment=segment, status="finished", user__username=user)
-                if annotation:
-                    annotation = annotation[0]
-                    regions = Region.objects.filter(annotation=annotation).order_by('start_time')
-                    if regions:
-                        for region in regions:
-                            # Check for zero-duration regions
-                            if abs(region.start_time - region.end_time) < 0.001:
-                                print "WARNING: 0-duration region in annotation %d of user %s" % (annotation.id, user)
-                                continue
-                            start_time = segment.start_time + region.start_time
-                            end_time = segment.start_time + region.end_time
-                            class_prominences = ClassProminence.objects.filter(
-                                                    region=region).order_by('class_obj__name')
-                            classes = []
-                            prominences = []
-                            for cp in class_prominences:
-                                classes.append(cp.class_obj.name)
-                                prominences.append(cp.prominence)
-                            if None in prominences and len(prominences) > 1:
-                                print "WARNING: Unassigned prominence in annotation %d of user %s" % (annotation.id, user)
-                            row = []
-                            row.append(user)
-                            row.append(wav.name.replace('.wav', ''))
-                            row.append(start_time)
-                            row.append(end_time)
-                            row.append('/'.join(classes))
-                            rms = computeRMS(wav_file[0], wav_file[1], start_time, end_time, dtype)
-                            if len(prominences) > 1:
-                                row.append('/'.join([str(x) for x in prominences]))
-                                row.append(str(rms))
-                            else:
-                                row.append("5")
-                                row.append(str(rms))
-                            with open(path_csv, 'ab') as csvfile:
-                                gtwriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-                                gtwriter.writerow(row)
-                    else:
-                        events = Event.objects.filter(annotation=annotation).order_by('start_time')
-                        for event in events:
-                            # Check for zero-duration events
-                            if abs(event.start_time - event.end_time) < 0.001:
-                                print "WARNING: 0-duration event in annotation %d of user %s" % (annotation.id, user)
-                                continue
-                            if event.event_class == None:
-                                print "WARNING: None class event in annotation %d" % annotation.id
-                                continue
-                            start_time = segment.start_time + event.start_time
-                            end_time = segment.start_time + event.end_time
-                            row = []
-                            row.append(user)
-                            row.append(wav.name.replace('.wav', ''))
-                            row.append(start_time)
-                            row.append(end_time)
-                            rms = computeRMS(wav_file[0], wav_file[1], start_time, end_time, dtype)
-                            row.append(event.event_class.name)
-                            row.append("5")
-                            row.append(str(rms))
-                            with open(path_csv, 'ab') as csvfile:
-                                gtwriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-                                gtwriter.writerow(row)
-
-
-def computeRMS(sr, wav_file, start_time, end_time, dtype):
-    excerpt = np.array(wav_file[int(round(start_time*sr)):int(round(end_time*sr))])
+def compute_rms(sr, wav, start_time, end_time, dtype):
+    excerpt = np.array(wav[int(round(start_time*sr)):int(round(end_time*sr))])
     if dtype == np.int16:
         excerpt = excerpt / float(-np.iinfo(np.int16).min)
     elif dtype == np.int32:
@@ -281,3 +196,72 @@ def computeRMS(sr, wav_file, start_time, end_time, dtype):
     elif dtype == np.uint8:
         excerpt = excerpt / float(np.iinfo(np.uint8).max)
     return np.sqrt(np.mean(np.square(excerpt)))
+
+
+def read_wav(wav_file_name):
+    input_file = os.path.join(MEDIA_ROOT, wav_file_name)
+    return read(input_file, 'r')
+
+
+def export_region_to_csv(wav, segment, region, annotator_name, output_csv):
+    start_time = segment.start_time + region.start_time
+    end_time = segment.start_time + region.end_time
+    class_prominences = ClassProminence.objects.filter(
+                            region=region).order_by('class_obj__name')
+    classes = []
+    prominences = []
+    for cp in class_prominences:
+        classes.append(cp.class_obj.name)
+        prominences.append(cp.prominence)
+    classes = '/'.join(classes)
+    prominences = '/'.join([str(x) for x in prominences])
+    sr, wav_samples = read_wav(wav.file.name)
+    dtype = type(wav_samples[0])
+    rms = compute_rms(sr, wav_samples, start_time, end_time, dtype)
+    row = [annotator_name, wav.name, start_time, end_time, classes,
+           prominences, rms]
+    with open(output_csv, 'ab') as csvfile:
+        gtwriter = csv.writer(csvfile, delimiter=',', quotechar='|',
+                              quoting=csv.QUOTE_MINIMAL)
+        gtwriter.writerow(row)
+
+
+def export_annotation_to_csv(annotation, annotator_name, output_csv):
+    segment = annotation.segment
+    wav = annotation.segment.wav
+    regions = Region.objects.filter(
+                annotation=annotation).order_by('start_time')
+    for region in regions:
+        export_region_to_csv(wav, segment, region, annotator_name, output_csv)
+
+
+def export_ground_truth_to_csv(wavs, annotator_name, output_csv):
+    if os.path.exists(output_csv):
+        os.remove(output_csv)
+    with open(output_csv, 'ab') as csvfile:
+        gtwriter = csv.writer(csvfile, delimiter=',', quotechar='|',
+                              quoting=csv.QUOTE_MINIMAL)
+        gtwriter.writerow(['annotator', 'wav', 'start', 'end', 'classes',
+                           'prominences', 'energy'])
+    annotations = Annotation.objects.filter(segment__wav__in=wavs,
+                    user__username=annotator_name).order_by(
+                        'segment__wav__name',
+                        'segment__start_time')
+    for annotation in tqdm(annotations):
+        export_annotation_to_csv(annotation, annotator_name, output_csv)
+
+
+def export_collection_ground_truth_to_csv(wavs_collection_name, annotator_name,
+                                          output_csv):
+    wavs = Wav.objects.filter(wavs_collection__name=wavs_collection_name)
+    export_ground_truth_to_csv(wavs, annotator_name, output_csv)
+
+
+def export_project_ground_truth_to_csv(project_name, annotator_name,
+                                       output_csv):
+    wavs = Wav.objects.filter(project__name=project_name)
+    export_ground_truth_to_csv(wavs, annotator_name, output_csv)
+
+
+def export_wavs_ground_truth_to_csv(wavs, annotator_name, output_csv):
+    export_ground_truth_to_csv(wavs, annotator_name, output_csv)
