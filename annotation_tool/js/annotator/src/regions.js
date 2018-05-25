@@ -1,4 +1,4 @@
-function setCurrentRegion(id) {
+function setCurrentRegion(id, token) {
   changePopup = false;
   if (currentRegionId != id){
     changePopup = true;
@@ -16,7 +16,7 @@ function setCurrentRegion(id) {
     if (changePopup) {
       var classes = typeof region.attributes.class != 'undefined' ? region.attributes.class.split(' ') : [];
       if (REGIONS_STATE) {
-        toggleProminencePopup(classes, region, $(region.element).offset());
+        toggleProminencePopup(classes, region, $(region.element).offset(), token);
       }
     }
   }

@@ -277,7 +277,7 @@
           if (!('update_db' in region.attributes)) {
             region.attributes['update_db'] = true;
           }
-          setCurrentRegion(-1);
+          setCurrentRegion(-1, '{{csrf_token}}');
           redrawTagsForRegion();
           redrawClassForRegion();
 
@@ -301,7 +301,7 @@
         });
 
         wavesurfer.on('region-dblclick', function (region, event) {
-          setCurrentRegion(region.id);
+          setCurrentRegion(region.id, '{{csrf_token}}');
         });
 
         wavesurfer.on('region-click', function (region, event) {
@@ -382,7 +382,7 @@
           handler.addRegion(wavesurfer, 'event', '{{ event.event_class|default_if_none:'' }}', tags, {{ event.id }}, {{ event.start_time }} + {{ padding }}, {{ event.end_time }} + {{ padding }}, '{{ event.color }}', false);
         {% endfor %}
       {% endif %}
-      setCurrentRegion(-1);
+      setCurrentRegion(-1, '{{csrf_token}}');
       checkOverlaps()
     }
 
@@ -412,7 +412,7 @@
 
     // WaveSurfer callbacks
     function onRegionCreated(region) {
-      setCurrentRegion(-1);
+      setCurrentRegion(-1, '{{csrf_token}}');
       redrawTagsForRegion();
       redrawClassForRegion();
       if (!('class' in region.attributes)){
@@ -494,7 +494,7 @@
           if (!('tags' in region.attributes)) {
             region.attributes['tags'] = []
           }
-          setCurrentRegion(region.id);
+          setCurrentRegion(region.id, '{{csrf_token}}');
           checkOverlaps();
         }
       });

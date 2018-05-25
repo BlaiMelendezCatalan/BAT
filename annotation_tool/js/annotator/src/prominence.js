@@ -20,7 +20,7 @@ function closeProminencePopup() {
   popup.removeClass('active');
 }
 
-function toggleProminencePopup(classes, region, offset) {
+function toggleProminencePopup(classes, region, offset, token) {
   var popup = $('#class-prominence-container');
   if (classes.length == 1) {
     popup.removeClass('active');
@@ -73,7 +73,7 @@ function toggleProminencePopup(classes, region, offset) {
         }
       }
       if (prominences.includes(5) || prominences.includes(0)) {
-        updateClassProminence(region.attributes.region_id, className, prominence, '{{csrf_token}}');
+        updateClassProminence(region.attributes.region_id, className, prominence, token);
         region.attributes.classProminences[className] = prominence;
 
         // mark circle as active
