@@ -16,6 +16,7 @@ from annotation_tool.models import Project, Class, Wav, Segment, Annotation, Eve
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from config.settings.common import BASE_DIR, MEDIA_ROOT
+from tqdm import tqdm
 
 
 def create_project(name, creation_date):

@@ -4,7 +4,7 @@ BAT - BMAT Annotation Tool
 Description:
 --------------
 
-BAT is an open-source, web-based tool for the manual annotation of events in audio recordings developed at [BMAT](http://www.bmat.com)
+BAT is an open-source, web-based tool for the manual annotation of events in audio recordings developed at [BMAT](http://www.bmat.com). It was developed in the context of a PhD and right now it is maintained by its author in his free. By no means is it a professional tool.
 
 1. It provides an easy way to annotate the salience of simultaneous sound sources.
 2. It allows to define multiple ontologies to adapt to multiple tasks.
@@ -67,9 +67,9 @@ Install and run BAT locally or on a server:
 First steps with BAT:
 --------------
 
-1. As the admin you can create projects. Porjects are usually named after the type of events that we want to annotate (instrument sounds, chords, everyday life sounds, etc.). To create one, go to the "projects page" and click "Add Project". Name it and choose whether or not events overlap for your particular annotation task.
+1. As the admin you can create projects, define classes and upload wavs to projects. First of all create the set of classes that you want to annotate with. Todo so go to "Classes" and click on "Add Class".
 
-2. Once the project is created you need to create the ontology, i.e., the classes, that you are going to use for the annotation. To do this, go to the "classes page". 
+2. Once the classes are defined you need to create the project. Projects are usually named after the type of events that we want to annotate (instrument sounds, chords, everyday life sounds, etc.). To create one, go to "Projects" and click "Add Project". Name it, pick the classes you want to use and choose whether or not events can overlap for your particular annotation task.
 
 3. The third step is to upload the audio data that you want to annotate in the "upload data page". BAT works with segments, so you will have to enter a value in the segment length field. If you write -1, the whole duration of the audio file will be used as the segment length. Right now BAT accepts only wav files. 
 

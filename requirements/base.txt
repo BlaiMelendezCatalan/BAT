@@ -9,3 +9,4 @@ pgcontents==0.5.0
 jupyter==1.0.0
 intervaltree==2.1.0
 aiorest_ws
+tqdm==3.7.1
