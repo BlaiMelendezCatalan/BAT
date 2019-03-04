@@ -150,6 +150,10 @@ def create_tmp_file(segment):
     input_file = os.path.join(MEDIA_ROOT, segment.wav.file.name)
     output_file = 'tmp/' + input_file.split('/')[-1]
     wav_file = read(input_file, 'r')
+
+    if len(wav_file[1].shape) > 1:
+        wav_file = (wav_file[0], wav_file[1].mean(axis=-1))
+    
     dtype = type(wav_file[1][0])
     sample_rate = wav_file[0]
     padding = round((segment.end_time - segment.start_time) / 20., 2)
