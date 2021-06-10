@@ -1,4 +1,4 @@
-Django==1.11.29
+Django==2.2.24
 numpy==1.11.3
 scipy==0.18.1
 django-environ==0.4.0
