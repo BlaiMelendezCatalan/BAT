@@ -1,5 +1,5 @@
 Django==1.11.29
-numpy==1.11.3
+numpy==1.21.0
 scipy==0.18.1
 django-environ==0.4.0
 psycopg2==2.6.2
